@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Calendar</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #282828;
+            color: #ebdbb2;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: -20px 20px;
+            overflow: hidden;
+        }
+        h1 {
+            font-weight: 300;
+            margin: 40px 0 40px;
+        }
+        h2 {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin: 20px 0;
+            color: #ebdbb2;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            max-width: 700px;
+            width: 100%;
+        }
+        .day {
+            aspect-ratio: 1;
+            border: 1px solid #928374;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .day::after {
+            content: attr(data-day);
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 0.7em;
+            color: #928374;
+            opacity: 0.8;
+        }
+        .day:hover {
+            border-color: #ebdbb2;
+        }
+        .prev-month, .next-month {
+            opacity: 0.3;
+        }
+        .prev-month::after, .next-month::after {
+            opacity: 0.3;
+        }
+        .weekday {
+            text-align: center;
+            padding: 10px;
+            font-size: 0.8em;
+            color: #a89984;
+        }
+        .color-picker {
+            position: fixed;
+            background: #3c3836;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin: 5px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s ease;
+        }
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+        .month-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: auto repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 40px;
+            width: 100%;
+        }
+        #calendarContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 700px;
+        }
+        .eye-icon {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            color: #928374;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .day:hover .eye-icon {
+            opacity: 1;
+        }
+        .sidebar {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background-color: #3c3836;
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(235, 219, 178, 0.03),
+                rgba(235, 219, 178, 0.03) 4px,
+                transparent 4px,
+                transparent 8px
+            );
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            opacity: 0;
+        }
+        .sidebar.active {
+            left: 0;
+            opacity: 1;
+        }
+        .sidebar-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: #928374;
+        }
+        .day.past {
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(235, 219, 178, 0.03),
+                rgba(235, 219, 178, 0.03) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ date_label }}</h1>
+    
+    <div class="calendar" id="calendarContainer">
+        <div class="month-grid" id="viewMonth">
+            {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+                <div class="weekday">{{ day }}</div>
+            {% endfor %}
+            
+            {% for day in calendar_data.prev_days %}
+                <div class="day prev-month" data-day="{{ day }}"></div>
+            {% endfor %}
+            
+            {% for day in calendar_data.current_days %}
+                <div class="day current-month {% if day < current_day%}past{% endif %}" 
+                     data-day="{{ day }}"
+                     onclick="showSidebar({{ day }})"
+                     {% if day in mood_colors %}style="background-color: {{ mood_colors[day] }}"{% endif %}>
+                </div>
+            {% endfor %}
+            
+            {% for day in calendar_data.next_days %}
+                <div class="day next-month" data-day="{{ day }}"></div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="color-picker" id="colorPicker">
+        <div class="color-option" style="background: #2ecc7180"></div>  <!-- Emerald Green -->
+        <div class="color-option" style="background: #16a58580"></div>  <!-- Sea Green -->
+        <div class="color-option" style="background: #00959580"></div>  <!-- Turquoise -->
+        <div class="color-option" style="background: #3674b580"></div>  <!-- Royal Blue -->
+        <div class="color-option" style="background: #5b5bb580"></div>  <!-- Blue Purple -->
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <div id="sidebarContent"></div>
+    </div>
+
+    <script>
+        // Current date (fixed, doesn't change)
+        const TODAY = {
+            year: {{ current_year }},
+            month: {{ current_month }},
+            day: {{ current_day }}
+        };
+        
+        // View state (changes as user navigates)
+        let viewState = {
+            year: TODAY.year,
+            month: TODAY.month
+        };
+        
+        let isLoading = false;
+        let currentOpenDay = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            const colorPicker = document.getElementById('colorPicker');
+            const sidebar = document.getElementById('sidebar');
+            let selectedDay = null;
+            let menuOpen = false;
+
+            document.querySelectorAll('.day').forEach(day => {
+                // Create and append eye icon
+                const eyeIcon = document.createElement('i');
+                eyeIcon.className = 'fas fa-eye eye-icon';
+                day.appendChild(eyeIcon);
+
+                // Update click handler to handle both menu and clearing
+                eyeIcon.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    
+                    // If color picker is already showing for this day and the day has a mood
+                    if (menuOpen && selectedDay === day && day.style.backgroundColor) {
+                        // Clear the mood
+                        try {
+                            const response = await fetch('/update_mood', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    year: viewState.year,
+                                    month: viewState.month,
+                                    day: day.dataset.day,
+                                    color: null
+                                })
+                            });
+                            
+                            const data = await response.json();
+                            if (data.status === 'success') {
+                                day.style.backgroundColor = '';
+                                colorPicker.style.display = 'none';
+                                menuOpen = false;
+                                selectedDay = null;
+                            } else {
+                                console.error('Failed to clear mood:', data.message);
+                            }
+                        } catch (error) {
+                            console.error('Error clearing mood:', error);
+                        }
+                    } else {
+                        // Show color picker
+                        selectedDay = day;
+                        menuOpen = true;
+                        const rect = day.getBoundingClientRect();
+                        colorPicker.style.display = 'block';
+                        colorPicker.style.left = `${rect.left}px`;
+                        colorPicker.style.top = `${rect.bottom + 5}px`;
+                    }
+                });
+            });
+
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', async () => {
+                    if (selectedDay) {
+                        const color = window.getComputedStyle(option).backgroundColor;
+                        
+                        try {
+                            const response = await fetch('/update_mood', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    year: viewState.year,
+                                    month: viewState.month,
+                                    day: selectedDay.dataset.day,
+                                    color: color
+                                })
+                            });
+                            
+                            const data = await response.json();
+                            if (data.status === 'success') {
+                                selectedDay.style.backgroundColor = color;
+                            } else {
+                                console.error('Failed to update mood:', data.message);
+                            }
+                        } catch (error) {
+                            console.error('Error updating mood:', error);
+                        }
+                        
+                        colorPicker.style.display = 'none';
+                        menuOpen = false;
+                        selectedDay = null;
+                    }
+                });
+            });
+
+            // Update the document click handler to also reset the menuOpen state
+            document.addEventListener('click', (event) => {
+                const sidebar = document.getElementById('sidebar');
+                const colorPicker = document.getElementById('colorPicker');
+                
+                // Check if click is on any interactive element
+                const isInteractiveClick = event.target.closest('#sidebar, #colorPicker, .day, .eye-icon');
+                
+                // Only close sidebar and color picker if clicking outside interactive elements
+                if (!isInteractiveClick) {
+                    colorPicker.style.display = 'none';
+                    menuOpen = false;
+                    selectedDay = null;
+                    sidebar.classList.remove('active');
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'h') {
+                updateMonth('prev');
+            } else if (event.key === 'l') {
+                updateMonth('next');
+            }
+        });
+
+        async function updateMonth(direction) {
+            if (isLoading) return;
+            isLoading = true;
+
+            if (direction === 'next') {
+                viewState.month++;
+                if (viewState.month > 12) {
+                    viewState.month = 1;
+                    viewState.year++;
+                }
+            } else if (direction === 'prev') {
+                viewState.month--;
+                if (viewState.month < 1) {
+                    viewState.month = 12;
+                    viewState.year--;
+                }
+            }
+
+            try {
+                const response = await fetch(`/get_month?year=${viewState.year}&month=${viewState.month}`);
+                const data = await response.json();
+                
+                // Update main header
+                document.querySelector('h1').textContent = data.month_label;
+                const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                
+                // Generate the new month HTML
+                const monthHTML = `
+                    <div class="month-grid" id="viewMonth">
+                        ${weekdays.map(day => `
+                            <div class="weekday">${day}</div>
+                        `).join('')}
+                        ${data.calendar_data.prev_days.map(day => `
+                            <div class="day prev-month" data-day="${day}"></div>
+                        `).join('')}
+                        ${data.calendar_data.current_days.map(day => `
+                            <div class="day current-month ${(viewState.year < TODAY.year || 
+                                    (viewState.year === TODAY.year && viewState.month < TODAY.month) ||
+                                    (viewState.year === TODAY.year && viewState.month === TODAY.month && day < TODAY.day)) 
+                                    ? 'past' : ''}" 
+                                 data-day="${day}" 
+                                 onclick="showSidebar(${day})"
+                                 ${data.mood_colors[day] ? `style="background-color: ${data.mood_colors[day]}"` : ''}>
+                            </div>
+                        `).join('')}
+                        ${data.calendar_data.next_days.map(day => `
+                            <div class="day next-month" data-day="${day}"></div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                document.getElementById('calendarContainer').innerHTML = monthHTML;
+                setupEventListeners();
+
+            } catch (error) {
+                console.error('Error updating month:', error);
+            } finally {
+                isLoading = false;
+            }
+        }
+        function showSidebar(day) {
+            const sidebar = document.getElementById('sidebar');
+            
+            if (currentOpenDay === day) {
+                sidebar.classList.remove('active');
+                currentOpenDay = null;
+            } else {
+                sidebar.classList.add('active');
+                currentOpenDay = day;
+                document.getElementById('sidebarContent').innerHTML = `<p></p>`;
+            }
+        }
+    </script>
+</body>
+</html>
