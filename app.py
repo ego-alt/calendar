@@ -46,6 +46,7 @@ def get_month_calendar(year, month):
     }
 
 def initialize_user():
+    logging.info("Instantiating user...")
     with app.app_context():
         # Create default user if it doesn't exist
         user = User.query.first()
@@ -55,17 +56,15 @@ def initialize_user():
             db.session.commit()
         return user
 
-# Update the user fetching in routes
 def get_current_user():
-    return User.query.get(session['user_id'])
+    with app.app_context():
+        return User.query.get(session.get('user_id'))
 
 @app.route('/')
 def index():
+    user = initialize_user()
     today = datetime.now()
     calendar_data = get_month_calendar(today.year, today.month)
-    
-    # Get user (in a real app, you'd get this from the session)
-    user = User.query.first()
     
     # Fetch mood data for current month
     start_date = datetime(today.year, today.month, 1).date()
@@ -107,8 +106,8 @@ def get_month():
     # Get the calendar data
     calendar_data = get_month_calendar(year, month)
     
-    # Get user (in a real app, you'd get this from the session)
-    user = User.query.first()
+    # Get user and ensure we're in a session
+    user = initialize_user()  # Replace get_current_user() with initialize_user()
     
     # Fetch all mood data for the month
     start_date = datetime(year, month, 1).date()
