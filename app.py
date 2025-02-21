@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import calendar
 import logging
 from models import db, User, Mood, DailyLog
+from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///events.db'
@@ -46,15 +47,29 @@ def get_month_calendar(year, month):
     }
 
 def initialize_user():
-    logging.info("Instantiating user...")
+    logging.info("Initializing user...")
     with app.app_context():
-        # Create default user if it doesn't exist
-        user = User.query.first()
-        if not user:
+        # Try to get existing default user first
+        user = User.query.filter_by(username='default').first()
+        if user:
+            session['user_id'] = user.id  # Store user ID in session
+            return user
+            
+        # Only create new user if one doesn't exist
+        try:
             user = User(username='default')
             db.session.add(user)
             db.session.commit()
-        return user
+            session['user_id'] = user.id  # Store user ID in session
+            return user
+        except IntegrityError:
+            # In case of race condition, try one more time to get existing user
+            db.session.rollback()
+            user = User.query.filter_by(username='default').first()
+            if user:
+                session['user_id'] = user.id
+                return user
+            raise  # Re-raise if we still can't get a user
 
 def get_current_user():
     with app.app_context():
@@ -200,4 +215,4 @@ def get_events():
     return jsonify({'events': events})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

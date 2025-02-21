@@ -13,14 +13,16 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
+            justify-content: center;
+            height: 100vh;
             margin: 0;
-            padding: -20px 20px;
+            padding: 10px;
             overflow: hidden;
         }
         h1 {
-            font-weight: 300;
-            margin: 40px 0 40px;
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            margin: 20px 0;
+            text-align: center;
         }
         h2 {
             grid-column: 1 / -1;
@@ -31,9 +33,10 @@
         .calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-            max-width: 700px;
+            gap: 2px;
             width: 100%;
+            max-width: min(700px, 95vw);
+            max-height: 80vh;
         }
         .day {
             aspect-ratio: 1;
@@ -45,13 +48,14 @@
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
+            font-size: clamp(0.8rem, 2vw, 1rem);
         }
         .day::after {
             content: attr(data-day);
             position: absolute;
             top: 5px;
             right: 5px;
-            font-size: 0.7em;
+            font-size: clamp(0.6rem, 1.5vw, 0.7rem);
             color: #928374;
             opacity: 0.8;
         }
@@ -66,17 +70,18 @@
         }
         .weekday {
             text-align: center;
-            padding: 10px;
-            font-size: 0.8em;
+            padding: 5px;
+            font-size: clamp(0.7rem, 1.8vw, 0.8rem);
             color: #a89984;
         }
         .color-picker {
+            display: none;  /* Hide by default */
             position: fixed;
-            background: #3c3836;
-            padding: 15px;
-            border-radius: 8px;
-            display: none;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translateX(-50%);
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 300px;
+            width: 90%;
         }
         .color-option {
             width: 30px;
@@ -104,6 +109,7 @@
             align-items: center;
             width: 100%;
             max-width: 700px;
+            margin: auto;
         }
         .eye-icon {
             position: absolute;
@@ -122,7 +128,7 @@
             position: fixed;
             left: -300px;
             top: 0;
-            width: 300px;
+            width: min(300px, 80vw);
             height: 100vh;
             background-color: #3c3836;
             background-image: repeating-linear-gradient(
@@ -158,32 +164,71 @@
                 transparent 4px
             );
         }
+        /* Desktop styles (default) */
+        @media (min-width: 481px) {
+            .color-picker {
+                position: absolute;  /* Position relative to clicked day */
+                display: none;
+                flex-direction: column;  /* Vertical layout */
+                width: auto;
+                transform: none;
+            }
+
+            .color-option {
+                margin: 3px;
+            }
+        }
+
+        /* Mobile styles */
+        @media (max-width: 480px) {
+            .color-picker {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                flex-direction: row;  /* Horizontal layout */
+            }
+
+            .color-option {
+                width: 25px;
+                height: 25px;
+                margin: 3px;
+            }
+        }
+
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 700px;
+        }
     </style>
 </head>
 <body>
-    <h1>{{ date_label }}</h1>
-    
-    <div class="calendar" id="calendarContainer">
-        <div class="month-grid" id="viewMonth">
-            {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
-                <div class="weekday">{{ day }}</div>
-            {% endfor %}
-            
-            {% for day in calendar_data.prev_days %}
-                <div class="day prev-month" data-day="{{ day }}"></div>
-            {% endfor %}
-            
-            {% for day in calendar_data.current_days %}
-                <div class="day current-month {% if day < current_day%}past{% endif %}" 
-                     data-day="{{ day }}"
-                     onclick="showSidebar({{ day }})"
-                     {% if day in mood_colors %}style="background-color: {{ mood_colors[day] }}"{% endif %}>
-                </div>
-            {% endfor %}
-            
-            {% for day in calendar_data.next_days %}
-                <div class="day next-month" data-day="{{ day }}"></div>
-            {% endfor %}
+    <div class="content-wrapper">
+        <h1>{{ date_label }}</h1>
+        <div class="calendar" id="calendarContainer">
+            <div class="month-grid" id="viewMonth">
+                {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+                    <div class="weekday">{{ day }}</div>
+                {% endfor %}
+                
+                {% for day in calendar_data.prev_days %}
+                    <div class="day prev-month" data-day="{{ day }}"></div>
+                {% endfor %}
+                
+                {% for day in calendar_data.current_days %}
+                    <div class="day current-month {% if day < current_day%}past{% endif %}" 
+                         data-day="{{ day }}"
+                         onclick="showSidebar({{ day }})"
+                         {% if day in mood_colors %}style="background-color: {{ mood_colors[day] }}"{% endif %}>
+                    </div>
+                {% endfor %}
+                
+                {% for day in calendar_data.next_days %}
+                    <div class="day next-month" data-day="{{ day }}"></div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 
@@ -227,16 +272,13 @@
             let menuOpen = false;
 
             document.querySelectorAll('.day').forEach(day => {
-                // Create and append eye icon
                 const eyeIcon = document.createElement('i');
                 eyeIcon.className = 'fas fa-eye eye-icon';
                 day.appendChild(eyeIcon);
 
-                // Update click handler to handle both menu and clearing
                 eyeIcon.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     
-                    // If color picker is already showing for this day and the day has a mood
                     if (menuOpen && selectedDay === day && day.style.backgroundColor) {
                         // Clear the mood
                         try {
@@ -266,13 +308,22 @@
                             console.error('Error clearing mood:', error);
                         }
                     } else {
-                        // Show color picker
+                        // Show color picker with position based on screen size
                         selectedDay = day;
                         menuOpen = true;
-                        const rect = day.getBoundingClientRect();
-                        colorPicker.style.display = 'block';
-                        colorPicker.style.left = `${rect.left}px`;
-                        colorPicker.style.top = `${rect.bottom + 5}px`;
+                        colorPicker.style.display = 'flex';
+                        
+                        // Position color picker based on screen width
+                        if (window.innerWidth > 480) {
+                            // Desktop: Position next to clicked day
+                            const rect = day.getBoundingClientRect();
+                            colorPicker.style.left = `${rect.left - 40}px`;
+                            colorPicker.style.top = `${rect.top + 16}px`;
+                        } else {
+                            // Mobile: Position at bottom
+                            colorPicker.style.left = '50%';
+                            colorPicker.style.bottom = '20px';
+                        }
                     }
                 });
             });
