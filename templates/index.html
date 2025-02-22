@@ -14,7 +14,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             padding: 10px;
             overflow: hidden;
@@ -129,7 +129,7 @@
             left: -300px;
             top: 0;
             width: min(300px, 80vw);
-            height: 100vh;
+            height: 95vh;
             background-color: #3c3836;
             background-image: repeating-linear-gradient(
                 45deg,
@@ -138,11 +138,13 @@
                 transparent 4px,
                 transparent 8px
             );
-            padding: 20px;
+            border-radius: 8px;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1000;
             opacity: 0;
+            padding: 20px;
+            overflow-y: auto;
         }
         .sidebar.active {
             left: 0;
@@ -164,6 +166,53 @@
                 transparent 4px
             );
         }
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 700px;
+            margin: auto;
+            padding: 20px 0;
+        }
+        .sidebar-header {
+            color: #ebdbb2;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            padding-right: 30px;  /* Space for close button */
+        }
+        .event-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .event-card {
+            background: rgba(40, 40, 40, 0.5);
+            border-radius: 8px;
+            padding: 12px;
+            border-left: 3px solid #ebdbb2;
+            position: relative;
+        }
+        .event-time {
+            color: #a89984;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .event-name {
+            color: #ebdbb2;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .event-details {
+            color: #928374;
+            font-size: 0.9em;
+        }
+        .no-events {
+            color: #928374;
+            text-align: center;
+            font-style: italic;
+            margin-top: 20px;
+        }
         /* Desktop styles (default) */
         @media (min-width: 481px) {
             .color-picker {
@@ -173,34 +222,164 @@
                 width: auto;
                 transform: none;
             }
-
             .color-option {
                 margin: 3px;
             }
         }
-
         /* Mobile styles */
         @media (max-width: 480px) {
+            .content-wrapper {
+                margin: auto;
+                padding: 10px 0;
+            }
             .color-picker {
                 position: fixed;
                 bottom: 20px;
                 left: 50%;
                 flex-direction: row;  /* Horizontal layout */
             }
-
             .color-option {
                 width: 25px;
                 height: 25px;
                 margin: 3px;
             }
+            .sidebar {
+                left: 0;
+                bottom: -100vh;
+                top: auto;
+                width: 90vw;
+                height: 15vh;
+                border-radius: 16px 16px 0 0;
+            }
+            .sidebar.active {
+                left: 0;
+                bottom: 0;
+            }
         }
-
-        .content-wrapper {
+        .add-event-btn {
+            background: #2ecc7180;
+            color: #ebdbb2;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.2s;
+            width: 100%;
+        }
+        .event-form {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 700px;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .event-form input,
+        .event-form textarea {
+            background: #282828;
+            border: 1px solid #504945;
+            color: #ebdbb2;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 1em;
+            font-family: monospace;
+        }
+        .event-form textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .time-inputs {
+            display: flex;
+            gap: 8px;
+        }
+        .form-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .cancel-btn,
+        .save-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            background: #2ecc7180;
+            color: #ebdbb2;
+        }
+        .add-event-btn:hover,
+        .cancel-btn:hover,
+        .save-btn:hover {
+            background: #16a58580;
+        }
+        .form-header {
+            color: #ebdbb2;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            padding-top: 20px;
+            border-top: 1px solid #504945;
+        }
+        .event-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .event-card:hover .event-actions {
+            opacity: 1;
+        }
+        .event-actions i {
+            cursor: pointer;
+            color: #928374;
+            transition: color 0.2s;
+        }
+        .event-actions i:hover {
+            color: #ebdbb2;
+        }
+        .event-form.editing {
+            border-top: 1px solid #504945;
+            margin-top: 20px;
+            padding-top: 20px;
+        }
+        .event-detail-item {
+            margin-bottom: 8px;
+        }
+        .event-detail-item:last-child {
+            margin-bottom: 0;
+        }
+        .time-input {
+            background: #282828;
+            border: 1px solid #504945;
+            color: #ebdbb2;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            width: 80px;
+            font-family: monospace;
+        }
+        .time-input::-webkit-inner-spin-button,
+        .time-input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .time-input::-webkit-calendar-picker-indicator {
+            display: none;
+        }
+        .time-input {
+            -moz-appearance: textfield;
+        }
+        .event-indicator {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            width: 6px;
+            height: 6px;
+            background-color: #ebdbb2;
+            border-radius: 50%;
+            opacity: 0.8;
         }
     </style>
 </head>
@@ -222,6 +401,9 @@
                          data-day="{{ day }}"
                          onclick="showSidebar({{ day }})"
                          {% if day in mood_colors %}style="background-color: {{ mood_colors[day] }}"{% endif %}>
+                        {% if day in days_with_events %}
+                            <div class="event-indicator"></div>
+                        {% endif %}
                     </div>
                 {% endfor %}
                 
@@ -241,7 +423,36 @@
     </div>
 
     <div class="sidebar" id="sidebar">
+        <i class="fas fa-times sidebar-close" onclick="closeSidebar()"></i>
         <div id="sidebarContent"></div>
+        <div id="eventForm" style="display: none;">
+            <div class="form-header">New Event</div>
+            <form id="newEventForm" class="event-form">
+                <input type="text" id="eventName" placeholder="Event name" required>
+                <div class="time-inputs">
+                    <input type="text" 
+                           id="startTime" 
+                           class="time-input" 
+                           placeholder="HH:MM"
+                           pattern="[0-9]{2}:[0-9]{2}"
+                           maxlength="5"
+                           required>
+                    <input type="text" 
+                           id="endTime" 
+                           class="time-input" 
+                           placeholder="HH:MM"
+                           pattern="[0-9]{2}:[0-9]{2}"
+                           maxlength="5">
+                </div>
+                <input type="text" id="eventWith" placeholder="With whom">
+                <input type="text" id="eventLocation" placeholder="Where">
+                <textarea id="eventNotes" placeholder="Notes"></textarea>
+                <div class="form-buttons">
+                    <button type="button" class="cancel-btn" onclick="toggleEventForm(false)">Cancel</button>
+                    <button type="submit" class="save-btn">Save</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -321,8 +532,10 @@
                             colorPicker.style.top = `${rect.top + 16}px`;
                         } else {
                             // Mobile: Position at bottom
+                            const calendar = document.getElementById('calendarContainer');
+                            const calendarRect = calendar.getBoundingClientRect();
                             colorPicker.style.left = '50%';
-                            colorPicker.style.bottom = '20px';
+                            colorPicker.style.top = `${calendarRect.bottom - 16}px`;
                         }
                     }
                 });
@@ -380,15 +593,21 @@
                     sidebar.classList.remove('active');
                 }
             });
+
+            setupTimeInputs();
         }
 
-        document.addEventListener('keydown', (event) => {
+        function handleKeyPress(event) {
+            // Ignore shortcuts if any input or textarea is focused
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
             if (event.key === 'h') {
                 updateMonth('prev');
             } else if (event.key === 'l') {
                 updateMonth('next');
             }
-        });
+        }
 
         async function updateMonth(direction) {
             if (isLoading) return;
@@ -433,6 +652,7 @@
                                  data-day="${day}" 
                                  onclick="showSidebar(${day})"
                                  ${data.mood_colors[day] ? `style="background-color: ${data.mood_colors[day]}"` : ''}>
+                                ${data.days_with_events.includes(day) ? '<div class="event-indicator"></div>' : ''}
                             </div>
                         `).join('')}
                         ${data.calendar_data.next_days.map(day => `
@@ -450,17 +670,184 @@
                 isLoading = false;
             }
         }
-        function showSidebar(day) {
+        async function showSidebar(day) {
             const sidebar = document.getElementById('sidebar');
+            const sidebarContent = document.getElementById('sidebarContent');
+            const eventForm = document.getElementById('eventForm');
+           
+            currentOpenDay = day;
+            sidebar.classList.add('active');
+            eventForm.style.display = 'none';
             
-            if (currentOpenDay === day) {
-                sidebar.classList.remove('active');
-                currentOpenDay = null;
-            } else {
-                sidebar.classList.add('active');
-                currentOpenDay = day;
-                document.getElementById('sidebarContent').innerHTML = `<p></p>`;
+            try {
+                const response = await fetch(`/events?year=${viewState.year}&month=${viewState.month}&day=${day}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const date = new Date(viewState.year, viewState.month - 1, day);
+                    const dateString = `${day} ${date.toLocaleDateString('en-US', { month: 'long' })}`;
+                    
+                    let html = `
+                        <div class="sidebar-header">${dateString}</div>
+                        <div class="event-list">
+                    `;
+                    
+                    if (data.events.length === 0) {
+                        html += `<div class="no-events">No events scheduled</div>`;
+                    } else {
+                        data.events.forEach(event => {
+                            html += `
+                                <div class="event-card" data-event-id="${event.id}">
+                                    <div class="event-actions">
+                                        <i class="fas fa-edit" onclick="editEvent(${event.id})"></i>
+                                        <i class="fas fa-trash" onclick="deleteEvent(${event.id})"></i>
+                                    </div>
+                                    <div class="event-time">
+                                        ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}
+                                    </div>
+                                    <div class="event-name">${event.name}</div>
+                                    <div class="event-details">
+                                        ${event.with_who ? `<div class="event-detail-item"><i class="fas fa-user"></i> ${event.with_who}</div>` : ''}
+                                        ${event.where ? `<div class="event-detail-item"><i class="fas fa-map-marker-alt"></i> ${event.where}</div>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    html += `</div><button class="add-event-btn" onclick="toggleEventForm(true)">Add Event</button>`;
+                    sidebarContent.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Error fetching events:', error);
+                sidebarContent.innerHTML = '<div class="no-events">Error loading events</div>';
             }
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.remove('active');
+            currentOpenDay = null;
+        }
+
+        function toggleEventForm(show) {
+            const eventForm = document.getElementById('eventForm');
+            const newEventForm = document.getElementById('newEventForm');
+            eventForm.style.display = show ? 'block' : 'none';
+            if (show) {
+                newEventForm.reset();
+            }
+        }
+
+        document.getElementById('newEventForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const form = e.target;
+            const formData = {
+                date: `${viewState.year}-${String(viewState.month).padStart(2, '0')}-${String(currentOpenDay).padStart(2, '0')}`,
+                name: document.getElementById('eventName').value,
+                start_time: document.getElementById('startTime').value,
+                end_time: document.getElementById('endTime').value || null,
+                where: document.getElementById('eventLocation').value || null,
+                with_who: document.getElementById('eventWith').value || null,
+                notes: document.getElementById('eventNotes').value || null
+            };
+            
+            try {
+                const eventId = form.dataset.eventId;
+                const method = eventId ? 'PUT' : 'POST';
+                const url = eventId ? `/events/${eventId}` : '/events';
+                
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showSidebar(currentOpenDay);
+                    updateMonth(viewState.year, viewState.month);
+                } else {
+                    console.error('Failed to save event:', data.message);
+                }
+            } catch (error) {
+                console.error('Error saving event:', error);
+            }
+        });
+
+        async function editEvent(eventId) {
+            const eventCard = document.querySelector(`.event-card[data-event-id="${eventId}"]`);
+            const eventForm = document.getElementById('eventForm');
+            const form = document.getElementById('newEventForm');
+            
+            // Get current event data
+            const response = await fetch(`/events?year=${viewState.year}&month=${viewState.month}&day=${currentOpenDay}`);
+            const data = await response.json();
+            const event = data.events.find(e => e.id === eventId);
+            
+            // Populate form
+            form.dataset.eventId = eventId;
+            document.getElementById('eventName').value = event.name;
+            document.getElementById('startTime').value = event.start_time;
+            document.getElementById('endTime').value = event.end_time || '';
+            document.getElementById('eventWith').value = event.with_who || '';
+            document.getElementById('eventLocation').value = event.where || '';
+            document.getElementById('eventNotes').value = event.notes || '';
+            
+            // Show form
+            eventForm.style.display = 'block';
+            eventForm.classList.add('editing');
+        }
+
+        async function deleteEvent(eventId) {
+            try {
+                const response = await fetch(`/events/${eventId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showSidebar(currentOpenDay);
+                    updateMonth(viewState.year, viewState.month);
+                } else {
+                    console.error('Failed to delete event:', data.message);
+                }
+            } catch (error) {
+                console.error('Error deleting event:', error);
+            }
+        }
+
+        function setupTimeInputs() {
+            document.querySelectorAll('.time-input').forEach(input => {
+                input.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    
+                    if (value.length >= 2) {
+                        const hours = parseInt(value.substring(0, 2));
+                        if (hours > 23) value = '23' + value.substring(2);
+                        value = value.substring(0, 2) + ':' + value.substring(2);
+                    }
+                    
+                    if (value.length > 5) value = value.substring(0, 5);
+                    
+                    if (value.length === 5) {
+                        const minutes = parseInt(value.substring(3, 5));
+                        if (minutes > 59) value = value.substring(0, 3) + '59';
+                    }
+                    
+                    e.target.value = value;
+                });
+
+                input.addEventListener('blur', function(e) {
+                    const value = e.target.value;
+                    if (value && !value.match(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/)) {
+                        e.target.value = '';
+                    }
+                });
+            });
         }
     </script>
 </body>

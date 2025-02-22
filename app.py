@@ -2,8 +2,9 @@ from flask import Flask, render_template, jsonify, request, session
 from datetime import datetime, timedelta
 import calendar
 import logging
-from models import db, User, Mood, DailyLog
+from models import db, User, Mood, DailyLog, Event
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import func
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///events.db'
@@ -13,9 +14,6 @@ app.config['SECRET_KEY'] = 'your-secret-key-here'  # Required for sessions
 logger = logging.getLogger(__name__)
 
 db.init_app(app)
-
-# Store mood data (in a real app, you'd use a database)
-mood_data = {}
 
 def get_month_calendar(year, month):
     # Get the first day of the month and number of days
@@ -83,8 +81,7 @@ def index():
     
     # Fetch mood data for current month
     start_date = datetime(today.year, today.month, 1).date()
-    end_date = (datetime(today.year, today.month + 1, 1) if today.month < 12 
-               else datetime(today.year + 1, 1, 1)).date()
+    end_date = (datetime(today.year, today.month + 1, 1) if today.month < 12 else datetime(today.year + 1, 1, 1)).date()
     
     daily_logs = DailyLog.query.filter(
         DailyLog.user_id == user.id,
@@ -98,6 +95,17 @@ def index():
         for log in daily_logs
     }
     
+    # Get days that have events
+    days_with_events = db.session.query(
+        func.extract('day', Event.start_time).label('day')
+    ).filter(
+        Event.user_id == user.id,
+        Event.start_time >= start_date,
+        Event.start_time < end_date
+    ).distinct().all()
+
+    days_with_events = [int(day.day) for day in days_with_events]
+    
     return render_template(
         'index.html',
         calendar_data=calendar_data,
@@ -105,7 +113,8 @@ def index():
         current_year=today.year,
         current_month=today.month,
         current_day=today.day,
-        mood_colors=mood_colors
+        mood_colors=mood_colors,
+        days_with_events=days_with_events
     )
 
 @app.route('/get_month', methods=['GET'])
@@ -118,11 +127,8 @@ def get_month():
         month = 1
         year += 1
     
-    # Get the calendar data
     calendar_data = get_month_calendar(year, month)
-    
-    # Get user and ensure we're in a session
-    user = initialize_user()  # Replace get_current_user() with initialize_user()
+    user = initialize_user()
     
     # Fetch all mood data for the month
     start_date = datetime(year, month, 1).date()
@@ -140,10 +146,22 @@ def get_month():
         for log in daily_logs
     }
     
+    # Get days that have events
+    days_with_events = db.session.query(
+        func.extract('day', Event.start_time).label('day')
+    ).filter(
+        Event.user_id == user.id,
+        Event.start_time >= start_date,
+        Event.start_time < end_date
+    ).distinct().all()
+
+    days_with_events = [int(day.day) for day in days_with_events]
+    
     return jsonify({
         'calendar_data': calendar_data,
         'month_label': datetime(year, month, 1).strftime('%B %Y'),
-        'mood_colors': mood_colors
+        'mood_colors': mood_colors,
+        'days_with_events': days_with_events
     })
 
 @app.route('/update_mood', methods=['POST'])
@@ -152,7 +170,6 @@ def update_mood():
     logger.info(f"Received mood update request with data: {data}")
     
     try:
-        # Get user from session
         user = get_current_user()
         if not user:
             logger.debug("Creating default user")
@@ -201,18 +218,111 @@ def update_mood():
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/events', methods=['GET', 'POST'])
+def events():
+    try:
+        user = get_current_user()
+        
+        if request.method == 'GET':
+            year = int(request.args.get('year'))
+            month = int(request.args.get('month'))
+            day = int(request.args.get('day'))
+            
+            # Get start and end of the requested day
+            start_date = datetime(year, month, day)
+            end_date = start_date + timedelta(days=1)
+            
+            # Query events for the current user and day
+            events = Event.query.filter(
+                Event.user_id == user.id,
+                Event.start_time >= start_date,
+                Event.start_time < end_date
+            ).order_by(Event.start_time).all()
+            
+            # Format events for JSON response
+            events_data = [{
+                'id': event.id,
+                'name': event.name,
+                'start_time': event.start_time.strftime('%H:%M'),
+                'end_time': event.end_time.strftime('%H:%M') if event.end_time else None,
+                'notes': event.notes,
+                'with_who': event.with_who,
+                'where': event.where
+            } for event in events]
+            
+            return jsonify({'status': 'success', 'events': events_data})
+            
+        else:  # POST method
+            data = request.json
+            
+            # Combine date and time
+            date = datetime.strptime(data['date'], '%Y-%m-%d')
+            start_time = datetime.strptime(data['start_time'], '%H:%M').time()
+            start_datetime = datetime.combine(date, start_time)
+            
+            # Handle end time if provided
+            end_datetime = None
+            if data.get('end_time'):
+                end_time = datetime.strptime(data['end_time'], '%H:%M').time()
+                end_datetime = datetime.combine(date, end_time)
+            
+            event = Event(
+                user_id=user.id,
+                name=data['name'],
+                start_time=start_datetime,
+                end_time=end_datetime,
+                notes=data.get('notes'),
+                with_who=data.get('with_who'),
+                where=data.get('where')
+            )
+            
+            db.session.add(event)
+            db.session.commit()
+            
+            return jsonify({'status': 'success', 'message': 'Event created successfully'})
+            
+    except Exception as e:
+        logger.error(f"Error handling events: {str(e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
-@app.route('/get_events', methods=['GET'])
-def get_events():
-    year = request.args.get('year')
-    month = request.args.get('month')
-    day = request.args.get('day')
-    date_key = f"{year}-{month}-{day}"
-    
-    # Fetch events for the given date
-    events = mood_data.get(date_key, [])
-    
-    return jsonify({'events': events})
+@app.route('/events/<int:event_id>', methods=['PUT', 'DELETE'])
+def manage_event(event_id):
+    try:
+        user = get_current_user()
+        event = Event.query.filter_by(id=event_id, user_id=user.id).first()
+        
+        if not event:
+            return jsonify({'status': 'error', 'message': 'Event not found'}), 404
+            
+        if request.method == 'DELETE':
+            db.session.delete(event)
+            db.session.commit()
+            return jsonify({'status': 'success', 'message': 'Event deleted'})
+            
+        # PUT method
+        data = request.json
+        date = datetime.strptime(data['date'], '%Y-%m-%d')
+        start_time = datetime.strptime(data['start_time'], '%H:%M').time()
+        start_datetime = datetime.combine(date, start_time)
+        
+        end_datetime = None
+        if data.get('end_time'):
+            end_time = datetime.strptime(data['end_time'], '%H:%M').time()
+            end_datetime = datetime.combine(date, end_time)
+        
+        event.name = data['name']
+        event.start_time = start_datetime
+        event.end_time = end_datetime
+        event.notes = data.get('notes')
+        event.with_who = data.get('with_who')
+        event.where = data.get('where')
+        
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Event updated'})
+        
+    except Exception as e:
+        logger.error(f"Error managing event: {str(e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
