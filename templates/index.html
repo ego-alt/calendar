@@ -5,376 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendar</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body {
-            background-color: #282828;
-            color: #ebdbb2;
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 0 10px;
-        }
-        h1 {
-            font-size: clamp(1.5rem, 4vw, 2rem);
-            margin: 0 0 20px;
-            text-align: center;
-        }
-        h2 {
-            grid-column: 1 / -1;
-            text-align: center;
-            margin: 20px 0;
-            color: #ebdbb2;
-        }
-        .calendar {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 2px;
-            width: 100%;
-            max-width: min(700px, 95vw);
-            max-height: 80vh;
-        }
-        .day {
-            aspect-ratio: 1;
-            border: 1px solid #928374;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            font-size: clamp(0.8rem, 2vw, 1rem);
-        }
-        .day::after {
-            content: attr(data-day);
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            font-size: clamp(0.6rem, 1.5vw, 0.7rem);
-            color: #928374;
-            opacity: 0.8;
-        }
-        .day:hover {
-            border-color: #ebdbb2;
-        }
-        .prev-month, .next-month {
-            opacity: 0.3;
-        }
-        .prev-month::after, .next-month::after {
-            opacity: 0.3;
-        }
-        .weekday {
-            text-align: center;
-            padding: 5px;
-            font-size: clamp(0.7rem, 1.8vw, 0.8rem);
-            color: #a89984;
-        }
-        .color-picker {
-            display: none;  /* Hide by default */
-            position: fixed;
-            transform: translateX(-50%);
-            flex-wrap: wrap;
-            justify-content: center;
-            max-width: 300px;
-            width: 90%;
-        }
-        .color-option {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            margin: 5px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: transform 0.2s ease;
-        }
-        .color-option:hover {
-            transform: scale(1.1);
-        }
-        .month-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            grid-template-rows: auto repeat(5, 1fr);
-            gap: 8px;
-            margin-bottom: 40px;
-            width: 100%;
-        }
-        #calendarContainer {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 700px;
-            margin: auto;
-        }
-        .eye-icon {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            color: #928374;
-            cursor: pointer;
-            font-size: 0.9em;
-        }
-        .day:hover .eye-icon {
-            opacity: 1;
-        }
-        .sidebar {
-            position: fixed;
-            left: -300px;
-            top: 0;
-            width: min(300px, 80vw);
-            height: 95vh;
-            background-color: #3c3836;
-            background-image: repeating-linear-gradient(
-                45deg,
-                rgba(235, 219, 178, 0.03),
-                rgba(235, 219, 178, 0.03) 4px,
-                transparent 4px,
-                transparent 8px
-            );
-            border-radius: 0px 8px 8px 0px;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1000;
-            opacity: 0;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        .sidebar.active {
-            left: 0;
-            opacity: 1;
-        }
-        .sidebar-close {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            color: #928374;
-        }
-        .day.past {
-            background-image: repeating-linear-gradient(
-                45deg,
-                rgba(235, 219, 178, 0.03),
-                rgba(235, 219, 178, 0.03) 2px,
-                transparent 2px,
-                transparent 4px
-            );
-        }
-        .content-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 700px;
-            margin: auto;
-        }
-        .sidebar-header {
-            color: #ebdbb2;
-            font-size: 1.2em;
-            margin-bottom: 20px;
-            padding-right: 30px;  /* Space for close button */
-        }
-        .event-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .event-card {
-            background: rgba(40, 40, 40, 0.5);
-            border-radius: 8px;
-            padding: 12px;
-            border-left: 3px solid #ebdbb2;
-            position: relative;
-        }
-        .event-time {
-            color: #a89984;
-            font-size: 0.9em;
-            margin-bottom: 5px;
-        }
-        .event-name {
-            color: #ebdbb2;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        .event-details {
-            color: #928374;
-            font-size: 0.9em;
-        }
-        .no-events {
-            color: #928374;
-            text-align: center;
-            font-style: italic;
-            margin-top: 20px;
-        }
-        .add-event-btn {
-            background: #2ecc7180;
-            color: #ebdbb2;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 20px;
-            transition: background 0.2s;
-            width: 100%;
-        }
-        .event-form {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 20px;
-        }
-        .event-form input,
-        .event-form textarea {
-            background: #282828;
-            border: 1px solid #504945;
-            color: #ebdbb2;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 1em;
-            font-family: monospace;
-        }
-        .event-form textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-        .time-inputs {
-            display: flex;
-            gap: 8px;
-        }
-        .form-buttons {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .cancel-btn,
-        .save-btn {
-            flex: 1;
-            padding: 8px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.2s;
-            background: #2ecc7180;
-            color: #ebdbb2;
-        }
-        .add-event-btn:hover,
-        .cancel-btn:hover,
-        .save-btn:hover {
-            background: #16a58580;
-        }
-        .form-header {
-            color: #ebdbb2;
-            font-size: 1.1em;
-            margin-bottom: 8px;
-            padding-top: 20px;
-            border-top: 1px solid #504945;
-        }
-        .event-actions {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            display: flex;
-            gap: 8px;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .event-card:hover .event-actions {
-            opacity: 1;
-        }
-        .event-actions i {
-            cursor: pointer;
-            color: #928374;
-            transition: color 0.2s;
-        }
-        .event-actions i:hover {
-            color: #ebdbb2;
-        }
-        .event-form.editing {
-            border-top: 1px solid #504945;
-            margin-top: 20px;
-            padding-top: 20px;
-        }
-        .event-detail-item {
-            margin-bottom: 8px;
-        }
-        .event-detail-item:last-child {
-            margin-bottom: 0;
-        }
-        .time-input {
-            background: #282828;
-            border: 1px solid #504945;
-            color: #ebdbb2;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 0.9em;
-            width: 80px;
-            font-family: monospace;
-        }
-        .time-input::-webkit-inner-spin-button,
-        .time-input::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        .time-input::-webkit-calendar-picker-indicator {
-            display: none;
-        }
-        .time-input {
-            -moz-appearance: textfield;
-        }
-        .event-indicator {
-            position: absolute;
-            bottom: 4px;
-            right: 4px;
-            width: 6px;
-            height: 6px;
-            background-color: #ebdbb2;
-            border-radius: 50%;
-            opacity: 0.8;
-        }
-                /* Desktop styles (default) */
-                @media (min-width: 481px) {
-            .color-picker {
-                position: absolute;  /* Position relative to clicked day */
-                display: none;
-                flex-direction: column;  /* Vertical layout */
-                width: auto;
-                transform: none;
-            }
-            .color-option {
-                margin: 3px;
-            }
-        }
-        /* Mobile styles */
-        @media (max-width: 480px) {
-
-            .color-picker {
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                flex-direction: row;  /* Horizontal layout */
-            }
-            .color-option {
-                width: 25px;
-                height: 25px;
-                margin: 3px;
-            }
-            .sidebar {
-                left: 0;
-                bottom: -100vh;
-                top: auto;
-                width: 90vw;
-                height: 15vh;
-                border-radius: 16px 16px 0 0;
-            }
-            .sidebar.active {
-                left: 0;
-                bottom: 0;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body>
     <div class="content-wrapper">
@@ -422,14 +53,29 @@
             <div class="form-header">New Event</div>
             <form id="newEventForm" class="event-form">
                 <input type="text" id="eventName" placeholder="Event name" required>
-                <div class="time-inputs">
+                <div class="start-inputs">
+                    <input type="text" 
+                           id="startDate" 
+                           class="date-input"
+                           placeholder="DD-MM-YYYY" 
+                           pattern="\d{2}-\d{2}-\d{4}"
+                           maxlength="10"
+                           required>
                     <input type="text" 
                            id="startTime" 
                            class="time-input" 
                            placeholder="HH:MM"
                            pattern="[0-9]{2}:[0-9]{2}"
-                           maxlength="5"
-                           required>
+                           maxlength="5">
+                </div>
+                <div class="end-inputs">
+                    <input type="text" 
+                            id="endDate" 
+                            class="date-input"
+                            placeholder="DD-MM-YYYY"
+                            pattern="\d{2}-\d{2}-\d{4}"
+                            maxlength="10"
+                            required> 
                     <input type="text" 
                            id="endTime" 
                            class="time-input" 
@@ -437,7 +83,7 @@
                            pattern="[0-9]{2}:[0-9]{2}"
                            maxlength="5">
                 </div>
-                <input type="text" id="eventWith" placeholder="With whom">
+                <input type="text" id="eventWith" placeholder="Who">
                 <input type="text" id="eventLocation" placeholder="Where">
                 <textarea id="eventNotes" placeholder="Notes"></textarea>
                 <div class="form-buttons">
@@ -576,9 +222,7 @@
                 const sidebar = document.getElementById('sidebar');
                 const colorPicker = document.getElementById('colorPicker');
                 
-                // Check if click is on any interactive element
                 const isInteractiveClick = event.target.closest('#sidebar, #colorPicker, .day, .eye-icon');
-                
                 // Only close sidebar and color picker if clicking outside interactive elements
                 if (!isInteractiveClick) {
                     colorPicker.style.display = 'none';
@@ -697,7 +341,7 @@
                                         <i class="fas fa-trash" onclick="deleteEvent(${event.id})"></i>
                                     </div>
                                     <div class="event-time">
-                                        ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}
+                                        ${formatEventDisplay(event)}
                                     </div>
                                     <div class="event-name">${event.name}</div>
                                     <div class="event-details">
@@ -730,6 +374,10 @@
             eventForm.style.display = show ? 'block' : 'none';
             if (show) {
                 newEventForm.reset();
+                // Set the date values based on the currently selected day
+                const formattedDate = `${String(currentOpenDay).padStart(2, '0')}-${String(viewState.month).padStart(2, '0')}-${viewState.year}`;
+                document.getElementById('startDate').value = formattedDate;
+                document.getElementById('endDate').value = formattedDate;
             }
         }
 
@@ -738,9 +386,10 @@
             
             const form = e.target;
             const formData = {
-                date: `${viewState.year}-${String(viewState.month).padStart(2, '0')}-${String(currentOpenDay).padStart(2, '0')}`,
                 name: document.getElementById('eventName').value,
-                start_time: document.getElementById('startTime').value,
+                start_date: document.getElementById('startDate').value,
+                start_time: document.getElementById('startTime').value || null,
+                end_date: document.getElementById('endDate').value,
                 end_time: document.getElementById('endTime').value || null,
                 where: document.getElementById('eventLocation').value || null,
                 with_who: document.getElementById('eventWith').value || null,
@@ -773,7 +422,6 @@
         });
 
         async function editEvent(eventId) {
-            const eventCard = document.querySelector(`.event-card[data-event-id="${eventId}"]`);
             const eventForm = document.getElementById('eventForm');
             const form = document.getElementById('newEventForm');
             
@@ -781,12 +429,32 @@
             const response = await fetch(`/events?year=${viewState.year}&month=${viewState.month}&day=${currentOpenDay}`);
             const data = await response.json();
             const event = data.events.find(e => e.id === eventId);
+
+            // Parse the datetime strings
+            const parseDateTime = (dateTimeStr) => {
+                if (!dateTimeStr) return { date: '', time: '' };
+                
+                // Parse "YYYY-MM-DD HH:MM" format
+                const [datePart, timePart] = dateTimeStr.split(' ');
+                const [year, month, day] = datePart.split('-');
+                
+                return {
+                    // Convert to DD-MM-YYYY format for the form
+                    date: `${day}-${month}-${year}`,
+                    time: timePart
+                };
+            };
+
+            const startDateTime = parseDateTime(event.start_time);
+            const endDateTime = parseDateTime(event.end_time);
             
             // Populate form
             form.dataset.eventId = eventId;
             document.getElementById('eventName').value = event.name;
-            document.getElementById('startTime').value = event.start_time;
-            document.getElementById('endTime').value = event.end_time || '';
+            document.getElementById('startDate').value = startDateTime.date;
+            document.getElementById('startTime').value = startDateTime.time;
+            document.getElementById('endDate').value = endDateTime.date || startDateTime.date;
+            document.getElementById('endTime').value = endDateTime.time || '';
             document.getElementById('eventWith').value = event.with_who || '';
             document.getElementById('eventLocation').value = event.where || '';
             document.getElementById('eventNotes').value = event.notes || '';
@@ -815,32 +483,105 @@
         }
 
         function setupTimeInputs() {
-            document.querySelectorAll('.time-input').forEach(input => {
-                input.addEventListener('input', function(e) {
+            document.querySelectorAll('.time-input').forEach(timeInput => {
+                timeInput.addEventListener('input', function(e) {
                     let value = e.target.value.replace(/\D/g, '');
-                    
                     if (value.length >= 2) {
                         const hours = parseInt(value.substring(0, 2));
                         if (hours > 23) value = '23' + value.substring(2);
                         value = value.substring(0, 2) + ':' + value.substring(2);
                     }
-                    
                     if (value.length > 5) value = value.substring(0, 5);
-                    
                     if (value.length === 5) {
                         const minutes = parseInt(value.substring(3, 5));
                         if (minutes > 59) value = value.substring(0, 3) + '59';
                     }
-                    
                     e.target.value = value;
                 });
 
-                input.addEventListener('blur', function(e) {
+                timeInput.addEventListener('blur', function(e) {
                     const value = e.target.value;
                     if (value && !value.match(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/)) {
                         e.target.value = '';
                     }
                 });
+            });
+
+            document.querySelectorAll('.date-input').forEach(dateInput => {
+                dateInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length >= 2) {
+                        value = value.substring(0, 2) + '-' + value.substring(2);
+                    }
+                    if (value.length >= 5) {
+                        value = value.substring(0, 5) + '-' + value.substring(5);
+                    }
+                    if (value.length > 10) value = value.substring(0, 10);
+                    e.target.value = value;
+                });
+
+                dateInput.addEventListener('blur', function(e) {
+                    const value = e.target.value;
+                    if (value && !value.match(/^(0[1-9]|[12]\d|3[01])-(0[1-9]|1[0-2])-\d{4}$/)) {
+                        e.target.value = '';
+                    }
+                });
+            });
+        }
+
+        function formatEventDisplay(event) {
+            const formatDate = (dateStr) => {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric'
+                });
+            };
+
+            const formatTime = (dateStr) => {
+                const date = new Date(dateStr);
+                return date.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                });
+            };
+
+            const startDate = formatDate(event.start_time);
+            const endDate = event.end_time ? formatDate(event.end_time) : '';
+            const startTime = formatTime(event.start_time);
+            const endTime = event.end_time ? formatTime(event.end_time) : '';
+
+            // If same day, only show date once
+            if (startDate === endDate) {
+                return `${startDate}, ${startTime} -- ${endTime}`;
+            } else {
+                return `${startDate}, ${startTime} -- ${endDate}, ${endTime}`;
+            }
+        }
+
+        function displayEvents(events) {
+            const eventsList = document.getElementById('eventsList');
+            eventsList.innerHTML = '';
+            
+            events.forEach(event => {
+                const eventCard = document.createElement('div');
+                eventCard.className = 'event-card';
+                eventCard.dataset.eventId = event.id;
+                
+                eventCard.innerHTML = `
+                    <h3>${event.name}</h3>
+                    <p class="event-time">${formatEventDisplay(event)}</p>
+                    ${event.where ? `<p class="event-location">📍 ${event.where}</p>` : ''}
+                    ${event.with_who ? `<p class="event-with">👥 ${event.with_who}</p>` : ''}
+                    ${event.notes ? `<p class="event-notes">📝 ${event.notes}</p>` : ''}
+                    <div class="event-actions">
+                        <button onclick="editEvent(${event.id})">Edit</button>
+                        <button onclick="deleteEvent(${event.id})">Delete</button>
+                    </div>
+                `;
+                
+                eventsList.appendChild(eventCard);
             });
         }
     </script>

@@ -46,7 +46,6 @@ class Event(db.Model):
     with_who = db.Column(db.String)
     where = db.Column(db.String) 
 
-
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime)
     

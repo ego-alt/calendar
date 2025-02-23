@@ -1,10 +1,9 @@
 from flask import Flask, render_template, jsonify, request, session
 from datetime import datetime, timedelta
-import calendar
 import logging
 from models import db, User, Mood, DailyLog, Event
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.sql import func
+from utils import parse_event_datetime, get_month_data
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///events.db'
@@ -15,34 +14,6 @@ logger = logging.getLogger(__name__)
 
 db.init_app(app)
 
-def get_month_calendar(year, month):
-    # Get the first day of the month and number of days
-    first_day = datetime(year, month, 1)
-    _, num_days = calendar.monthrange(year, month)
-    
-    # Get the previous month's trailing days
-    if first_day.weekday() != 0:  # If month doesn't start on Monday
-        prev_month = first_day - timedelta(days=1)
-        _, prev_month_days = calendar.monthrange(prev_month.year, prev_month.month)
-        prev_days = list(range(
-            prev_month_days - first_day.weekday() + 1,
-            prev_month_days + 1
-        ))
-    else:
-        prev_days = []
-    
-    # Current month's days
-    current_days = list(range(1, num_days + 1))
-    
-    # Next month's leading days
-    total_days = len(prev_days) + len(current_days)
-    next_days = list(range(1, 43 - total_days))
-    
-    return {
-        'prev_days': prev_days,
-        'current_days': current_days,
-        'next_days': next_days
-    }
 
 def initialize_user():
     logging.info("Initializing user...")
@@ -69,42 +40,17 @@ def initialize_user():
                 return user
             raise  # Re-raise if we still can't get a user
 
+
 def get_current_user():
     with app.app_context():
         return User.query.get(session.get('user_id'))
+
 
 @app.route('/')
 def index():
     user = initialize_user()
     today = datetime.now()
-    calendar_data = get_month_calendar(today.year, today.month)
-    
-    # Fetch mood data for current month
-    start_date = datetime(today.year, today.month, 1).date()
-    end_date = (datetime(today.year, today.month + 1, 1) if today.month < 12 else datetime(today.year + 1, 1, 1)).date()
-    
-    daily_logs = DailyLog.query.filter(
-        DailyLog.user_id == user.id,
-        DailyLog.date >= start_date,
-        DailyLog.date < end_date
-    ).join(Mood).all()
-    
-    # Create a dictionary of day -> mood color
-    mood_colors = {
-        log.date.day: log.mood.color
-        for log in daily_logs
-    }
-    
-    # Get days that have events
-    days_with_events = db.session.query(
-        func.extract('day', Event.start_time).label('day')
-    ).filter(
-        Event.user_id == user.id,
-        Event.start_time >= start_date,
-        Event.start_time < end_date
-    ).distinct().all()
-
-    days_with_events = [int(day.day) for day in days_with_events]
+    calendar_data, mood_colors, days_with_events = get_month_data(today.year, today.month, user.id)
     
     return render_template(
         'index.html',
@@ -117,45 +63,18 @@ def index():
         days_with_events=days_with_events
     )
 
+
 @app.route('/get_month', methods=['GET'])
 def get_month():
     year = int(request.args.get('year'))
     month = int(request.args.get('month'))
-    
     # Handle year transition
     if month == 13:
         month = 1
         year += 1
     
-    calendar_data = get_month_calendar(year, month)
     user = initialize_user()
-    
-    # Fetch all mood data for the month
-    start_date = datetime(year, month, 1).date()
-    end_date = (datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)).date()
-    
-    daily_logs = DailyLog.query.filter(
-        DailyLog.user_id == user.id,
-        DailyLog.date >= start_date,
-        DailyLog.date < end_date
-    ).join(Mood).all()
-    
-    # Create a dictionary of day -> mood color
-    mood_colors = {
-        log.date.day: log.mood.color
-        for log in daily_logs
-    }
-    
-    # Get days that have events
-    days_with_events = db.session.query(
-        func.extract('day', Event.start_time).label('day')
-    ).filter(
-        Event.user_id == user.id,
-        Event.start_time >= start_date,
-        Event.start_time < end_date
-    ).distinct().all()
-
-    days_with_events = [int(day.day) for day in days_with_events]
+    calendar_data, mood_colors, days_with_events = get_month_data(year, month, user.id)
     
     return jsonify({
         'calendar_data': calendar_data,
@@ -163,6 +82,7 @@ def get_month():
         'mood_colors': mood_colors,
         'days_with_events': days_with_events
     })
+
 
 @app.route('/update_mood', methods=['POST'])
 def update_mood():
@@ -218,6 +138,7 @@ def update_mood():
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+
 @app.route('/events', methods=['GET', 'POST'])
 def events():
     try:
@@ -235,16 +156,16 @@ def events():
             # Query events for the current user and day
             events = Event.query.filter(
                 Event.user_id == user.id,
-                Event.start_time >= start_date,
-                Event.start_time < end_date
+                Event.start_time < end_date,
+                Event.end_time >= start_date
             ).order_by(Event.start_time).all()
             
             # Format events for JSON response
             events_data = [{
                 'id': event.id,
                 'name': event.name,
-                'start_time': event.start_time.strftime('%H:%M'),
-                'end_time': event.end_time.strftime('%H:%M') if event.end_time else None,
+                'start_time': event.start_time.strftime('%Y-%m-%d %H:%M'),
+                'end_time': event.end_time.strftime('%Y-%m-%d %H:%M') if event.end_time else None,
                 'notes': event.notes,
                 'with_who': event.with_who,
                 'where': event.where
@@ -254,17 +175,8 @@ def events():
             
         else:  # POST method
             data = request.json
-            
-            # Combine date and time
-            date = datetime.strptime(data['date'], '%Y-%m-%d')
-            start_time = datetime.strptime(data['start_time'], '%H:%M').time()
-            start_datetime = datetime.combine(date, start_time)
-            
-            # Handle end time if provided
-            end_datetime = None
-            if data.get('end_time'):
-                end_time = datetime.strptime(data['end_time'], '%H:%M').time()
-                end_datetime = datetime.combine(date, end_time)
+            start_datetime = parse_event_datetime(data['start_date'], data.get('start_time'))
+            end_datetime = parse_event_datetime(data['end_date'], data.get('end_time'))
             
             event = Event(
                 user_id=user.id,
@@ -285,6 +197,7 @@ def events():
         logger.error(f"Error handling events: {str(e)}", exc_info=True)
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+
 @app.route('/events/<int:event_id>', methods=['PUT', 'DELETE'])
 def manage_event(event_id):
     try:
@@ -301,14 +214,8 @@ def manage_event(event_id):
             
         # PUT method
         data = request.json
-        date = datetime.strptime(data['date'], '%Y-%m-%d')
-        start_time = datetime.strptime(data['start_time'], '%H:%M').time()
-        start_datetime = datetime.combine(date, start_time)
-        
-        end_datetime = None
-        if data.get('end_time'):
-            end_time = datetime.strptime(data['end_time'], '%H:%M').time()
-            end_datetime = datetime.combine(date, end_time)
+        start_datetime = parse_event_datetime(data['start_date'], data.get('start_time'))
+        end_datetime = parse_event_datetime(data['end_date'], data.get('end_time'))
         
         event.name = data['name']
         event.start_time = start_datetime
@@ -323,6 +230,7 @@ def manage_event(event_id):
     except Exception as e:
         logger.error(f"Error managing event: {str(e)}", exc_info=True)
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
