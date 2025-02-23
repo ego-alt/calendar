@@ -47,7 +47,7 @@
     </div>
 
     <div class="sidebar" id="sidebar">
-        <i class="fas fa-times sidebar-close" onclick="closeSidebar()"></i>
+        <div class="sidebar-handle"></div>
         <div id="sidebarContent"></div>
         <div id="eventForm" style="display: none;">
             <div class="form-header">New Event</div>
@@ -228,11 +228,43 @@
                     colorPicker.style.display = 'none';
                     menuOpen = false;
                     selectedDay = null;
+                    
                     sidebar.classList.remove('active');
+                    sidebar.classList.remove('expanded');
+                    sidebar.style.height = '20vh';
                 }
             });
 
             setupTimeInputs();
+
+            if (window.innerWidth <= 480) {
+                const sidebar = document.getElementById('sidebar');
+                const handle = document.querySelector('.sidebar-handle');
+                let isDragging = false;
+                
+                handle.addEventListener('touchstart', (e) => {
+                    isDragging = true;
+                    sidebar.style.transition = 'none';
+                    e.preventDefault(); // Prevent default to ensure proper touch handling
+                }, { passive: false });
+
+                document.addEventListener('touchmove', (e) => {
+                    if (!isDragging) return;
+                    e.preventDefault();
+                    const vh = window.innerHeight / 100;
+                    const height = window.innerHeight - e.touches[0].clientY;
+                    sidebar.style.height = `${Math.min(Math.max(height, 15 * vh), 60 * vh)}px`;
+                }, { passive: false });
+
+                document.addEventListener('touchend', () => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    sidebar.style.transition = 'height 0.3s ease';
+                    const isExpanded = sidebar.offsetHeight > window.innerHeight * 0.45;
+                    sidebar.style.height = isExpanded ? '60vh' : '15vh';
+                    sidebar.classList.toggle('expanded', isExpanded);
+                });
+            }
         }
 
         function handleKeyPress(event) {
@@ -312,10 +344,9 @@
             const sidebar = document.getElementById('sidebar');
             const sidebarContent = document.getElementById('sidebarContent');
             const eventForm = document.getElementById('eventForm');
-           
+
+            requestAnimationFrame(() => {sidebar.classList.add('active');});
             currentOpenDay = day;
-            sidebar.classList.add('active');
-            eventForm.style.display = 'none';
             
             try {
                 const response = await fetch(`/events?year=${viewState.year}&month=${viewState.month}&day=${day}`);
@@ -360,12 +391,6 @@
                 console.error('Error fetching events:', error);
                 sidebarContent.innerHTML = '<div class="no-events">Error loading events</div>';
             }
-        }
-        
-        function closeSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.remove('active');
-            currentOpenDay = null;
         }
 
         function toggleEventForm(show) {
@@ -532,32 +557,30 @@
         function formatEventDisplay(event) {
             const formatDate = (dateStr) => {
                 const date = new Date(dateStr);
-                return date.toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric'
-                });
-            };
-
-            const formatTime = (dateStr) => {
-                const date = new Date(dateStr);
-                return date.toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    hour12: false 
-                });
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             };
 
             const startDate = formatDate(event.start_time);
-            const endDate = event.end_time ? formatDate(event.end_time) : '';
+            const endDate = event.end_time ? formatDate(event.end_time) : startDate;
+            
+            // Check if all-day event (both times at midnight)
+            if (event.start_time.endsWith('00:00') && event.end_time.endsWith('00:00')) {
+                return startDate;  // For all-day events, just show the date
+            }
+
+            // For timed events
+            const formatTime = dateStr => new Date(dateStr).toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: false 
+            });
+
             const startTime = formatTime(event.start_time);
             const endTime = event.end_time ? formatTime(event.end_time) : '';
 
-            // If same day, only show date once
-            if (startDate === endDate) {
-                return `${startDate}, ${startTime} -- ${endTime}`;
-            } else {
-                return `${startDate}, ${startTime} -- ${endDate}, ${endTime}`;
-            }
+            return startDate === endDate ? 
+                `${startDate}, ${startTime} -- ${endTime}` : 
+                `${startDate}, ${startTime} -- ${endDate}, ${endTime}`;
         }
 
         function displayEvents(events) {
