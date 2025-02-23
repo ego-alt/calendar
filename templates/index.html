@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mood Calendar</title>
+    <title>Calendar</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
@@ -11,17 +11,14 @@
             color: #ebdbb2;
             font-family: 'Arial', sans-serif;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            padding: 10px;
-            overflow: hidden;
+            padding: 0 10px;
         }
         h1 {
             font-size: clamp(1.5rem, 4vw, 2rem);
-            margin: 20px 0;
+            margin: 0 0 20px;
             text-align: center;
         }
         h2 {
@@ -138,7 +135,7 @@
                 transparent 4px,
                 transparent 8px
             );
-            border-radius: 8px;
+            border-radius: 0px 8px 8px 0px;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1000;
@@ -173,7 +170,6 @@
             width: 100%;
             max-width: 700px;
             margin: auto;
-            padding: 20px 0;
         }
         .sidebar-header {
             color: #ebdbb2;
@@ -212,49 +208,6 @@
             text-align: center;
             font-style: italic;
             margin-top: 20px;
-        }
-        /* Desktop styles (default) */
-        @media (min-width: 481px) {
-            .color-picker {
-                position: absolute;  /* Position relative to clicked day */
-                display: none;
-                flex-direction: column;  /* Vertical layout */
-                width: auto;
-                transform: none;
-            }
-            .color-option {
-                margin: 3px;
-            }
-        }
-        /* Mobile styles */
-        @media (max-width: 480px) {
-            .content-wrapper {
-                margin: auto;
-                padding: 10px 0;
-            }
-            .color-picker {
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                flex-direction: row;  /* Horizontal layout */
-            }
-            .color-option {
-                width: 25px;
-                height: 25px;
-                margin: 3px;
-            }
-            .sidebar {
-                left: 0;
-                bottom: -100vh;
-                top: auto;
-                width: 90vw;
-                height: 15vh;
-                border-radius: 16px 16px 0 0;
-            }
-            .sidebar.active {
-                left: 0;
-                bottom: 0;
-            }
         }
         .add-event-btn {
             background: #2ecc7180;
@@ -380,6 +333,46 @@
             background-color: #ebdbb2;
             border-radius: 50%;
             opacity: 0.8;
+        }
+                /* Desktop styles (default) */
+                @media (min-width: 481px) {
+            .color-picker {
+                position: absolute;  /* Position relative to clicked day */
+                display: none;
+                flex-direction: column;  /* Vertical layout */
+                width: auto;
+                transform: none;
+            }
+            .color-option {
+                margin: 3px;
+            }
+        }
+        /* Mobile styles */
+        @media (max-width: 480px) {
+
+            .color-picker {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                flex-direction: row;  /* Horizontal layout */
+            }
+            .color-option {
+                width: 25px;
+                height: 25px;
+                margin: 3px;
+            }
+            .sidebar {
+                left: 0;
+                bottom: -100vh;
+                top: auto;
+                width: 90vw;
+                height: 15vh;
+                border-radius: 16px 16px 0 0;
+            }
+            .sidebar.active {
+                left: 0;
+                bottom: 0;
+            }
         }
     </style>
 </head>
@@ -528,8 +521,8 @@
                         if (window.innerWidth > 480) {
                             // Desktop: Position next to clicked day
                             const rect = day.getBoundingClientRect();
-                            colorPicker.style.left = `${rect.left - 40}px`;
-                            colorPicker.style.top = `${rect.top + 16}px`;
+                            colorPicker.style.left = `${rect.left - 44}px`;
+                            colorPicker.style.top = `${rect.top}px`;
                         } else {
                             // Mobile: Position at bottom
                             const calendar = document.getElementById('calendarContainer');
