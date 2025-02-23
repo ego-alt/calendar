@@ -467,6 +467,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             setupEventListeners();
+            document.addEventListener('keydown', handleKeyPress);
         });
 
         function setupEventListeners() {
