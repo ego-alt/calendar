@@ -24,7 +24,7 @@
             </form>
         </div>
     </div>
-    {% if session.get('user_id') %}
+    {% if current_user.is_authenticated %}
         <button class="login-button" onclick="handleLogout()">
             <i class="fas fa-door-closed"></i>
         </button>
@@ -160,7 +160,7 @@
                     if (menuOpen && selectedDay === day && day.style.backgroundColor) {
                         // Clear the mood
                         try {
-                            const response = await fetch('/update_mood', {
+                            const response = await fetch('/mood/update', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -214,7 +214,7 @@
                         const color = window.getComputedStyle(option).backgroundColor;
                         
                         try {
-                            const response = await fetch('/update_mood', {
+                            const response = await fetch('/mood/update', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -227,7 +227,23 @@
                                 })
                             });
                             
-                            const data = await response.json();
+                            // Add debugging for response
+                            console.log('Response status:', response.status);
+                            console.log('Response headers:', response.headers);
+                            
+                            // Try to get the raw text first
+                            const rawText = await response.text();
+                            console.log('Raw response:', rawText);
+                            
+                            // Then parse it as JSON if it looks like JSON
+                            let data;
+                            try {
+                                data = JSON.parse(rawText);
+                            } catch (e) {
+                                console.error('Failed to parse response as JSON:', e);
+                                throw new Error('Invalid JSON response');
+                            }
+                            
                             if (data.status === 'success') {
                                 selectedDay.style.backgroundColor = color;
                             } else {
