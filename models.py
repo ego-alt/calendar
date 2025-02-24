@@ -1,19 +1,28 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 
 db = SQLAlchemy()
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, unique=True, nullable=False)
+    password_hash = db.Column(db.String(128))  # New field
     created_at = db.Column(db.DateTime, server_default=func.now())
 
     # Relationships
     daily_logs = db.relationship("DailyLog", back_populates="user")
     events = db.relationship("Event", back_populates="user")
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 
 class Mood(db.Model):

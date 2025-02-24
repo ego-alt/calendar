@@ -35,13 +35,11 @@ def get_current_user():
 @app.route("/auth/login", methods=["POST"])
 def login():
     username = request.form.get("username")
+    password = request.form.get("password")
     
-    # Find or create user
     user = User.query.filter_by(username=username).first()
-    if not user:
-        user = User(username=username)
-        db.session.add(user)
-        db.session.commit()
+    if not user or not user.check_password(password):
+        return jsonify({"status": "error", "message": "Invalid username or password"}), 401
     
     session["user_id"] = user.id
     return jsonify({"status": "success"})
