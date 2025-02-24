@@ -1,7 +1,7 @@
 from datetime import datetime
-from flask import Blueprint, current_app, jsonify, request, render_template
+from flask import Blueprint, jsonify, request, render_template
 from flask_login import current_user
-from utils import parse_event_datetime, get_month_data
+from utils import get_month_data
 
 
 index_blueprint = Blueprint("index_routes", __name__)

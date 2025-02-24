@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, request, jsonify
 from flask_login import current_user
 from models import db, DailyLog, Mood
 

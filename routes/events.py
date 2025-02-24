@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, jsonify, request
 from flask_login import current_user
 from models import db, Event
 from utils import parse_event_datetime
