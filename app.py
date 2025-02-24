@@ -3,13 +3,14 @@ from flask_login import LoginManager, current_user
 from datetime import datetime, timedelta
 import logging
 from models import db, User, Mood, DailyLog, Event
-from routes import auth_blueprint, event_blueprint, index_blueprint, mood_blueprint 
+from routes import auth_blueprint, event_blueprint, index_blueprint, mood_blueprint
 from sqlalchemy.exc import IntegrityError
 from utils import parse_event_datetime, get_month_data
 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 def create_app():
     app = Flask(__name__)

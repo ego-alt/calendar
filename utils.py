@@ -85,8 +85,10 @@ def get_month_data(year, month, user_id: int | None):
         return calendar_data, dict(), list()
 
     start_date = datetime(year, month, 1).date()
-    end_date = (datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)).date()
+    end_date = (
+        datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)
+    ).date()
 
     mood_colors = get_mood_logs(start_date, end_date, user_id)
-    days_with_events = get_month_events(start_date, end_date, user_id) 
+    days_with_events = get_month_events(start_date, end_date, user_id)
     return calendar_data, mood_colors, days_with_events

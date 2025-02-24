@@ -11,7 +11,9 @@ index_blueprint = Blueprint("index_routes", __name__)
 def index():
     today = datetime.now()
     calendar_data, mood_colors, days_with_events = get_month_data(
-        today.year, today.month, current_user.id if current_user.is_authenticated else None
+        today.year,
+        today.month,
+        current_user.id if current_user.is_authenticated else None,
     )
 
     return render_template(
@@ -34,7 +36,7 @@ def get_month():
     if month == 13:
         month = 1
         year += 1
-    
+
     calendar_data, mood_colors, days_with_events = get_month_data(
         year, month, current_user.id if current_user.is_authenticated else None
     )

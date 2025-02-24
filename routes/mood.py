@@ -32,7 +32,9 @@ def update_mood():
             if daily_log:
                 daily_log.mood_id = mood.id
             else:
-                daily_log = DailyLog(user_id=current_user.id, date=date, mood_id=mood.id)
+                daily_log = DailyLog(
+                    user_id=current_user.id, date=date, mood_id=mood.id
+                )
                 db.session.add(daily_log)
 
         db.session.commit()
