@@ -1,4 +1,5 @@
 from flask import Flask, render_template, jsonify, request, session
+from flask_login import LoginManager
 from datetime import datetime, timedelta
 import logging
 from models import db, User, Mood, DailyLog, Event
@@ -11,6 +12,15 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SECRET_KEY"] = "your-secret-key-here"  # Required for sessions
 
 logger = logging.getLogger(__name__)
+
+ # Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "auth.login"
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 db.init_app(app)
 

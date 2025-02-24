@@ -8,6 +8,15 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body>
+    {% if current_user.is_authenticated %}
+        <button class="login-button" onclick="handleLogout()">
+            <i class="fas fa-door-closed"></i>
+        </button>
+    {% else %}
+        <button class="login-button" onclick="showLoginDialog()">
+            <i class="fas fa-door-open"></i>
+        </button>
+    {% endif %}
     <div class="content-wrapper">
         <h1>{{ date_label }}</h1>
         <div class="calendar" id="calendarContainer">
@@ -230,8 +239,10 @@
                     selectedDay = null;
                     
                     sidebar.classList.remove('active');
-                    sidebar.classList.remove('expanded');
-                    sidebar.style.height = '20vh';
+                    if (window.innerWidth <= 480) {
+                        sidebar.classList.remove('expanded');
+                        sidebar.style.height = '20vh';
+                    }
                 }
             });
 

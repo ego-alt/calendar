@@ -321,8 +321,8 @@ h2 {
     border-radius: 50%;
     opacity: 0.8;
 }
-        /* Desktop styles (default) */
-        @media (min-width: 481px) {
+ /* Desktop styles (default) */
+ @media (min-width: 481px) {
     .color-picker {
         position: absolute;  /* Position relative to clicked day */
         display: none;
@@ -379,4 +379,20 @@ h2 {
     .sidebar-handle:active {
         cursor: grabbing;
     }
+}
+.login-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: none;
+    border: none;
+    color: #928374;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 8px;
+    transition: color 0.2s ease;
+    z-index: 1001; /* Ensure it's above the sidebar */
+}
+.login-button:hover {
+    color: #ebdbb2;
 }
