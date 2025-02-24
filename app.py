@@ -25,43 +25,39 @@ def load_user(user_id):
 db.init_app(app)
 
 
-def initialize_user():
-    logging.info("Initializing user...")
-    with app.app_context():
-        # Try to get existing default user first
-        user = User.query.filter_by(username="default").first()
-        if user:
-            session["user_id"] = user.id  # Store user ID in session
-            return user
-
-        # Only create new user if one doesn't exist
-        try:
-            user = User(username="default")
-            db.session.add(user)
-            db.session.commit()
-            session["user_id"] = user.id  # Store user ID in session
-            return user
-        except IntegrityError:
-            # In case of race condition, try one more time to get existing user
-            db.session.rollback()
-            user = User.query.filter_by(username="default").first()
-            if user:
-                session["user_id"] = user.id
-                return user
-            raise  # Re-raise if we still can't get a user
-
-
 def get_current_user():
-    with app.app_context():
-        return User.query.get(session.get("user_id"))
+    user_id = session.get("user_id")
+    if user_id:
+        return User.query.get(user_id)
+    return None
 
+
+@app.route("/auth/login", methods=["POST"])
+def login():
+    username = request.form.get("username")
+    
+    # Find or create user
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        user = User(username=username)
+        db.session.add(user)
+        db.session.commit()
+    
+    session["user_id"] = user.id
+    return jsonify({"status": "success"})
+
+@app.route("/auth/logout")
+def logout():
+    session.pop("user_id", None)
+    return jsonify({"status": "success"})
 
 @app.route("/")
 def index():
-    user = initialize_user()
+    user = get_current_user()
     today = datetime.now()
+        
     calendar_data, mood_colors, days_with_events = get_month_data(
-        today.year, today.month, user.id
+        today.year, today.month, user.id if user else None
     )
 
     return render_template(
@@ -84,9 +80,11 @@ def get_month():
     if month == 13:
         month = 1
         year += 1
-
-    user = initialize_user()
-    calendar_data, mood_colors, days_with_events = get_month_data(year, month, user.id)
+    
+    user = get_current_user()
+    calendar_data, mood_colors, days_with_events = get_month_data(
+        year, month, user.id if user else None
+    )
 
     return jsonify(
         {

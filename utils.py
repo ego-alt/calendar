@@ -41,14 +41,7 @@ def get_month_calendar(year, month):
     }
 
 
-def get_month_data(year, month, user_id):
-    """Helper function to get calendar, mood, and event data for a specific month."""
-    calendar_data = get_month_calendar(year, month)
-    start_date = datetime(year, month, 1).date()
-    end_date = (
-        datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)
-    ).date()
-
+def get_mood_logs(start_date, end_date, user_id: int):
     # Fetch mood data
     daily_logs = (
         DailyLog.query.filter(
@@ -59,10 +52,12 @@ def get_month_data(year, month, user_id):
         .join(Mood)
         .all()
     )
+    return {log.date.day: log.mood.color for log in daily_logs}
 
-    mood_colors = {log.date.day: log.mood.color for log in daily_logs}
 
+def get_month_events(start_date, end_date, user_id: int):
     # Get events that overlap with the month
+    days_with_events = set()
     events = Event.query.filter(
         Event.user_id == user_id,
         Event.start_time < end_date,
@@ -70,7 +65,6 @@ def get_month_data(year, month, user_id):
     ).all()
 
     # Generate all days that have events
-    days_with_events = set()
     for event in events:
         # Get the date range bounds within the month
         event_start = max(event.start_time.date(), start_date)
@@ -81,6 +75,18 @@ def get_month_data(year, month, user_id):
             days_with_events.add(current_date.day)
             current_date += timedelta(days=1)
 
-    days_with_events = sorted(list(days_with_events))
+    return sorted(list(days_with_events))
 
+
+def get_month_data(year, month, user_id: int | None):
+    """Helper function to get calendar, mood, and event data for a specific month."""
+    calendar_data = get_month_calendar(year, month)
+    if not user_id:
+        return calendar_data, dict(), list()
+
+    start_date = datetime(year, month, 1).date()
+    end_date = (datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)).date()
+
+    mood_colors = get_mood_logs(start_date, end_date, user_id)
+    days_with_events = get_month_events(start_date, end_date, user_id) 
     return calendar_data, mood_colors, days_with_events
