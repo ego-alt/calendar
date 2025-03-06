@@ -135,9 +135,10 @@ function setupEventListeners() {
     document.addEventListener('click', (event) => {
         const sidebar = document.getElementById('sidebar');
         const colorPicker = document.getElementById('colorPicker');
+        const diaryView = document.getElementById('diaryView');
         
         // Check if click is outside interactive elements
-        const isInteractiveClick = event.target.closest('#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions');
+        const isInteractiveClick = event.target.closest('#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn');
         
         // Only close sidebar and color picker if clicking outside interactive elements
         if (!isInteractiveClick) {
@@ -150,6 +151,9 @@ function setupEventListeners() {
                 sidebar.classList.remove('expanded');
                 sidebar.style.height = '20vh';
             }
+            
+            // Close diary view when clicking outside
+            diaryView.classList.remove('active');
             
             // Close any open subevent forms
             const subEventForms = document.querySelectorAll('.subevent-form-container');
@@ -214,11 +218,15 @@ function handleKeyPress(event) {
         case 'k':
             updateYear('next');
             break;
+        case 'd':
+            toggleDiaryView();
+            break;
     }
     
     // Add ESC key handling
     if (event.key === 'Escape') {
         toggleSubEventForm(false);
+        toggleDiaryView(false);
         event.preventDefault();
     }
 }
@@ -287,6 +295,11 @@ async function updateCalendarView() {
         
         document.getElementById('calendarContainer').innerHTML = monthHTML;
         setupEventListeners();
+        
+        // Refresh diary view if it's open
+        if (document.getElementById('diaryView').classList.contains('active')) {
+            loadMonthEvents();
+        }
 
     } catch (error) {
         console.error('Error updating calendar:', error);
@@ -1050,3 +1063,114 @@ async function deleteSubEvent(subEventId, eventId) {
         console.error('Error deleting subevent:', error);
     }
 }
+
+// Add these diary view functions
+function toggleDiaryView(show) {
+    const diaryView = document.getElementById('diaryView');
+    
+    if (show === undefined) {
+        // Toggle if no specific state is provided
+        show = !diaryView.classList.contains('active');
+    }
+    
+    if (show) {
+        loadMonthEvents();
+        requestAnimationFrame(() => {
+            diaryView.classList.add('active');
+        });
+    } else {
+        diaryView.classList.remove('active');
+    }
+}
+
+async function loadMonthEvents() {
+    const diaryContent = document.getElementById('diaryContent');
+    diaryContent.innerHTML = '<div class="loading-indicator">Loading events...</div>';
+    
+    try {
+        const response = await fetch(`/events/month?year=${viewState.year}&month=${viewState.month}`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            if (data.events.length === 0) {
+                diaryContent.innerHTML = '<div class="no-events">No events this month</div>';
+                return;
+            }
+            
+            // Group events by day
+            const eventsByDay = {};
+            data.events.forEach(event => {
+                // Extract day from start_time (format: "YYYY-MM-DD HH:MM")
+                const day = parseInt(event.start_time.split(' ')[0].split('-')[2]);
+                if (!eventsByDay[day]) {
+                    eventsByDay[day] = [];
+                }
+                eventsByDay[day].push(event);
+            });
+            
+            // Sort days and create HTML
+            let html = '';
+            Object.keys(eventsByDay)
+                .sort((a, b) => parseInt(a) - parseInt(b))
+                .forEach(day => {
+                    const date = new Date(viewState.year, viewState.month - 1, day);
+                    const dateString = date.toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        day: 'numeric', 
+                        month: 'short' 
+                    });
+                    
+                    html += `<div class="diary-day">
+                        <div class="diary-date">${dateString}</div>
+                        <div class="diary-events">`;
+                    
+                    eventsByDay[day].forEach(event => {
+                        html += `
+                            <div class="diary-event" onclick="showSidebar(${day})">
+                                <div class="diary-event-time">${formatEventTime(event)}</div>
+                                <div class="diary-event-name">${event.name}</div>
+                                ${event.with_who ? `<div class="diary-event-detail"><i class="fas fa-user"></i> ${event.with_who}</div>` : ''}
+                                ${event.where ? `<div class="diary-event-detail"><i class="fas fa-map-marker-alt"></i> ${event.where}</div>` : ''}
+                                ${event.notes ? `<div class="diary-event-detail diary-event-notes"><i class="fas fa-sticky-note"></i> ${event.notes}</div>` : ''}
+                            </div>
+                        `;
+                    });
+                    
+                    html += `</div></div>`;
+                });
+            
+            diaryContent.innerHTML = html;
+        } else {
+            diaryContent.innerHTML = '<div class="error-message">Failed to load events</div>';
+        }
+    } catch (error) {
+        console.error('Error loading month events:', error);
+        diaryContent.innerHTML = '<div class="error-message">Error loading events</div>';
+    }
+}
+
+function formatEventTime(event) {
+    // For diary view, we only need to show the time, not the date
+    const formatTime = dateStr => new Date(dateStr).toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: false 
+    });
+
+    // Check if all-day event (both times at midnight)
+    if (event.start_time.endsWith('00:00') && event.end_time.endsWith('00:00')) {
+        return 'All day';  // For all-day events
+    }
+
+    const startTime = formatTime(event.start_time);
+    const endTime = event.end_time ? formatTime(event.end_time) : '';
+
+    return endTime ? `${startTime} - ${endTime}` : startTime;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Setup diary view button click handler
+    document.getElementById('diaryViewBtn').addEventListener('click', function() {
+        toggleDiaryView();
+    });
+});

@@ -233,3 +233,49 @@ def manage_subevent(subevent_id):
     
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@event_blueprint.route("/month", methods=["GET"])
+def month_events():
+    if not current_user.is_authenticated:
+        return jsonify({"status": "error", "message": "Authentication required"}), 401
+    
+    try:
+        year = int(request.args.get("year"))
+        month = int(request.args.get("month"))
+        
+        # Get start and end of the requested month
+        start_date = datetime(year, month, 1)
+        if month == 12:
+            end_date = datetime(year + 1, 1, 1)
+        else:
+            end_date = datetime(year, month + 1, 1)
+        
+        # Query events for the current user and month
+        events = (
+            Event.query.filter(
+                Event.user_id == current_user.id,
+                Event.start_time < end_date,
+                Event.end_time >= start_date,
+            )
+            .order_by(Event.start_time)
+            .all()
+        )
+        
+        # Format events for JSON response
+        events_data = []
+        for event in events:
+            events_data.append({
+                "id": event.id,
+                "name": event.name,
+                "start_time": event.start_time.strftime("%Y-%m-%d %H:%M"),
+                "end_time": event.end_time.strftime("%Y-%m-%d %H:%M") if event.end_time else None,
+                "notes": event.notes,
+                "with_who": event.with_who,
+                "where": event.where,
+            })
+        
+        return jsonify({"status": "success", "events": events_data})
+    
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500

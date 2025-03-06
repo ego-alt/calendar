@@ -23,6 +23,9 @@
             </form>
         </div>
     </div>
+    <button class="diary-button" id="diaryViewBtn">
+        <i class="fas fa-book"></i>
+    </button>
     {% if current_user.is_authenticated %}
         <button class="login-button" onclick="handleLogout()">
             <i class="fas fa-door-closed"></i>
@@ -116,6 +119,13 @@
                 </div>
             </form>
         </div>
+    </div>
+    <div class="diary-sidebar" id="diaryView">
+        <div class="diary-header">
+            <h2>Month Overview</h2>
+            </button>
+        </div>
+        <div class="diary-content" id="diaryContent"></div>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
