@@ -154,6 +154,7 @@ function setupEventListeners() {
             // Close any open subevent forms
             const subEventForms = document.querySelectorAll('.subevent-form-container');
             subEventForms.forEach(form => form.remove());
+            toggleEventForm(false);
         }
     });
 
@@ -301,6 +302,7 @@ async function showSidebar(day) {
 
     requestAnimationFrame(() => {sidebar.classList.add('active');});
     currentOpenDay = day;
+    toggleEventForm(false);
     
     try {
         const response = await fetch(`/events?year=${viewState.year}&month=${viewState.month}&day=${day}`);
@@ -319,7 +321,8 @@ async function showSidebar(day) {
                 html += `<div class="no-events">No events scheduled</div>`;
             } else {
                 data.events.forEach(event => {
-                    html += `
+                    // Start building the event card HTML
+                    let eventHtml = `
                         <div class="event-card" data-event-id="${event.id}">
                             <div class="event-actions">
                                 <i class="fas fa-edit" onclick="editEvent(${event.id})"></i>
@@ -335,11 +338,38 @@ async function showSidebar(day) {
                                 ${event.where ? `<div class="event-detail-item"><i class="fas fa-map-marker-alt"></i> ${event.where}</div>` : ''}
                                 ${event.notes ? `<div class="event-detail-item"><i class="fas fa-sticky-note"></i> ${event.notes}</div>` : ''}
                             </div>
-                        </div>
                     `;
                     
-                    // Load subevents after rendering the event card
-                    setTimeout(() => loadSubEvents(event.id), 100);
+                    // Add subevents directly to the event card HTML if they exist
+                    if (event.subevents && event.subevents.length > 0) {
+                        eventHtml += `<div class="subevents-container" id="subevents-${event.id}">
+                            <div class="subevents-list">`;
+                        
+                        event.subevents.forEach(subevent => {
+                            eventHtml += `
+                                <div class="subevent-card" data-subevent-id="${subevent.id}">
+                                    <div class="subevent-actions">
+                                        <i class="fas fa-edit" onclick="editSubEvent(${subevent.id}, ${event.id})"></i>
+                                        <i class="fas fa-trash" onclick="deleteSubEvent(${subevent.id}, ${event.id})"></i>
+                                    </div>
+                                    <div class="subevent-time">${formatSubEventTime(subevent)}</div>
+                                    <div class="subevent-name">${subevent.name}</div>
+                                    <div class="subevent-details">
+                                        ${subevent.with_who ? `<div class="subevent-detail-item"><i class="fas fa-user"></i> ${subevent.with_who}</div>` : ''}
+                                        ${subevent.where ? `<div class="subevent-detail-item"><i class="fas fa-map-marker-alt"></i> ${subevent.where}</div>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        eventHtml += `</div></div>`;
+                    }
+                    
+                    // Close the event card div
+                    eventHtml += `</div>`;
+                    
+                    // Add the complete event card to the main HTML
+                    html += eventHtml;
                 });
             }
             
@@ -355,7 +385,7 @@ async function showSidebar(day) {
     toggleSubEventForm(false);
 }
 
-async function loadSubEvents(eventId) {
+function displaySubEvents(eventId, subevents) {
     const eventCard = document.querySelector(`.event-card[data-event-id="${eventId}"]`);
     if (!eventCard) return;
     
@@ -365,41 +395,34 @@ async function loadSubEvents(eventId) {
         existingContainer.remove();
     }
     
-    try {
-        const response = await fetch(`/events/${eventId}/subevents`);
-        const data = await response.json();
+    if (subevents && subevents.length > 0) {
+        // Only create container if there are subevents to display
+        const container = document.createElement('div');
+        container.className = 'subevents-container';
+        container.id = `subevents-${eventId}`;
         
-        if (data.status === 'success' && data.subevents && data.subevents.length > 0) {
-            // Only create container if there are subevents to display
-            const container = document.createElement('div');
-            container.className = 'subevents-container';
-            container.id = `subevents-${eventId}`;
-            
-            let html = `<div class="subevents-list">`;
-            data.subevents.forEach(subevent => {
-                html += `
-                    <div class="subevent-card" data-subevent-id="${subevent.id}">
-                        <div class="subevent-actions">
-                            <i class="fas fa-edit" onclick="editSubEvent(${subevent.id}, ${eventId})"></i>
-                            <i class="fas fa-trash" onclick="deleteSubEvent(${subevent.id}, ${eventId})"></i>
-                        </div>
-                        <div class="subevent-time">${formatSubEventTime(subevent)}</div>
-                        <div class="subevent-name">${subevent.name}</div>
-                        <div class="subevent-details">
-                            ${subevent.with_who ? `<div class="subevent-detail-item"><i class="fas fa-user"></i> ${subevent.with_who}</div>` : ''}
-                            ${subevent.where ? `<div class="subevent-detail-item"><i class="fas fa-map-marker-alt"></i> ${subevent.where}</div>` : ''}
-                        </div>
+        let html = `<div class="subevents-list">`;
+        subevents.forEach(subevent => {
+            html += `
+                <div class="subevent-card" data-subevent-id="${subevent.id}">
+                    <div class="subevent-actions">
+                        <i class="fas fa-edit" onclick="editSubEvent(${subevent.id}, ${eventId})"></i>
+                        <i class="fas fa-trash" onclick="deleteSubEvent(${subevent.id}, ${eventId})"></i>
                     </div>
-                `;
-            });
-            html += `</div>`;
-            container.innerHTML = html;
-            
-            // Append the container to the event card
-            eventCard.appendChild(container);
-        }
-    } catch (error) {
-        console.error('Error loading subevents:', error);
+                    <div class="subevent-time">${formatSubEventTime(subevent)}</div>
+                    <div class="subevent-name">${subevent.name}</div>
+                    <div class="subevent-details">
+                        ${subevent.with_who ? `<div class="subevent-detail-item"><i class="fas fa-user"></i> ${subevent.with_who}</div>` : ''}
+                        ${subevent.where ? `<div class="subevent-detail-item"><i class="fas fa-map-marker-alt"></i> ${subevent.where}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        container.innerHTML = html;
+        
+        // Append the container to the event card
+        eventCard.appendChild(container);
     }
 }
 
@@ -541,7 +564,8 @@ function toggleSubEventForm(show, eventId = null, subEventId = null) {
             .then(data => {
                 if (data.status === 'success') {
                     toggleSubEventForm(false);
-                    loadSubEvents(eventId);
+                    // Refresh the entire sidebar instead of just the subevents
+                    showSidebar(currentOpenDay);
                 } else {
                     console.error('Failed to save subevent:', data.message);
                     alert('Error: ' + data.message);
@@ -910,7 +934,8 @@ async function deleteSubEvent(subEventId, eventId) {
         
         const data = await response.json();
         if (data.status === 'success') {
-            loadSubEvents(eventId);
+            // Refresh the entire sidebar instead of just the subevents
+            showSidebar(currentOpenDay);
         } else {
             console.error('Failed to delete subevent:', data.message);
         }

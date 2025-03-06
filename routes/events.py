@@ -33,9 +33,28 @@ def events():
                 .all()
             )
 
-            # Format events for JSON response
-            events_data = [
-                {
+            # Format events for JSON response and include subevents
+            events_data = []
+            for event in events:
+                # Get subevents for this event
+                subevents = SubEvent.query.filter_by(event_id=event.id).order_by(SubEvent.start_time).all()
+                
+                # Format subevents
+                subevents_data = [
+                    {
+                        "id": subevent.id,
+                        "name": subevent.name,
+                        "start_time": subevent.start_time.strftime("%Y-%m-%d %H:%M"),
+                        "end_time": subevent.end_time.strftime("%Y-%m-%d %H:%M") if subevent.end_time else None,
+                        "notes": subevent.notes,
+                        "with_who": subevent.with_who,
+                        "where": subevent.where,
+                    }
+                    for subevent in subevents
+                ]
+                
+                # Add event with its subevents
+                events_data.append({
                     "id": event.id,
                     "name": event.name,
                     "start_time": event.start_time.strftime("%Y-%m-%d %H:%M"),
@@ -45,9 +64,8 @@ def events():
                     "notes": event.notes,
                     "with_who": event.with_who,
                     "where": event.where,
-                }
-                for event in events
-            ]
+                    "subevents": subevents_data
+                })
 
             return jsonify({"status": "success", "events": events_data})
 
@@ -115,7 +133,7 @@ def manage_event(event_id):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@event_blueprint.route("/<int:event_id>/subevents", methods=["GET", "POST"])
+@event_blueprint.route("/<int:event_id>/subevents", methods=["POST"])
 def subevents(event_id):
     if not current_user.is_authenticated:
         return jsonify({"status": "error", "message": "Authentication required"}), 401
@@ -126,53 +144,32 @@ def subevents(event_id):
         if not event:
             return jsonify({"status": "error", "message": "Event not found"}), 404
         
-        if request.method == "GET":
-            # Query subevents for the specified event
-            subevents = SubEvent.query.filter_by(event_id=event_id).order_by(SubEvent.start_time).all()
-            
-            # Format subevents for JSON response
-            subevents_data = [
-                {
-                    "id": subevent.id,
-                    "name": subevent.name,
-                    "start_time": subevent.start_time.strftime("%Y-%m-%d %H:%M"),
-                    "end_time": subevent.end_time.strftime("%Y-%m-%d %H:%M") if subevent.end_time else None,
-                    "notes": subevent.notes,
-                    "with_who": subevent.with_who,
-                    "where": subevent.where,
-                }
-                for subevent in subevents
-            ]
-            
-            return jsonify({"status": "success", "subevents": subevents_data})
+        data = request.json
+        start_datetime = parse_event_datetime(data["start_date"], data.get("start_time"))
+        end_datetime = parse_event_datetime(data["end_date"], data.get("end_time"))
         
-        else:  # POST method
-            data = request.json
-            start_datetime = parse_event_datetime(data["start_date"], data.get("start_time"))
-            end_datetime = parse_event_datetime(data["end_date"], data.get("end_time"))
-            
-            # Validate that subevent time is within parent event time
-            if start_datetime < event.start_time or (event.end_time and end_datetime > event.end_time):
-                return jsonify({
-                    "status": "error", 
-                    "message": "Subevent must occur within the parent event's timeframe"
-                }), 400
-            
-            subevent = SubEvent(
-                event_id=event_id,
-                name=data["name"],
-                start_time=start_datetime,
-                end_time=end_datetime,
-                notes=data.get("notes"),
-                with_who=data.get("with_who"),
-                where=data.get("where"),
-            )
-            
-            db.session.add(subevent)
-            db.session.commit()
-            
-            return jsonify({"status": "success", "message": "Subevent created successfully"})
-    
+        # Validate that subevent time is within parent event time
+        if start_datetime < event.start_time or (event.end_time and end_datetime > event.end_time):
+            return jsonify({
+                "status": "error", 
+                "message": "Subevent must occur within the parent event's timeframe"
+            }), 400
+        
+        subevent = SubEvent(
+            event_id=event_id,
+            name=data["name"],
+            start_time=start_datetime,
+            end_time=end_datetime,
+            notes=data.get("notes"),
+            with_who=data.get("with_who"),
+            where=data.get("where"),
+        )
+        
+        db.session.add(subevent)
+        db.session.commit()
+        
+        return jsonify({"status": "success", "message": "Subevent created successfully"})
+
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
