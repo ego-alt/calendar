@@ -69,3 +69,26 @@ class Event(db.Model):
 
     # Relationships
     user = db.relationship("User", back_populates="events")
+    subevents = db.relationship("SubEvent", back_populates="parent_event", cascade="all, delete-orphan")
+
+
+class SubEvent(db.Model):
+    __tablename__ = "subevents"
+
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey("events.id"), nullable=False)
+    name = db.Column(db.String, nullable=False)
+    notes = db.Column(db.String)
+    with_who = db.Column(db.String)
+    where = db.Column(db.String)
+
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime)
+
+    created_at = db.Column(db.DateTime, server_default=func.now())
+    last_modified = db.Column(
+        db.DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationships
+    parent_event = db.relationship("Event", back_populates="subevents")

@@ -101,11 +101,7 @@ function setupEventListeners() {
                             color: color
                         })
                     });
-                    
-                    // Add debugging for response
-                    console.log('Response status:', response.status);
-                    console.log('Response headers:', response.headers);
-                    
+
                     // Try to get the raw text first
                     const rawText = await response.text();
                     console.log('Raw response:', rawText);
@@ -140,7 +136,9 @@ function setupEventListeners() {
         const sidebar = document.getElementById('sidebar');
         const colorPicker = document.getElementById('colorPicker');
         
-        const isInteractiveClick = event.target.closest('#sidebar, #colorPicker, .day, .eye-icon');
+        // Check if click is outside interactive elements
+        const isInteractiveClick = event.target.closest('#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions');
+        
         // Only close sidebar and color picker if clicking outside interactive elements
         if (!isInteractiveClick) {
             colorPicker.style.display = 'none';
@@ -152,6 +150,10 @@ function setupEventListeners() {
                 sidebar.classList.remove('expanded');
                 sidebar.style.height = '20vh';
             }
+            
+            // Close any open subevent forms
+            const subEventForms = document.querySelectorAll('.subevent-form-container');
+            subEventForms.forEach(form => form.remove());
         }
     });
 
@@ -190,19 +192,39 @@ function setupEventListeners() {
 function handleKeyPress(event) {
     // Ignore shortcuts if any input or textarea is focused
     if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        // But still handle Escape key for closing forms
+        if (event.key === 'Escape') {
+            toggleSubEventForm(false);
+            event.preventDefault();
+        }
         return;
     }
-    if (event.key === 'h') {
-        updateMonth('prev');
-    } else if (event.key === 'l') {
-        updateMonth('next');
+    
+    switch (event.key) {
+        case 'h':
+            updateMonth('prev');
+            break;
+        case 'l':
+            updateMonth('next');
+            break;
+        case 'j':
+            updateYear('prev');
+            break;
+        case 'k':
+            updateYear('next');
+            break;
+    }
+    
+    // Add ESC key handling
+    if (event.key === 'Escape') {
+        toggleSubEventForm(false);
+        event.preventDefault();
     }
 }
 
 async function updateMonth(direction) {
     if (isLoading) return;
-    isLoading = true;
-
+    
     if (direction === 'next') {
         viewState.month++;
         if (viewState.month > 12) {
@@ -216,6 +238,17 @@ async function updateMonth(direction) {
             viewState.year--;
         }
     }
+    await updateCalendarView();
+}
+
+async function updateYear(direction) {
+    if (isLoading) return;
+    viewState.year += direction === 'next' ? 1 : -1;
+    await updateCalendarView();
+}
+
+async function updateCalendarView() {
+    isLoading = true;
 
     try {
         const response = await fetch(`/get_month?year=${viewState.year}&month=${viewState.month}`);
@@ -255,11 +288,12 @@ async function updateMonth(direction) {
         setupEventListeners();
 
     } catch (error) {
-        console.error('Error updating month:', error);
+        console.error('Error updating calendar:', error);
     } finally {
         isLoading = false;
     }
 }
+
 async function showSidebar(day) {
     const sidebar = document.getElementById('sidebar');
     const sidebarContent = document.getElementById('sidebarContent');
@@ -290,6 +324,7 @@ async function showSidebar(day) {
                             <div class="event-actions">
                                 <i class="fas fa-edit" onclick="editEvent(${event.id})"></i>
                                 <i class="fas fa-trash" onclick="deleteEvent(${event.id})"></i>
+                                <i class="fas fa-plus-circle" onclick="toggleSubEventForm(true, ${event.id})" title="Subevent"></i>
                             </div>
                             <div class="event-time">
                                 ${formatEventDisplay(event)}
@@ -301,6 +336,9 @@ async function showSidebar(day) {
                             </div>
                         </div>
                     `;
+                    
+                    // Load subevents after rendering the event card
+                    setTimeout(() => loadSubEvents(event.id), 100);
                 });
             }
             
@@ -311,14 +349,279 @@ async function showSidebar(day) {
         console.error('Error fetching events:', error);
         sidebarContent.innerHTML = '<div class="no-events">Error loading events</div>';
     }
+    
+    // Close any open subevent forms
+    toggleSubEventForm(false);
 }
 
-function toggleEventForm(show) {
+async function loadSubEvents(eventId) {
+    const eventCard = document.querySelector(`.event-card[data-event-id="${eventId}"]`);
+    if (!eventCard) return;
+    
+    // Remove any existing subevents container
+    const existingContainer = document.getElementById(`subevents-${eventId}`);
+    if (existingContainer) {
+        existingContainer.remove();
+    }
+    
+    try {
+        const response = await fetch(`/events/${eventId}/subevents`);
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.subevents && data.subevents.length > 0) {
+            // Only create container if there are subevents to display
+            const container = document.createElement('div');
+            container.className = 'subevents-container';
+            container.id = `subevents-${eventId}`;
+            
+            let html = `<div class="subevents-list">`;
+            data.subevents.forEach(subevent => {
+                html += `
+                    <div class="subevent-card" data-subevent-id="${subevent.id}">
+                        <div class="subevent-actions">
+                            <i class="fas fa-edit" onclick="editSubEvent(${subevent.id}, ${eventId})"></i>
+                            <i class="fas fa-trash" onclick="deleteSubEvent(${subevent.id}, ${eventId})"></i>
+                        </div>
+                        <div class="subevent-time">${formatSubEventTime(subevent)}</div>
+                        <div class="subevent-name">${subevent.name}</div>
+                        <div class="subevent-details">
+                            ${subevent.with_who ? `<div class="subevent-detail-item"><i class="fas fa-user"></i> ${subevent.with_who}</div>` : ''}
+                            ${subevent.where ? `<div class="subevent-detail-item"><i class="fas fa-map-marker-alt"></i> ${subevent.where}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            container.innerHTML = html;
+            
+            // Append the container to the event card
+            eventCard.appendChild(container);
+        }
+    } catch (error) {
+        console.error('Error loading subevents:', error);
+    }
+}
+
+function formatSubEventTime(subevent) {
+    // For subevents, we only need to show the time, not the date
+    const formatTime = dateStr => new Date(dateStr).toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: false 
+    });
+
+    const startTime = formatTime(subevent.start_time);
+    const endTime = subevent.end_time ? formatTime(subevent.end_time) : '';
+
+    return endTime ? `${startTime} - ${endTime}` : startTime;
+}
+
+function toggleSubEventForm(show, eventId = null, subEventId = null) {
+    // Remove any existing subevent forms first
+    const existingForms = document.querySelectorAll('.subevent-form-container');
+    existingForms.forEach(form => form.remove());
+    
+    if (!show) return;
+    
+    if (show && eventId) {
+        // Find the parent event card
+        const eventCard = document.querySelector(`.event-card[data-event-id="${eventId}"]`);
+        if (!eventCard) return;
+        
+        // Create the form container
+        const formContainer = document.createElement('div');
+        formContainer.className = 'subevent-form-container';
+        
+        const isEdit = subEventId !== null;
+        const headerText = isEdit ? 'Edit Subevent' : 'Add Subevent';
+        
+        formContainer.innerHTML = `
+            <div class="subevent-form-header">${headerText}</div>
+            <form id="newSubEventForm" data-event-id="${eventId}" ${isEdit ? `data-subevent-id="${subEventId}"` : ''}>
+                <input type="text" id="subEventName" placeholder="Subevent Name" required>
+                <div class="form-row">
+                    <input type="text" id="subStartDate" class="date-input" placeholder="DD-MM-YYYY" required>
+                    <input type="text" id="subStartTime" class="time-input" placeholder="HH:MM">
+                </div>
+                <div class="form-row">
+                    <input type="text" id="subEndDate" class="date-input" placeholder="DD-MM-YYYY">
+                    <input type="text" id="subEndTime" class="time-input" placeholder="HH:MM">
+                </div>
+                <input type="text" id="subEventLocation" placeholder="Where">
+                <textarea id="subEventNotes" placeholder="Notes"></textarea>
+                <div class="form-buttons">
+                    <button type="button" class="cancel-btn" onclick="toggleSubEventForm(false)">Cancel</button>
+                    <button type="button" class="save-btn" id="saveSubEventBtn">Save</button>
+                </div>
+            </form>
+        `;
+        
+        // Find where to insert the form
+        if (isEdit) {
+            const subEventCard = eventCard.querySelector(`.subevent-card[data-subevent-id="${subEventId}"]`);
+            if (subEventCard) {
+                subEventCard.parentNode.insertBefore(formContainer, subEventCard.nextSibling);
+            } else {
+                insertFormIntoEventCard(eventCard, formContainer);
+            }
+            
+            // Populate form with existing data if editing
+            populateSubEventForm(eventId, subEventId);
+        } else {
+            insertFormIntoEventCard(eventCard, formContainer);
+            
+            // Get parent event date and populate the date fields
+            const eventTimeElement = eventCard.querySelector('.event-time');
+            if (eventTimeElement) {
+                // Extract date from the parent event display
+                const eventText = eventTimeElement.textContent.trim();
+                const dateMatch = eventText.match(/([A-Za-z]+\s\d+)/);
+                
+                if (dateMatch) {
+                    const dateText = dateMatch[1];
+                    const date = new Date(dateText + ', ' + viewState.year);
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    
+                    const formattedDate = `${day}-${month}-${year}`;
+                    document.getElementById('subStartDate').value = formattedDate;
+                    document.getElementById('subEndDate').value = formattedDate;
+                }
+            }
+        }
+        
+        // Setup time/date inputs
+        setupTimeInputs();
+        
+        // Focus on the first input field
+        document.getElementById('subEventName').focus();
+        
+        // Add click handler to the save button instead of form submit
+        document.getElementById('saveSubEventBtn').addEventListener('click', function() {
+            const form = document.getElementById('newSubEventForm');
+            const eventId = parseInt(form.dataset.eventId);
+            const subEventId = form.dataset.subEventId ? parseInt(form.dataset.subEventId) : null;
+            
+            // Validate required fields
+            if (!document.getElementById('subEventName').value || 
+                !document.getElementById('subStartDate').value) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            const formData = {
+                name: document.getElementById('subEventName').value,
+                start_date: document.getElementById('subStartDate').value,
+                start_time: document.getElementById('subStartTime').value || null,
+                end_date: document.getElementById('subEndDate').value,
+                end_time: document.getElementById('subEndTime').value || null,
+                where: document.getElementById('subEventLocation').value || null,
+                with_who: null,
+                notes: document.getElementById('subEventNotes').value || null
+            };
+            
+            // Determine if this is an edit or a new subevent
+            const method = subEventId ? 'PUT' : 'POST';
+            const url = subEventId ? 
+                `/events/subevents/${subEventId}` : 
+                `/events/${eventId}/subevents`;
+            
+            fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    toggleSubEventForm(false);
+                    loadSubEvents(eventId);
+                } else {
+                    console.error('Failed to save subevent:', data.message);
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('An error occurred while saving the subevent.');
+            });
+        });
+    }
+}
+
+function insertFormIntoEventCard(eventCard, formContainer) {
+    const subeventsContainer = eventCard.querySelector('.subevents-container');
+    if (subeventsContainer) {
+        eventCard.insertBefore(formContainer, subeventsContainer);
+    } else {
+        eventCard.appendChild(formContainer);
+    }
+}
+
+async function populateSubEventForm(eventId, subEventId) {
+    try {
+        console.log('Populating form for subevent:', subEventId, 'in event:', eventId);
+        const response = await fetch(`/events/${eventId}/subevents`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const subevent = data.subevents.find(se => se.id === subEventId);
+            console.log('Found subevent data:', subevent);
+            
+            if (subevent) {
+                // Make sure the form has the correct subevent ID
+                const form = document.getElementById('newSubEventForm');
+                form.dataset.subEventId = subEventId;
+                console.log('Set form dataset.subEventId to:', form.dataset.subEventId);
+                
+                // Parse the datetime strings
+                const parseDateTime = (dateTimeStr) => {
+                    if (!dateTimeStr) return { date: '', time: '' };
+                    
+                    // Parse "YYYY-MM-DD HH:MM" format
+                    const [datePart, timePart] = dateTimeStr.split(' ');
+                    const [year, month, day] = datePart.split('-');
+                    
+                    return {
+                        // Convert to DD-MM-YYYY format for the form
+                        date: `${day}-${month}-${year}`,
+                        time: timePart
+                    };
+                };
+
+                const startDateTime = parseDateTime(subevent.start_time);
+                const endDateTime = parseDateTime(subevent.end_time);
+                
+                // Populate form
+                document.getElementById('subEventName').value = subevent.name;
+                document.getElementById('subStartDate').value = startDateTime.date;
+                document.getElementById('subStartTime').value = startDateTime.time;
+                document.getElementById('subEndDate').value = endDateTime.date || startDateTime.date;
+                document.getElementById('subEndTime').value = endDateTime.time || '';
+                document.getElementById('subEventLocation').value = subevent.where || '';
+                document.getElementById('subEventNotes').value = subevent.notes || '';
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching subevent details:', error);
+        alert('Error loading subevent details. Please try again.');
+    }
+}
+
+function toggleEventForm(show, eventToEdit = null) {
     const eventForm = document.getElementById('eventForm');
-    const newEventForm = document.getElementById('newEventForm');
+    const form = document.getElementById('newEventForm');
+    
+    // Close any open subevent forms
+    toggleSubEventForm(false);
+    
     eventForm.style.display = show ? 'block' : 'none';
     if (show) {
-        newEventForm.reset();
+        form.reset();
         // Set the date values based on the currently selected day
         const formattedDate = `${String(currentOpenDay).padStart(2, '0')}-${String(viewState.month).padStart(2, '0')}-${viewState.year}`;
         document.getElementById('startDate').value = formattedDate;
@@ -356,6 +659,7 @@ document.getElementById('newEventForm').addEventListener('submit', async (e) => 
         
         const data = await response.json();
         if (data.status === 'success') {
+            toggleEventForm(false);
             showSidebar(currentOpenDay);
             updateMonth(viewState.year, viewState.month);
         } else {
@@ -592,3 +896,24 @@ $(document).ready(function() {
         e.stopPropagation();
     });
 });
+
+async function editSubEvent(subEventId, eventId) {
+    toggleSubEventForm(true, eventId, subEventId);
+}
+
+async function deleteSubEvent(subEventId, eventId) {
+    try {
+        const response = await fetch(`/events/subevents/${subEventId}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        if (data.status === 'success') {
+            loadSubEvents(eventId);
+        } else {
+            console.error('Failed to delete subevent:', data.message);
+        }
+    } catch (error) {
+        console.error('Error deleting subevent:', error);
+    }
+}

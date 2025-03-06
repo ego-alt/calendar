@@ -454,3 +454,127 @@ h2 {
         cursor: grabbing;
     }
 }
+.subevents-container {
+    margin-top: 10px;
+    border-top: 1px dashed #504945;
+    padding-top: 8px;
+}
+.subevents-loading, .subevents-error {
+    color: #928374;
+    font-size: 0.8em;
+    font-style: italic;
+    text-align: center;
+    padding: 5px 0;
+}
+.subevents-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.subevent-card {
+    background: rgba(40, 40, 40, 0.3);
+    border-radius: 6px;
+    padding: 8px;
+    border-left: 2px solid #a89984;
+    position: relative;
+    margin-bottom: 3px;
+    font-size: 0.9em;
+}
+.subevent-time {
+    color: #a89984;
+    font-size: 0.85em;
+    margin-bottom: 3px;
+}
+.subevent-name {
+    color: #ebdbb2;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.subevent-details {
+    color: #928374;
+    font-size: 0.85em;
+}
+.subevent-detail-item {
+    margin-bottom: 4px;
+}
+.subevent-actions {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.subevent-card:hover .subevent-actions {
+    opacity: 1;
+}
+.subevent-actions i {
+    cursor: pointer;
+    color: #928374;
+    transition: color 0.2s;
+    font-size: 0.85em;
+}
+.subevent-actions i:hover {
+    color: #ebdbb2;
+}
+.subevent-form-container {
+    background: rgba(40, 40, 40, 0.5);
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+    animation: fadeIn 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.subevent-form-header {
+    color: #ebdbb2;
+    font-size: 0.95em;
+    font-weight: bold;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #504945;
+    padding-bottom: 5px;
+}
+#newSubEventForm {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+#newSubEventForm input, 
+#newSubEventForm textarea {
+    background: #282828;
+    border: 1px solid #504945;
+    border-radius: 4px;
+    padding: 8px;
+    color: #ebdbb2;
+    font-size: 0.9em;
+    font-family: monospace;
+}
+#newSubEventForm textarea {
+    min-height: 60px;
+    resize: vertical;
+}
+.form-row {
+    display: flex;
+    gap: 8px;
+}
+.form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.form-group label {
+    font-size: 0.8em;
+    color: #a89984;
+}
+.input-group {
+    display: flex;
+    gap: 5px;
+}
+.input-group input {
+    flex: 1;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
