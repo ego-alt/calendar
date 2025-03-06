@@ -333,6 +333,7 @@ async function showSidebar(day) {
                             <div class="event-details">
                                 ${event.with_who ? `<div class="event-detail-item"><i class="fas fa-user"></i> ${event.with_who}</div>` : ''}
                                 ${event.where ? `<div class="event-detail-item"><i class="fas fa-map-marker-alt"></i> ${event.where}</div>` : ''}
+                                ${event.notes ? `<div class="event-detail-item"><i class="fas fa-sticky-note"></i> ${event.notes}</div>` : ''}
                             </div>
                         </div>
                     `;

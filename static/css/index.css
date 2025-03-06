@@ -289,6 +289,10 @@ h2 {
 .event-detail-item:last-child {
     margin-bottom: 0;
 }
+.event-detail-item:has(.fa-sticky-note) {
+    text-align: justify;
+    padding-right: 5px;
+}
 .date-input,
 .time-input {
     background: #282828;
