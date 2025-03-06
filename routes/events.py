@@ -174,7 +174,7 @@ def subevents(event_id):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@event_blueprint.route("/subevents/<int:subevent_id>", methods=["PUT", "DELETE"])
+@event_blueprint.route("/subevents/<int:subevent_id>", methods=["PUT", "DELETE", "GET"])
 def manage_subevent(subevent_id):
     if not current_user.is_authenticated:
         return jsonify({"status": "error", "message": "Authentication required"}), 401
@@ -193,6 +193,20 @@ def manage_subevent(subevent_id):
             db.session.delete(subevent)
             db.session.commit()
             return jsonify({"status": "success", "message": "Subevent deleted"})
+        
+        if request.method == "GET":
+            # Format subevent data
+            subevent_data = {
+                "id": subevent.id,
+                "name": subevent.name,
+                "start_time": subevent.start_time.strftime("%Y-%m-%d %H:%M"),
+                "end_time": subevent.end_time.strftime("%Y-%m-%d %H:%M") if subevent.end_time else None,
+                "notes": subevent.notes,
+                "with_who": subevent.with_who,
+                "where": subevent.where,
+            }
+            
+            return jsonify({"status": "success", "subevent": subevent_data})
         
         # PUT method
         data = request.json

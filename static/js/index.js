@@ -590,11 +590,11 @@ function insertFormIntoEventCard(eventCard, formContainer) {
 async function populateSubEventForm(eventId, subEventId) {
     try {
         console.log('Populating form for subevent:', subEventId, 'in event:', eventId);
-        const response = await fetch(`/events/${eventId}/subevents`);
+        const response = await fetch(`/events/subevents/${subEventId}`);
         const data = await response.json();
         
         if (data.status === 'success') {
-            const subevent = data.subevents.find(se => se.id === subEventId);
+            const subevent = data.subevent;
             console.log('Found subevent data:', subevent);
             
             if (subevent) {
@@ -696,46 +696,153 @@ document.getElementById('newEventForm').addEventListener('submit', async (e) => 
 });
 
 async function editEvent(eventId) {
-    const eventForm = document.getElementById('eventForm');
-    const form = document.getElementById('newEventForm');
+    // Remove any existing event edit forms first
+    const existingForms = document.querySelectorAll('.event-form-container');
+    existingForms.forEach(form => form.remove());
     
-    // Get current event data
-    const response = await fetch(`/events?year=${viewState.year}&month=${viewState.month}&day=${currentOpenDay}`);
-    const data = await response.json();
-    const event = data.events.find(e => e.id === eventId);
-
-    // Parse the datetime strings
-    const parseDateTime = (dateTimeStr) => {
-        if (!dateTimeStr) return { date: '', time: '' };
+    // Close any open subevent forms
+    toggleSubEventForm(false);
+    
+    // Find the parent event card
+    const eventCard = document.querySelector(`.event-card[data-event-id="${eventId}"]`);
+    if (!eventCard) return;
+    
+    // Create the form container
+    const formContainer = document.createElement('div');
+    formContainer.className = 'event-form-container';
+    
+    formContainer.innerHTML = `
+        <div class="event-form-header">Edit Event</div>
+        <form id="editEventForm" data-event-id="${eventId}">
+            <input type="text" id="inlineEventName" placeholder="Event Name" required>
+            <div class="form-row">
+                <input type="text" id="inlineStartDate" class="date-input" placeholder="DD-MM-YYYY" required>
+                <input type="text" id="inlineStartTime" class="time-input" placeholder="HH:MM">
+            </div>
+            <div class="form-row">
+                <input type="text" id="inlineEndDate" class="date-input" placeholder="DD-MM-YYYY">
+                <input type="text" id="inlineEndTime" class="time-input" placeholder="HH:MM">
+            </div>
+            <input type="text" id="inlineEventWith" placeholder="With Who">
+            <input type="text" id="inlineEventLocation" placeholder="Where">
+            <textarea id="inlineEventNotes" placeholder="Notes"></textarea>
+            <div class="form-buttons">
+                <button type="button" class="cancel-btn" onclick="closeEventEditForm()">Cancel</button>
+                <button type="button" class="save-btn" id="saveInlineEventBtn">Save</button>
+            </div>
+        </form>
+    `;
+    
+    // Insert the form after the event card's content
+    eventCard.appendChild(formContainer);
+    
+    // Populate form with existing data
+    populateEventEditForm(eventId);
+    
+    // Setup time/date inputs
+    setupTimeInputs();
+    
+    // Focus on the first input field
+    document.getElementById('inlineEventName').focus();
+    
+    // Add click handler to the save button
+    document.getElementById('saveInlineEventBtn').addEventListener('click', async function() {
+        const form = document.getElementById('editEventForm');
+        const eventId = parseInt(form.dataset.eventId);
         
-        // Parse "YYYY-MM-DD HH:MM" format
-        const [datePart, timePart] = dateTimeStr.split(' ');
-        const [year, month, day] = datePart.split('-');
+        // Validate required fields
+        if (!document.getElementById('inlineEventName').value || 
+            !document.getElementById('inlineStartDate').value) {
+            alert('Please fill in all required fields');
+            return;
+        }
         
-        return {
-            // Convert to DD-MM-YYYY format for the form
-            date: `${day}-${month}-${year}`,
-            time: timePart
+        const formData = {
+            name: document.getElementById('inlineEventName').value,
+            start_date: document.getElementById('inlineStartDate').value,
+            start_time: document.getElementById('inlineStartTime').value || null,
+            end_date: document.getElementById('inlineEndDate').value,
+            end_time: document.getElementById('inlineEndTime').value || null,
+            where: document.getElementById('inlineEventLocation').value || null,
+            with_who: document.getElementById('inlineEventWith').value || null,
+            notes: document.getElementById('inlineEventNotes').value || null
         };
-    };
+        
+        try {
+            const response = await fetch(`/events/${eventId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            const data = await response.json();
+            if (data.status === 'success') {
+                closeEventEditForm();
+                showSidebar(currentOpenDay);
+            } else {
+                console.error('Failed to update event:', data.message);
+                alert('Error: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error updating event:', error);
+            alert('An error occurred while updating the event.');
+        }
+    });
+    document.querySelector('.cancel-btn').addEventListener('click', function(e) {
+        e.stopPropagation(); // Prevent the click from reaching the document
+        closeEventEditForm();
+    });
+}
 
-    const startDateTime = parseDateTime(event.start_time);
-    const endDateTime = parseDateTime(event.end_time);
-    
-    // Populate form
-    form.dataset.eventId = eventId;
-    document.getElementById('eventName').value = event.name;
-    document.getElementById('startDate').value = startDateTime.date;
-    document.getElementById('startTime').value = startDateTime.time;
-    document.getElementById('endDate').value = endDateTime.date || startDateTime.date;
-    document.getElementById('endTime').value = endDateTime.time || '';
-    document.getElementById('eventWith').value = event.with_who || '';
-    document.getElementById('eventLocation').value = event.where || '';
-    document.getElementById('eventNotes').value = event.notes || '';
-    
-    // Show form
-    eventForm.style.display = 'block';
-    eventForm.classList.add('editing');
+function closeEventEditForm() {
+    const eventForms = document.querySelectorAll('.event-form-container');
+    eventForms.forEach(form => form.remove());
+}
+
+async function populateEventEditForm(eventId) {
+    try {
+        const response = await fetch(`/events?year=${viewState.year}&month=${viewState.month}&day=${currentOpenDay}`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const event = data.events.find(e => e.id === eventId);
+            
+            if (event) {
+                // Parse the datetime strings
+                const parseDateTime = (dateTimeStr) => {
+                    if (!dateTimeStr) return { date: '', time: '' };
+                    
+                    // Parse "YYYY-MM-DD HH:MM" format
+                    const [datePart, timePart] = dateTimeStr.split(' ');
+                    const [year, month, day] = datePart.split('-');
+                    
+                    return {
+                        // Convert to DD-MM-YYYY format for the form
+                        date: `${day}-${month}-${year}`,
+                        time: timePart
+                    };
+                };
+
+                const startDateTime = parseDateTime(event.start_time);
+                const endDateTime = parseDateTime(event.end_time);
+                
+                // Populate form
+                document.getElementById('inlineEventName').value = event.name;
+                document.getElementById('inlineStartDate').value = startDateTime.date;
+                document.getElementById('inlineStartTime').value = startDateTime.time;
+                document.getElementById('inlineEndDate').value = endDateTime.date || startDateTime.date;
+                document.getElementById('inlineEndTime').value = endDateTime.time || '';
+                document.getElementById('inlineEventWith').value = event.with_who || '';
+                document.getElementById('inlineEventLocation').value = event.where || '';
+                document.getElementById('inlineEventNotes').value = event.notes || '';
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching event details:', error);
+        alert('Error loading event details. Please try again.');
+    }
 }
 
 async function deleteEvent(eventId) {
