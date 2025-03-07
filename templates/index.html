@@ -26,6 +26,9 @@
     <button class="diary-button" id="diaryViewBtn">
         <i class="fas fa-book"></i>
     </button>
+    <button class="year-button" id="yearViewBtn">
+        <i class="fas fa-calendar-alt"></i>
+    </button>
     {% if current_user.is_authenticated %}
         <button class="login-button" onclick="handleLogout()">
             <i class="fas fa-door-closed"></i>
@@ -126,6 +129,12 @@
             </button>
         </div>
         <div class="diary-content" id="diaryContent"></div>
+    </div>
+    <div class="year-sidebar" id="yearView">
+        <div class="year-header">
+            <h2>Year Overview</h2>
+        </div>
+        <div class="year-content" id="yearContent"></div>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>

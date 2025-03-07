@@ -15,7 +15,7 @@ h1, h2, .form-header, .event-form-header, .subevent-form-header {
     margin-bottom: 20px;
 }
 
-.sidebar-header, .diary-header h2 {
+.sidebar-header, .diary-header h2, .year-header h2 {
     color: #ebdbb2;
     margin-bottom: 20px;
     font-size: 1.2em;
@@ -39,7 +39,7 @@ h2 {
     text-align: left;
 }
 
-.sidebar-header, .diary-header {
+.sidebar-header, .diary-header, .year-header {
     font-size: 1.2em;
 }
 
@@ -138,7 +138,7 @@ h2 {
     opacity: 1;
 }
 
-.login-button, .diary-button {
+.login-button, .diary-button, .year-button {
     position: fixed;
     top: 20px;
     background: none;
@@ -154,12 +154,13 @@ h2 {
 .login-button {
     right: 40px;
 }
-
 .diary-button {
     right: 80px;
 }
-
-.login-button:hover, .diary-button:hover {
+.year-button {
+    right: 120px;
+}
+.login-button:hover, .diary-button:hover, .year-button:hover {
     color: #ebdbb2;
 }
 
@@ -195,10 +196,12 @@ h2 {
 .day:hover {
     border-color: #ebdbb2;
 }
-.prev-month, .next-month {
-    opacity: 0.3;
-}
-.prev-month::after, .next-month::after {
+.prev-month,
+.next-month,
+.prev-month::after,
+.next-month::after,
+.year-prev-month,
+.year-next-month {
     opacity: 0.3;
 }
 .weekday {
@@ -257,7 +260,7 @@ h2 {
 .day:hover .eye-icon {
     opacity: 1;
 }
-.sidebar, .diary-sidebar {
+.sidebar, .diary-sidebar, .year-sidebar {
     position: fixed;
     width: min(300px, 80vw);
     height: 100vh;
@@ -275,22 +278,21 @@ h2 {
     opacity: 0;
     overflow-y: auto;
     padding: 20px;
+    top: 0;
 }
 .sidebar {
     left: -300px;
-    top: 0;
     border-radius: 0px 8px 8px 0px;
 }
-.diary-sidebar {
+.diary-sidebar, .year-sidebar {
     right: -300px;
-    top: 0;
     border-radius: 8px 0 0 8px;
 }
 .sidebar.active {
     left: 0;
     opacity: 1;
 }
-.diary-sidebar.active {
+.diary-sidebar.active, .year-sidebar.active {
     right: 0;
     opacity: 1;
 }
@@ -599,10 +601,10 @@ h2 {
 .cancel-btn:hover, .save-btn:hover {
     background: #16a58580;
 }
-.diary-day {
+.diary-day, .year-month {
     margin-bottom: 20px;
 }
-.diary-date {
+.diary-date, .year-month-title {
     font-weight: bold;
     color: #ebdbb2;
     padding-bottom: 5px;
@@ -668,10 +670,40 @@ h2 {
     .sidebar-handle:active {
         cursor: grabbing;
     }
-    .diary-sidebar {
+    .diary-sidebar, .year-sidebar {
         width: 90vw;
     }
     .diary-button {
         right: 60px;
     }
+    .year-button {
+        right: 100px;
+    }
+}
+/* Year view styles */
+.year-month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+.year-weekday {
+    text-align: center;
+    font-size: 0.6em;
+    color: #a89984;
+}
+.year-day {
+    aspect-ratio: 1;
+    border: 1px solid #504945;
+    border-radius: 4px;
+    font-size: 0.6em;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.year-day::after {
+    content: attr(data-day);
+    position: absolute;
+    font-size: 0.6em;
+    color: #928374;
 }

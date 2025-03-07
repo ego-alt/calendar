@@ -49,3 +49,26 @@ def get_month():
             "days_with_events": days_with_events,
         }
     )
+
+@index_blueprint.route("/get_year", methods=["GET"])
+def get_year():
+    year = int(request.args.get("year"))
+    
+    months_data = []
+    for month in range(1, 13):
+        calendar_data, mood_colors, days_with_events = get_month_data(
+            year, month, current_user.id if current_user.is_authenticated else None
+        )
+        
+        months_data.append({
+            "month": month,
+            "calendar_data": calendar_data,
+            "mood_colors": mood_colors,
+            "days_with_events": days_with_events
+        })
+    
+    return jsonify({
+        "status": "success",
+        "year": year,
+        "months": months_data
+    })

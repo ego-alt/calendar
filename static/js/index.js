@@ -136,9 +136,12 @@ function setupEventListeners() {
         const sidebar = document.getElementById('sidebar');
         const colorPicker = document.getElementById('colorPicker');
         const diaryView = document.getElementById('diaryView');
+        const yearView = document.getElementById('yearView');
         
         // Check if click is outside interactive elements
-        const isInteractiveClick = event.target.closest('#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn');
+        const isInteractiveClick = event.target.closest(
+            '#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn'
+        );
         
         // Only close sidebar and color picker if clicking outside interactive elements
         if (!isInteractiveClick) {
@@ -154,6 +157,7 @@ function setupEventListeners() {
             
             // Close diary view when clicking outside
             diaryView.classList.remove('active');
+            yearView.classList.remove('active');
             
             // Close any open subevent forms
             const subEventForms = document.querySelectorAll('.subevent-form-container');
@@ -221,12 +225,16 @@ function handleKeyPress(event) {
         case 'd':
             toggleDiaryView();
             break;
+        case 'y':
+            toggleYearView();
+            break;
     }
     
     // Add ESC key handling
     if (event.key === 'Escape') {
         toggleSubEventForm(false);
         toggleDiaryView(false);
+        toggleYearView(false);
         event.preventDefault();
     }
 }
@@ -1064,23 +1072,45 @@ async function deleteSubEvent(subEventId, eventId) {
     }
 }
 
-// Add these diary view functions
-function toggleDiaryView(show) {
+function toggleSidebar(sidebarType, show) {
     const diaryView = document.getElementById('diaryView');
+    const yearView = document.getElementById('yearView');
     
+    // Determine which sidebar is primary and which is secondary based on type
+    const primarySidebar = sidebarType === 'diary' ? diaryView : yearView;
+    const secondarySidebar = sidebarType === 'diary' ? yearView : diaryView;
+    
+    // Determine whether to show or hide if not specified
     if (show === undefined) {
-        // Toggle if no specific state is provided
-        show = !diaryView.classList.contains('active');
+        show = !primarySidebar.classList.contains('active');
     }
+    
+    // Always close the secondary sidebar
+    secondarySidebar.classList.remove('active');
     
     if (show) {
-        loadMonthEvents();
+        // Load appropriate data based on sidebar type
+        if (sidebarType === 'diary') {
+            loadMonthEvents();
+        } else {
+            loadYearView(viewState.year);
+        }
+        
+        // Show the sidebar
         requestAnimationFrame(() => {
-            diaryView.classList.add('active');
+            primarySidebar.classList.add('active');
         });
     } else {
-        diaryView.classList.remove('active');
+        primarySidebar.classList.remove('active');
     }
+}
+
+function toggleDiaryView(show) {
+    toggleSidebar('diary', show);
+}
+
+function toggleYearView(show) {
+    toggleSidebar('year', show);
 }
 
 async function loadMonthEvents() {
@@ -1172,5 +1202,74 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup diary view button click handler
     document.getElementById('diaryViewBtn').addEventListener('click', function() {
         toggleDiaryView();
+    });
+});
+
+// Add these year view functions
+async function loadYearView(year) {
+    const yearContent = document.getElementById('yearContent');
+    yearContent.innerHTML = '<div class="loading-indicator">Loading year data...</div>';
+    
+    try {
+        const response = await fetch(`/get_year?year=${year}`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            let html = '';
+            
+            // Create each month grid
+            data.months.forEach(month => {
+                const monthName = new Date(year, month.month - 1, 1).toLocaleDateString('en-US', { month: 'long' });
+                
+                html += `
+                <div class="year-month">
+                    <div class="year-month-title">${monthName}</div>
+                    <div class="year-month-grid">
+                `;
+                
+                // Weekday headers
+                ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(day => {
+                    html += `<div class="year-weekday">${day}</div>`;
+                });
+                
+                // Previous month days
+                month.calendar_data.prev_days.forEach(day => {
+                    html += `<div class="year-day year-prev-month" data-day="${day}"></div>`;
+                });
+                
+                // Current month days with mood colors
+                month.calendar_data.current_days.forEach(day => {
+                    const hasColor = month.mood_colors[day];
+                    html += `
+                        <div class="year-day year-current-month" 
+                            data-day="${day}"
+                            ${hasColor ? `style="background-color: ${month.mood_colors[day]}"` : ''}>
+                        </div>
+                    `;
+                });
+                
+                // Next month days
+                month.calendar_data.next_days.forEach(day => {
+                    html += `<div class="year-day year-next-month" data-day="${day}"></div>`;
+                });
+                
+                html += `</div></div>`;
+            });
+            
+            yearContent.innerHTML = html;
+        } else {
+            yearContent.innerHTML = '<div class="error-message">Failed to load year data</div>';
+        }
+    } catch (error) {
+        console.error('Error loading year data:', error);
+        yearContent.innerHTML = '<div class="error-message">Error loading year data</div>';
+    }
+}
+
+// Add event listener for year view button
+document.addEventListener('DOMContentLoaded', function() {
+    // Setup year view button click handler
+    document.getElementById('yearViewBtn').addEventListener('click', function() {
+        toggleYearView();
     });
 });
