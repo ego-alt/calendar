@@ -331,7 +331,7 @@ async function showSidebar(day) {
         
         if (data.status === 'success') {
             const date = new Date(viewState.year, viewState.month - 1, day);
-            const dateString = `${day} ${date.toLocaleDateString('en-US', { month: 'long' })}`;
+            const dateString = `${day} ${date.toLocaleDateString('en-GB', { month: 'long' })}`;
             
             let html = `
                 <div class="sidebar-header">${dateString}</div>
@@ -378,6 +378,7 @@ async function showSidebar(day) {
                                     <div class="subevent-details">
                                         ${subevent.with_who ? `<div class="subevent-detail-item"><i class="fas fa-user"></i> ${subevent.with_who}</div>` : ''}
                                         ${subevent.where ? `<div class="subevent-detail-item"><i class="fas fa-map-marker-alt"></i> ${subevent.where}</div>` : ''}
+                                        ${subevent.notes ? `<div class="subevent-detail-item"><i class="fas fa-sticky-note"></i> ${subevent.notes}</div>` : ''}
                                     </div>
                                 </div>
                             `;
@@ -934,7 +935,7 @@ function setupTimeInputs() {
 function formatEventDisplay(event) {
     const formatDate = (dateStr) => {
         const date = new Date(dateStr);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
     };
 
     const startDate = formatDate(event.start_time);
@@ -1144,7 +1145,7 @@ async function loadMonthEvents() {
                 .sort((a, b) => parseInt(a) - parseInt(b))
                 .forEach(day => {
                     const date = new Date(viewState.year, viewState.month - 1, day);
-                    const dateString = date.toLocaleDateString('en-US', { 
+                    const dateString = date.toLocaleDateString('en-GB', { 
                         weekday: 'short', 
                         day: 'numeric', 
                         month: 'short' 
@@ -1219,7 +1220,7 @@ async function loadYearView(year) {
             
             // Create each month grid
             data.months.forEach(month => {
-                const monthName = new Date(year, month.month - 1, 1).toLocaleDateString('en-US', { month: 'long' });
+                const monthName = new Date(year, month.month - 1, 1).toLocaleDateString('en-GB', { month: 'long' });
                 
                 html += `
                 <div class="year-month">
