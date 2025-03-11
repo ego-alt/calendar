@@ -216,10 +216,10 @@ function handleKeyPress(event) {
         case 'l':
             updateMonth('next');
             break;
-        case 'j':
+        case 'k':
             updateYear('prev');
             break;
-        case 'k':
+        case 'j':
             updateYear('next');
             break;
         case 'd':

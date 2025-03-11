@@ -287,7 +287,7 @@ h2 {
     border-radius: 0px 8px 8px 0px;
 }
 .diary-sidebar, .year-sidebar {
-    right: -300px;
+    right: -400px;
     border-radius: 8px 0 0 8px;
 }
 .sidebar.active {
@@ -335,7 +335,7 @@ h2 {
     font-weight: bold;
     margin-bottom: 8px;
 }
-.event-details, .diary-event-detail, .diary-event-location, .subevent-details {
+.event-details, .subevent-details, .diary-event-detail {
     color: #928374;
     font-size: 0.9em;
 }
@@ -392,8 +392,8 @@ h2 {
 .add-event-btn:hover, .cancel-btn:hover, .save-btn:hover {
     background: #16a58580;
 }
-.event-detail-item {
-    margin-bottom: 8px;
+.event-detail-item, .subevent-detail-item, .diary-event-detail {
+    margin-bottom: 4px;
 }
 .event-detail-item:last-child {
     margin-bottom: 0;
@@ -517,9 +517,6 @@ h2 {
     color: #ebdbb2;
     font-weight: bold;
     margin-bottom: 5px;
-}
-.subevent-detail-item {
-    margin-bottom: 4px;
 }
 .subevent-actions {
     position: absolute;
