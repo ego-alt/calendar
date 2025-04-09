@@ -1132,16 +1132,33 @@ async function loadMonthEvents() {
                 diaryContent.innerHTML = '<div class="no-events">No events this month</div>';
                 return;
             }
-            
-            // Group events by day
+
             const eventsByDay = {};
             data.events.forEach(event => {
-                // Extract day from start_time (format: "YYYY-MM-DD HH:MM")
-                const day = parseInt(event.start_time.split(' ')[0].split('-')[2]);
-                if (!eventsByDay[day]) {
-                    eventsByDay[day] = [];
+                const startDate = new Date(event.start_time);
+                const endDate = new Date(event.end_time || event.start_time);
+                
+                // Create a copy of start date to iterate through
+                let currentDate = new Date(startDate);
+                
+                // Loop through all days of the event
+                while (currentDate <= endDate) {
+                    // Only include days in the current month view
+                    if (currentDate.getMonth() + 1 === viewState.month && 
+                        currentDate.getFullYear() === viewState.year) {
+                        
+                        const day = currentDate.getDate();
+                        if (!eventsByDay[day]) {
+                            eventsByDay[day] = [];
+                        }
+                        
+                        // Only add the event once per day
+                        if (!eventsByDay[day].some(e => e.id === event.id)) {
+                            eventsByDay[day].push(event);
+                        }
+                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
                 }
-                eventsByDay[day].push(event);
             });
             
             // Sort days and create HTML
@@ -1163,7 +1180,7 @@ async function loadMonthEvents() {
                     eventsByDay[day].forEach(event => {
                         html += `
                             <div class="diary-event" onclick="showSidebar(${day})">
-                                <div class="diary-event-time">${formatEventTime(event)}</div>
+                                <div class="diary-event-time">${formatEventTime(event, parseInt(day))}</div>
                                 <div class="diary-event-name">${event.name}</div>
                                 ${event.with_who ? `<div class="diary-event-detail"><i class="fas fa-user"></i> ${event.with_who}</div>` : ''}
                                 ${event.where ? `<div class="diary-event-detail"><i class="fas fa-map-marker-alt"></i> ${event.where}</div>` : ''}
@@ -1185,22 +1202,77 @@ async function loadMonthEvents() {
     }
 }
 
-function formatEventTime(event) {
-    // For diary view, we only need to show the time, not the date
-    const formatTime = dateStr => new Date(dateStr).toLocaleTimeString('en-US', { 
+function formatEventTime(event, displayDay) {
+    // Extract the current day's date at midnight
+    const currentDayDate = new Date(viewState.year, viewState.month - 1, displayDay);
+    
+    // Parse event times
+    const eventStart = new Date(event.start_time);
+    const eventEnd = event.end_time ? new Date(event.end_time) : new Date(event.start_time);
+    
+    // Format time helper function
+    const formatTime = date => date.toLocaleTimeString('en-US', { 
         hour: '2-digit', 
         minute: '2-digit', 
         hour12: false 
     });
-
-    // Check if all-day event (both times at midnight)
-    if (event.start_time.endsWith('00:00') && event.end_time.endsWith('00:00')) {
-        return 'All day';  // For all-day events
+    
+    // Check if this is a multi-day event
+    const isMultiDay = eventStart.toDateString() !== eventEnd.toDateString();
+    
+    // True all-day event check (starts at 00:00 and ends at 00:00)
+    const isTrueAllDayEvent = event.start_time.endsWith('00:00') && event.end_time && event.end_time.endsWith('00:00');
+    if (isTrueAllDayEvent) {
+        return ''; // No time for true all-day events
     }
-
-    const startTime = formatTime(event.start_time);
-    const endTime = event.end_time ? formatTime(event.end_time) : '';
-
+    
+    if (isMultiDay) {
+        // Start of day and end of day times
+        const startOfDay = '00:00';
+        const endOfDay = '23:59';
+        
+        // Is this the first day of the event?
+        if (eventStart.getDate() === displayDay && 
+            eventStart.getMonth() === viewState.month - 1 && 
+            eventStart.getFullYear() === viewState.year) {
+            
+            // If event starts at beginning of day (00:00), show no time
+            if (eventStart.getHours() === 0 && eventStart.getMinutes() === 0) {
+                return `${startOfDay} - ${endOfDay}`;
+            }
+            
+            // Otherwise show the actual start time to end of day
+            return `${formatTime(eventStart)} - ${endOfDay}`;
+        }
+        
+        // Is this the last day of the event?
+        if (eventEnd.getDate() === displayDay && 
+            eventEnd.getMonth() === viewState.month - 1 && 
+            eventEnd.getFullYear() === viewState.year) {
+            
+            // If event ends at end of day (23:59) or beginning of next day (00:00), show no time
+            if ((eventEnd.getHours() === 23 && eventEnd.getMinutes() === 59) || 
+                (eventEnd.getHours() === 0 && eventEnd.getMinutes() === 0)) {
+                return `${startOfDay} - ${endOfDay}`;
+            }
+            
+            // Otherwise show start of day to the actual end time
+            return `${startOfDay} - ${formatTime(eventEnd)}`;
+        }
+        
+        // This is a middle day of the event - spans full day
+        return '';
+    }
+    
+    // Single-day event with specified times
+    const startTime = formatTime(eventStart);
+    const endTime = event.end_time ? formatTime(eventEnd) : '';
+    
+    // If it's a same-day all-day event (starts at 00:00 and ends at 23:59 or 00:00 next day)
+    if (startTime === '00:00' && (endTime === '23:59' || endTime === '00:00')) {
+        return '';
+    }
+    
     return endTime ? `${startTime} - ${endTime}` : startTime;
 }
 
