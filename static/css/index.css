@@ -403,6 +403,7 @@ h2 {
     padding-right: 5px;
     margin-top: 8px;
     font-style: italic;
+    white-space: pre-line;
 }
 .date-input,
 .time-input {

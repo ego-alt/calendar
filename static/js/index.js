@@ -943,7 +943,12 @@ function formatEventDisplay(event) {
     
     // Check if all-day event (both times at midnight)
     if (event.start_time.endsWith('00:00') && event.end_time.endsWith('00:00')) {
-        return startDate;  // For all-day events, just show the date
+        // For multi-day all-day events, show full range
+        if (startDate !== endDate) {
+            return `${startDate} -- ${endDate}`;
+        }
+        // For single-day all-day events, just show one date
+        return startDate;
     }
 
     // For timed events
