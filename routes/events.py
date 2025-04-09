@@ -37,7 +37,11 @@ def events():
             events_data = []
             for event in events:
                 # Get subevents for this event
-                subevents = SubEvent.query.filter_by(event_id=event.id).order_by(SubEvent.start_time).all()
+                subevents = SubEvent.query.filter(
+                    SubEvent.event_id == event.id,
+                    SubEvent.start_time >= start_date,
+                    SubEvent.start_time < end_date
+                ).order_by(SubEvent.start_time).all()
                 
                 # Format subevents
                 subevents_data = [
