@@ -63,13 +63,13 @@ class Event(db.Model):
     end_time = db.Column(db.DateTime)
 
     created_at = db.Column(db.DateTime, server_default=func.now())
-    last_modified = db.Column(
-        db.DateTime, server_default=func.now(), onupdate=func.now()
-    )
+    last_modified = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
     user = db.relationship("User", back_populates="events")
-    subevents = db.relationship("SubEvent", back_populates="parent_event", cascade="all, delete-orphan")
+    subevents = db.relationship(
+        "SubEvent", back_populates="parent_event", cascade="all, delete-orphan"
+    )
 
 
 class SubEvent(db.Model):
@@ -86,9 +86,7 @@ class SubEvent(db.Model):
     end_time = db.Column(db.DateTime)
 
     created_at = db.Column(db.DateTime, server_default=func.now())
-    last_modified = db.Column(
-        db.DateTime, server_default=func.now(), onupdate=func.now()
-    )
+    last_modified = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
     parent_event = db.relationship("Event", back_populates="subevents")

@@ -17,24 +17,15 @@ def update_mood():
         date = datetime(int(data["year"]), int(data["month"]), int(data["day"])).date()
         daily_log = DailyLog.query.filter_by(user_id=current_user.id, date=date).first()
 
-        if data["color"] is None:
-            # If color is null, delete the daily log if it exists
-            if daily_log:
-                db.session.delete(daily_log)
+        # If color is null, delete the daily log if it exists
+        if data["color"] is None and daily_log:
+            db.session.delete(daily_log)
         else:
-            # Handle normal mood setting
             mood = Mood.query.filter_by(color=data["color"]).first()
-            if not mood:
-                mood = Mood(color=data["color"], name="Custom")
-                db.session.add(mood)
-                db.session.flush()
-
             if daily_log:
                 daily_log.mood_id = mood.id
             else:
-                daily_log = DailyLog(
-                    user_id=current_user.id, date=date, mood_id=mood.id
-                )
+                daily_log = DailyLog(user_id=current_user.id, date=date, mood_id=mood.id)
                 db.session.add(daily_log)
 
         db.session.commit()

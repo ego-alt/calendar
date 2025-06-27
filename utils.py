@@ -4,15 +4,16 @@ from models import db, User, Mood, DailyLog, Event
 from sqlalchemy.sql import func
 
 
-def parse_event_datetime(date_str, time_str=None, is_end: bool=False):
+def parse_event_datetime(date_str, time_str=None, is_end: bool = False):
     date = datetime.strptime(date_str, "%d-%m-%Y")
     time_obj = (
-        datetime.strptime(time_str, "%H:%M").time() if time_str
-        else time(23, 59) if is_end
+        datetime.strptime(time_str, "%H:%M").time()
+        if time_str
+        else time(23, 59)
+        if is_end
         else time(0, 0)
     )
     return datetime.combine(date, time_obj)
-
 
 
 def get_month_calendar(year, month):
@@ -24,9 +25,7 @@ def get_month_calendar(year, month):
     if first_day.weekday() != 0:  # If month doesn't start on Monday
         prev_month = first_day - timedelta(days=1)
         _, prev_month_days = calendar.monthrange(prev_month.year, prev_month.month)
-        prev_days = list(
-            range(prev_month_days - first_day.weekday() + 1, prev_month_days + 1)
-        )
+        prev_days = list(range(prev_month_days - first_day.weekday() + 1, prev_month_days + 1))
     else:
         prev_days = []
 
@@ -88,9 +87,7 @@ def get_month_data(year, month, user_id: int | None):
         return calendar_data, dict(), list()
 
     start_date = datetime(year, month, 1).date()
-    end_date = (
-        datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)
-    ).date()
+    end_date = (datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)).date()
 
     mood_colors = get_mood_logs(start_date, end_date, user_id)
     days_with_events = get_month_events(start_date, end_date, user_id)
