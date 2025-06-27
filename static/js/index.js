@@ -348,7 +348,7 @@ async function showSidebar(day) {
                             <div class="event-actions">
                                 <i class="fas fa-edit" onclick="editEvent(${event.id})"></i>
                                 <i class="fas fa-trash" onclick="deleteEvent(${event.id})"></i>
-                                <i class="fas fa-plus-circle" onclick="toggleSubEventForm(true, ${event.id})" title="Subevent"></i>
+                                <i class="fas fa-plus-circle" onclick="toggleSubEventForm(true, '${date.toDateString()}', ${event.id})" title="Subevent"></i>
                             </div>
                             <div class="event-time">
                                 ${formatEventDisplay(event)}
@@ -462,7 +462,7 @@ function formatSubEventTime(subevent) {
     return endTime ? `${startTime} - ${endTime}` : startTime;
 }
 
-function toggleSubEventForm(show, eventId = null, subEventId = null) {
+function toggleSubEventForm(show, parentDate = null, eventId = null, subEventId = null) {
     // Remove any existing subevent forms first
     const existingForms = document.querySelectorAll('.subevent-form-container');
     existingForms.forEach(form => form.remove());
@@ -515,25 +515,15 @@ function toggleSubEventForm(show, eventId = null, subEventId = null) {
             populateSubEventForm(eventId, subEventId);
         } else {
             insertFormIntoEventCard(eventCard, formContainer);
-            
-            // Get parent event date and populate the date fields
-            const eventTimeElement = eventCard.querySelector('.event-time');
-            if (eventTimeElement) {
-                // Extract date from the parent event display
-                const eventText = eventTimeElement.textContent.trim();
-                const dateMatch = eventText.match(/([A-Za-z]+\s\d+)/);
+            if (parentDate) {
+                parentDate = new Date(parentDate);
+                const day = String(parentDate.getDate()).padStart(2, '0');
+                const month = String(parentDate.getMonth() + 1).padStart(2, '0');
+                const year = parentDate.getFullYear();
                 
-                if (dateMatch) {
-                    const dateText = dateMatch[1];
-                    const date = new Date(dateText + ', ' + viewState.year);
-                    const day = String(date.getDate()).padStart(2, '0');
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const year = date.getFullYear();
-                    
-                    const formattedDate = `${day}-${month}-${year}`;
-                    document.getElementById('subStartDate').value = formattedDate;
-                    document.getElementById('subEndDate').value = formattedDate;
-                }
+                const formattedDate = `${day}-${month}-${year}`;
+                document.getElementById('subStartDate').value = formattedDate;
+                document.getElementById('subEndDate').value = formattedDate;
             }
         }
         
@@ -1057,7 +1047,7 @@ $(document).ready(function() {
 });
 
 async function editSubEvent(subEventId, eventId) {
-    toggleSubEventForm(true, eventId, subEventId);
+    toggleSubEventForm(true, null, eventId, subEventId);
 }
 
 async function deleteSubEvent(subEventId, eventId) {
