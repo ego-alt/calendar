@@ -649,7 +649,7 @@ async function populateSubEventForm(eventId, subEventId) {
     }
 }
 
-function toggleEventForm(show, eventToEdit = null) {
+function toggleEventForm(show) {
     const eventForm = document.getElementById('eventForm');
     const form = document.getElementById('newEventForm');
     
@@ -932,7 +932,7 @@ function formatEventDisplay(event) {
     const endDate = event.end_time ? formatDate(event.end_time) : startDate;
     
     // Check if all-day event (both times at midnight)
-    if (event.start_time.endsWith('00:00') && event.end_time.endsWith('00:00')) {
+    if (event.start_time.endsWith('00:00') && event.end_time.endsWith('23:59')) {
         // For multi-day all-day events, show full range
         if (startDate !== endDate) {
             return `${startDate} -- ${endDate}`;
@@ -1207,13 +1207,10 @@ function formatEventTime(event, displayDay) {
         hour12: false 
     });
     
-    // Check if this is a multi-day event
     const isMultiDay = eventStart.toDateString() !== eventEnd.toDateString();
-    
-    // True all-day event check (starts at 00:00 and ends at 00:00)
-    const isTrueAllDayEvent = event.start_time.endsWith('00:00') && event.end_time && event.end_time.endsWith('00:00');
+    const isTrueAllDayEvent = (event.start_time.endsWith('00:00') && event.end_time && event.end_time.endsWith('23:59'));
     if (isTrueAllDayEvent) {
-        return ''; // No time for true all-day events
+        return '';
     }
     
     if (isMultiDay) {
@@ -1241,8 +1238,7 @@ function formatEventTime(event, displayDay) {
             eventEnd.getFullYear() === viewState.year) {
             
             // If event ends at end of day (23:59) or beginning of next day (00:00), show no time
-            if ((eventEnd.getHours() === 23 && eventEnd.getMinutes() === 59) || 
-                (eventEnd.getHours() === 0 && eventEnd.getMinutes() === 0)) {
+            if (eventEnd.getHours() === 23 && eventEnd.getMinutes() === 59) {
                 return `${startOfDay} - ${endOfDay}`;
             }
             
@@ -1258,8 +1254,8 @@ function formatEventTime(event, displayDay) {
     const startTime = formatTime(eventStart);
     const endTime = event.end_time ? formatTime(eventEnd) : '';
     
-    // If it's a same-day all-day event (starts at 00:00 and ends at 23:59 or 00:00 next day)
-    if (startTime === '00:00' && (endTime === '23:59' || endTime === '00:00')) {
+    // If it's a same-day all-day event (starts at 00:00 and ends at 23:59)
+    if (startTime === '00:00' && endTime === '23:59') {
         return '';
     }
     

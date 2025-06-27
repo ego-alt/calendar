@@ -45,7 +45,7 @@ def is_within_parent_date(parent: Event, start_datetime, end_datetime) -> bool:
 def edit_event_data(event: Event | SubEvent, data: dict, parent: Event | None=None):
     """Edit the event or subevent details."""
     start_datetime = parse_event_datetime(data["start_date"], data.get("start_time"))
-    end_datetime = parse_event_datetime(data["end_date"], data.get("end_time"))
+    end_datetime = parse_event_datetime(data["end_date"], data.get("end_time"), is_end=True)
 
     if parent and not is_within_parent_date(parent, start_datetime, end_datetime):
         return False
@@ -64,7 +64,7 @@ def edit_event_data(event: Event | SubEvent, data: dict, parent: Event | None=No
 def create_event(event_class, data: dict, parent: Event | None=None, **kwargs):
     """Create a new event or subevent."""
     start_datetime = parse_event_datetime(data["start_date"], data.get("start_time"))
-    end_datetime = parse_event_datetime(data["end_date"], data.get("end_time"))
+    end_datetime = parse_event_datetime(data["end_date"], data.get("end_time"), is_end=True)
 
     if parent and not is_within_parent_date(parent, start_datetime, end_datetime):
         return False
