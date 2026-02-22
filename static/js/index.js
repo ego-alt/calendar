@@ -1203,6 +1203,13 @@ async function loadMonthEvents() {
                         <div class="diary-events">`;
                     
                     eventsByDay[day].forEach(event => {
+                        const daySubevents = (event.subevents || []).filter(s => {
+                            const d = new Date(s.start_time);
+                            return d.getDate() === parseInt(day) &&
+                                   d.getMonth() + 1 === viewState.month &&
+                                   d.getFullYear() === viewState.year;
+                        });
+
                         html += `
                             <div class="diary-event" onclick="showSidebar(${day})">
                                 <div class="diary-event-time">${formatEventTime(event, parseInt(day))}</div>
@@ -1210,6 +1217,12 @@ async function loadMonthEvents() {
                                 ${event.with_who ? `<div class="diary-event-detail"><i class="fas fa-user"></i> ${event.with_who}</div>` : ''}
                                 ${event.where ? `<div class="diary-event-detail"><i class="fas fa-map-marker-alt"></i> ${event.where}</div>` : ''}
                                 ${event.notes ? `<div class="diary-event-detail diary-event-notes"><i class="fas fa-sticky-note"></i> ${event.notes}</div>` : ''}
+                                ${daySubevents.map(s => `
+                                    <div class="diary-subevent">
+                                        <div class="diary-subevent-title">${s.name}</div>
+                                        ${s.notes ? `<div class="diary-subevent-content">${s.notes}</div>` : ''}
+                                    </div>
+                                `).join('')}
                             </div>
                         `;
                     });

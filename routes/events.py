@@ -232,10 +232,16 @@ def month_events():
         month = int(request.args.get("month"))
         start_date = datetime(year, month, 1)
         end_date = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
-        events_data = [
-            retrieve_event_data(event)
-            for event in retrieve_events_within_range(start_date, end_date)
-        ]
+        events_data = []
+        for event in retrieve_events_within_range(start_date, end_date):
+            subevents = (
+                SubEvent.query.filter_by(event_id=event.id)
+                .order_by(SubEvent.start_time)
+                .all()
+            )
+            event_data = retrieve_event_data(event)
+            event_data["subevents"] = [retrieve_event_data(s) for s in subevents]
+            events_data.append(event_data)
         return jsonify({"status": "success", "events": events_data})
 
     except Exception as e:

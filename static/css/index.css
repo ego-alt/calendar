@@ -318,7 +318,8 @@ h2 {
 .event-card, .diary-event {
     background: rgba(40, 40, 40, 0.5);
     border-radius: 8px;
-    padding: 12px;
+    padding: 8px;
+    padding-left: 12px;
     border-left: 3px solid #ebdbb2;
     position: relative;
     margin-bottom: 8px;
@@ -620,6 +621,24 @@ h2 {
     padding-bottom: 5px;
     border-bottom: 1px solid #504945;
     margin-bottom: 10px;
+}
+.diary-subevent {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #504945;
+}
+.diary-subevent-title {
+    color: #d5c4a1;
+    font-size: 0.85em;
+    font-weight: bold;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    margin-bottom: 6px;
+}
+.diary-subevent-content {
+    color: #928374;
+    font-size: 0.82em;
+    white-space: pre-line;
 }
 
 /* Desktop styles (default) */
