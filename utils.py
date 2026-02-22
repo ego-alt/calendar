@@ -43,28 +43,20 @@ def get_month_calendar(year, month):
     }
 
 
-def get_mood_logs(start_date, end_date, user_id: int):
+def get_daily_logs(start_date, end_date, user_id: int):
     # Fetch mood data
-    daily_logs = (
+    daily_info = (
         DailyLog.query.filter(
             DailyLog.user_id == user_id,
             DailyLog.date >= start_date,
             DailyLog.date < end_date,
         )
-        .join(Mood)
+        .outerjoin(Mood)
         .all()
     )
-    return {log.date.day: log.mood.color for log in daily_logs}
-
-
-def get_marked_days(start_date, end_date, user_id: int):
-    daily_logs = DailyLog.query.filter(
-        DailyLog.user_id == user_id,
-        DailyLog.date >= start_date,
-        DailyLog.date < end_date,
-        DailyLog.has_marker == True,
-    ).all()
-    return [log.date.day for log in daily_logs]
+    mood_logs = {log.date.day: log.mood.color for log in daily_info if log.mood}
+    marked_days = [log.date.day for log in daily_info if log.has_marker]
+    return mood_logs, marked_days
 
 
 def get_month_events(start_date, end_date, user_id: int):
@@ -99,7 +91,6 @@ def get_month_data(year, month, user_id: int | None):
     start_date = datetime(year, month, 1).date()
     end_date = (datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)).date()
 
-    mood_colors = get_mood_logs(start_date, end_date, user_id)
+    mood_colors, days_with_marker = get_daily_logs(start_date, end_date, user_id)
     days_with_events = get_month_events(start_date, end_date, user_id)
-    days_with_marker = get_marked_days(start_date, end_date, user_id)
     return calendar_data, mood_colors, days_with_events, days_with_marker
