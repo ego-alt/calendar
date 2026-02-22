@@ -40,6 +40,7 @@ class DailyLog(db.Model):
     date = db.Column(db.Date, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     mood_id = db.Column(db.Integer, db.ForeignKey("moods.id"), nullable=True)
+    has_marker = db.Column(db.Boolean, nullable=False, default=False)
 
     # Make date unique per user
     __table_args__ = (db.UniqueConstraint("user_id", "date", name="unique_user_date"),)
