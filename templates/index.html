@@ -58,6 +58,9 @@
                         {% if day in days_with_events %}
                             <div class="event-indicator"></div>
                         {% endif %}
+                        {% if day in days_with_marker %}
+                            <div class="marker-indicator"></div>
+                        {% endif %}
                     </div>
                 {% endfor %}
                 

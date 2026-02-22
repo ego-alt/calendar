@@ -57,6 +57,16 @@ def get_mood_logs(start_date, end_date, user_id: int):
     return {log.date.day: log.mood.color for log in daily_logs}
 
 
+def get_marked_days(start_date, end_date, user_id: int):
+    daily_logs = DailyLog.query.filter(
+        DailyLog.user_id == user_id,
+        DailyLog.date >= start_date,
+        DailyLog.date < end_date,
+        DailyLog.has_marker == True,
+    ).all()
+    return [log.date.day for log in daily_logs]
+
+
 def get_month_events(start_date, end_date, user_id: int):
     # Get events that overlap with the month
     days_with_events = set()
@@ -84,11 +94,12 @@ def get_month_data(year, month, user_id: int | None):
     """Helper function to get calendar, mood, and event data for a specific month."""
     calendar_data = get_month_calendar(year, month)
     if not user_id:
-        return calendar_data, dict(), list()
+        return calendar_data, dict(), list(), list()
 
     start_date = datetime(year, month, 1).date()
     end_date = (datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)).date()
 
     mood_colors = get_mood_logs(start_date, end_date, user_id)
     days_with_events = get_month_events(start_date, end_date, user_id)
-    return calendar_data, mood_colors, days_with_events
+    days_with_marker = get_marked_days(start_date, end_date, user_id)
+    return calendar_data, mood_colors, days_with_events, days_with_marker

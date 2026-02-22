@@ -83,6 +83,40 @@ function setupEventListeners() {
         });
     });
 
+    document.querySelectorAll('.day.current-month').forEach(day => {
+        day.addEventListener('dblclick', async (e) => {
+            e.stopPropagation();
+
+            try {
+                const response = await fetch('/mood/marker/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        year: viewState.year,
+                        month: viewState.month,
+                        day: day.dataset.day,
+                    })
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    let indicator = day.querySelector('.marker-indicator');
+                    if (data.has_marker) {
+                        if (!indicator) {
+                            indicator = document.createElement('div');
+                            indicator.className = 'marker-indicator';
+                            day.appendChild(indicator);
+                        }
+                    } else {
+                        if (indicator) indicator.remove();
+                    }
+                }
+            } catch (error) {
+                console.error('Error toggling period:', error);
+            }
+        });
+    });
+
     document.querySelectorAll('.color-option').forEach(option => {
         option.addEventListener('click', async () => {
             if (selectedDay) {
@@ -293,6 +327,7 @@ async function updateCalendarView() {
                          onclick="showSidebar(${day})"
                          ${data.mood_colors[day] ? `style="background-color: ${data.mood_colors[day]}"` : ''}>
                         ${data.days_with_events.includes(day) ? '<div class="event-indicator"></div>' : ''}
+                        ${data.days_with_marker.includes(day) ? '<div class="marker-indicator"></div>' : ''}
                     </div>
                 `).join('')}
                 ${data.calendar_data.next_days.map(day => `

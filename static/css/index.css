@@ -437,6 +437,16 @@ h2 {
     border-radius: 50%;
     opacity: 0.8;
 }
+.marker-indicator {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    width: 6px;
+    height: 6px;
+    background-color: #8b1a1a;
+    border-radius: 50%;
+    opacity: 0.85;
+}
 .login-overlay {
     display: none;
     position: fixed;

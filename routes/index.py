@@ -10,7 +10,7 @@ index_blueprint = Blueprint("index_routes", __name__)
 @index_blueprint.route("/")
 def index():
     today = datetime.now()
-    calendar_data, mood_colors, days_with_events = get_month_data(
+    calendar_data, mood_colors, days_with_events, days_with_marker = get_month_data(
         today.year,
         today.month,
         current_user.id if current_user.is_authenticated else None,
@@ -25,6 +25,7 @@ def index():
         current_day=today.day,
         mood_colors=mood_colors,
         days_with_events=days_with_events,
+        days_with_marker=days_with_marker,
     )
 
 
@@ -37,7 +38,7 @@ def get_month():
         month = 1
         year += 1
 
-    calendar_data, mood_colors, days_with_events = get_month_data(
+    calendar_data, mood_colors, days_with_events, days_with_marker = get_month_data(
         year, month, current_user.id if current_user.is_authenticated else None
     )
 
@@ -47,6 +48,7 @@ def get_month():
             "month_label": datetime(year, month, 1).strftime("%B %Y"),
             "mood_colors": mood_colors,
             "days_with_events": days_with_events,
+            "days_with_marker": days_with_marker,
         }
     )
 
@@ -57,7 +59,7 @@ def get_year():
 
     months_data = []
     for month in range(1, 13):
-        calendar_data, mood_colors, days_with_events = get_month_data(
+        calendar_data, mood_colors, days_with_events, days_with_marker = get_month_data(
             year, month, current_user.id if current_user.is_authenticated else None
         )
 
@@ -67,6 +69,7 @@ def get_year():
                 "calendar_data": calendar_data,
                 "mood_colors": mood_colors,
                 "days_with_events": days_with_events,
+                "days_with_marker": days_with_marker,
             }
         )
 
