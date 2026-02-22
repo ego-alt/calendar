@@ -1219,7 +1219,7 @@ async function loadMonthEvents() {
                                 ${event.notes ? `<div class="diary-event-detail diary-event-notes"><i class="fas fa-sticky-note"></i> ${event.notes}</div>` : ''}
                                 ${daySubevents.map(s => `
                                     <div class="diary-subevent">
-                                        <div class="diary-subevent-title">${s.name}</div>
+                                        <div class="diary-subevent-title">${s.name}${s.where ? `<span class="diary-subevent-content">&nbsp;&nbsp;(${s.where})</span>` : ''}</div>
                                         ${s.notes ? `<div class="diary-subevent-content">${s.notes}</div>` : ''}
                                     </div>
                                 `).join('')}
