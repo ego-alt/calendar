@@ -1,17 +1,23 @@
 # syntax=docker/dockerfile:1
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy just the requirements file to leverage Docker cache
-COPY requirements.txt /app/
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy project metadata first to leverage Docker cache
+COPY pyproject.toml uv.lock /app/
+
+# Install dependencies from the lock file
+RUN uv sync --frozen --no-dev --no-install-project
 
 # Copy the rest of the project files
 COPY . /app/
+
+# Install the local project after source is copied
+RUN uv sync --frozen --no-dev
 
 # Set production environment variables
 ENV FLASK_ENV=production
@@ -22,4 +28,4 @@ EXPOSE 8001
 
 # Run the Flask application using Gunicorn with the correct module reference.
 # This tells Gunicorn to call the create_app() factory in app.py.
-CMD ["gunicorn", "app:create_app()", "--bind", "0.0.0.0:8001", "--workers", "3", "--timeout", "120", "--worker-class", "sync"]
+CMD ["uv", "run", "gunicorn", "app:create_app()", "--bind", "0.0.0.0:8001", "--workers", "3", "--timeout", "120", "--worker-class", "sync"]
