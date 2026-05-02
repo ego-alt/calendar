@@ -13,16 +13,136 @@ let viewState = {
 let isLoading = false;
 let currentOpenDay = null;
 
+/** Shared by color picker UI (eye icon, options, document dismiss). */
+let moodPickerSelectedDay = null;
+let moodPickerMenuOpen = false;
+
+let globalListenersAttached = false;
+
 document.addEventListener('DOMContentLoaded', () => {
-    setupEventListeners();
+    setupGlobalEventListeners();
+    setupMonthGridListeners();
     document.addEventListener('keydown', handleKeyPress);
 });
 
-function setupEventListeners() {
+/** Document-level and static-DOM listeners — call once. */
+function setupGlobalEventListeners() {
+    if (globalListenersAttached) return;
+    globalListenersAttached = true;
+
     const colorPicker = document.getElementById('colorPicker');
-    const sidebar = document.getElementById('sidebar');
-    let selectedDay = null;
-    let menuOpen = false;
+
+    document.querySelectorAll('.color-option').forEach(option => {
+        option.addEventListener('click', async () => {
+            if (moodPickerSelectedDay) {
+                const color = window.getComputedStyle(option).backgroundColor;
+
+                try {
+                    const response = await fetch('/mood/update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            year: viewState.year,
+                            month: viewState.month,
+                            day: moodPickerSelectedDay.dataset.day,
+                            color: color
+                        })
+                    });
+
+                    const rawText = await response.text();
+                    console.log('Raw response:', rawText);
+
+                    let data;
+                    try {
+                        data = JSON.parse(rawText);
+                    } catch (e) {
+                        console.error('Failed to parse response as JSON:', e);
+                        throw new Error('Invalid JSON response');
+                    }
+
+                    if (data.status === 'success') {
+                        moodPickerSelectedDay.style.backgroundColor = color;
+                    } else {
+                        console.error('Failed to update mood:', data.message);
+                    }
+                } catch (error) {
+                    console.error('Error updating mood:', error);
+                }
+
+                colorPicker.style.display = 'none';
+                moodPickerMenuOpen = false;
+                moodPickerSelectedDay = null;
+            }
+        });
+    });
+
+    document.addEventListener('click', (event) => {
+        const sidebar = document.getElementById('sidebar');
+        const colorPickerEl = document.getElementById('colorPicker');
+        const diaryView = document.getElementById('diaryView');
+        const yearView = document.getElementById('yearView');
+
+        const isInteractiveClick = event.target.closest(
+            '#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn'
+        );
+
+        if (!isInteractiveClick) {
+            colorPickerEl.style.display = 'none';
+            moodPickerMenuOpen = false;
+            moodPickerSelectedDay = null;
+
+            sidebar.classList.remove('active');
+            if (window.innerWidth <= 480) {
+                sidebar.classList.remove('expanded');
+                sidebar.style.height = '20vh';
+            }
+
+            diaryView.classList.remove('active');
+            yearView.classList.remove('active');
+
+            const subEventForms = document.querySelectorAll('.subevent-form-container');
+            subEventForms.forEach(form => form.remove());
+            toggleEventForm(false);
+        }
+    });
+
+    setupTimeInputs();
+
+    if (window.innerWidth <= 480) {
+        const sidebar = document.getElementById('sidebar');
+        const handle = document.querySelector('.sidebar-handle');
+        let isDragging = false;
+
+        handle.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            sidebar.style.transition = 'none';
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const vh = window.innerHeight / 100;
+            const height = window.innerHeight - e.touches[0].clientY;
+            sidebar.style.height = `${Math.min(Math.max(height, 15 * vh), 60 * vh)}px`;
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            sidebar.style.transition = 'height 0.3s ease';
+            const isExpanded = sidebar.offsetHeight > window.innerHeight * 0.45;
+            sidebar.style.height = isExpanded ? '60vh' : '15vh';
+            sidebar.classList.toggle('expanded', isExpanded);
+        });
+    }
+}
+
+/** Day cells are replaced when the month changes — reattach only these listeners. */
+function setupMonthGridListeners() {
+    const colorPicker = document.getElementById('colorPicker');
 
     document.querySelectorAll('.day').forEach(day => {
         const eyeIcon = document.createElement('i');
@@ -32,7 +152,7 @@ function setupEventListeners() {
         eyeIcon.addEventListener('click', async (e) => {
             e.stopPropagation();
             
-            if (menuOpen && selectedDay === day && day.style.backgroundColor) {
+            if (moodPickerMenuOpen && moodPickerSelectedDay === day && day.style.backgroundColor) {
                 // Clear the mood
                 try {
                     const response = await fetch('/mood/update', {
@@ -52,8 +172,8 @@ function setupEventListeners() {
                     if (data.status === 'success') {
                         day.style.backgroundColor = '';
                         colorPicker.style.display = 'none';
-                        menuOpen = false;
-                        selectedDay = null;
+                        moodPickerMenuOpen = false;
+                        moodPickerSelectedDay = null;
                     } else {
                         console.error('Failed to clear mood:', data.message);
                     }
@@ -62,8 +182,8 @@ function setupEventListeners() {
                 }
             } else {
                 // Show color picker with position based on screen size
-                selectedDay = day;
-                menuOpen = true;
+                moodPickerSelectedDay = day;
+                moodPickerMenuOpen = true;
                 colorPicker.style.display = 'flex';
                 
                 // Position color picker based on screen width
@@ -116,120 +236,6 @@ function setupEventListeners() {
             }
         });
     });
-
-    document.querySelectorAll('.color-option').forEach(option => {
-        option.addEventListener('click', async () => {
-            if (selectedDay) {
-                const color = window.getComputedStyle(option).backgroundColor;
-                
-                try {
-                    const response = await fetch('/mood/update', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            year: viewState.year,
-                            month: viewState.month,
-                            day: selectedDay.dataset.day,
-                            color: color
-                        })
-                    });
-
-                    // Try to get the raw text first
-                    const rawText = await response.text();
-                    console.log('Raw response:', rawText);
-                    
-                    // Then parse it as JSON if it looks like JSON
-                    let data;
-                    try {
-                        data = JSON.parse(rawText);
-                    } catch (e) {
-                        console.error('Failed to parse response as JSON:', e);
-                        throw new Error('Invalid JSON response');
-                    }
-                    
-                    if (data.status === 'success') {
-                        selectedDay.style.backgroundColor = color;
-                    } else {
-                        console.error('Failed to update mood:', data.message);
-                    }
-                } catch (error) {
-                    console.error('Error updating mood:', error);
-                }
-                
-                colorPicker.style.display = 'none';
-                menuOpen = false;
-                selectedDay = null;
-            }
-        });
-    });
-
-    // Update the document click handler to also reset the menuOpen state
-    document.addEventListener('click', (event) => {
-        const sidebar = document.getElementById('sidebar');
-        const colorPicker = document.getElementById('colorPicker');
-        const diaryView = document.getElementById('diaryView');
-        const yearView = document.getElementById('yearView');
-        
-        // Check if click is outside interactive elements
-        const isInteractiveClick = event.target.closest(
-            '#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn'
-        );
-        
-        // Only close sidebar and color picker if clicking outside interactive elements
-        if (!isInteractiveClick) {
-            colorPicker.style.display = 'none';
-            menuOpen = false;
-            selectedDay = null;
-            
-            sidebar.classList.remove('active');
-            if (window.innerWidth <= 480) {
-                sidebar.classList.remove('expanded');
-                sidebar.style.height = '20vh';
-            }
-            
-            // Close diary view when clicking outside
-            diaryView.classList.remove('active');
-            yearView.classList.remove('active');
-            
-            // Close any open subevent forms
-            const subEventForms = document.querySelectorAll('.subevent-form-container');
-            subEventForms.forEach(form => form.remove());
-            toggleEventForm(false);
-        }
-    });
-
-    setupTimeInputs();
-
-    if (window.innerWidth <= 480) {
-        const sidebar = document.getElementById('sidebar');
-        const handle = document.querySelector('.sidebar-handle');
-        let isDragging = false;
-        
-        handle.addEventListener('touchstart', (e) => {
-            isDragging = true;
-            sidebar.style.transition = 'none';
-            e.preventDefault(); // Prevent default to ensure proper touch handling
-        }, { passive: false });
-
-        document.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            const vh = window.innerHeight / 100;
-            const height = window.innerHeight - e.touches[0].clientY;
-            sidebar.style.height = `${Math.min(Math.max(height, 15 * vh), 60 * vh)}px`;
-        }, { passive: false });
-
-        document.addEventListener('touchend', () => {
-            if (!isDragging) return;
-            isDragging = false;
-            sidebar.style.transition = 'height 0.3s ease';
-            const isExpanded = sidebar.offsetHeight > window.innerHeight * 0.45;
-            sidebar.style.height = isExpanded ? '60vh' : '15vh';
-            sidebar.classList.toggle('expanded', isExpanded);
-        });
-    }
 }
 
 function handleKeyPress(event) {
@@ -337,7 +343,7 @@ async function updateCalendarView() {
         `;
         
         document.getElementById('calendarContainer').innerHTML = monthHTML;
-        setupEventListeners();
+        setupMonthGridListeners();
         
         // Refresh diary view if it's open
         if (document.getElementById('diaryView').classList.contains('active')) {
@@ -1377,7 +1383,6 @@ async function loadYearView(year) {
         yearContent.innerHTML = '<div class="error-message">Error loading year data</div>';
     }
 }
-
 // Add event listener for year view button
 document.addEventListener('DOMContentLoaded', function() {
     // Setup year view button click handler
