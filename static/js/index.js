@@ -23,6 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setupGlobalEventListeners();
     setupMonthGridListeners();
     document.addEventListener('keydown', handleKeyPress);
+    document.getElementById('diaryViewBtn').addEventListener('click', () => {
+        toggleDiaryView();
+    });
+    document.getElementById('yearViewBtn').addEventListener('click', () => {
+        toggleYearView();
+    });
 });
 
 /** Document-level and static-DOM listeners — call once. */
@@ -739,7 +745,7 @@ document.getElementById('newEventForm').addEventListener('submit', async (e) => 
         if (data.status === 'success') {
             toggleEventForm(false);
             showSidebar(currentOpenDay);
-            updateMonth(viewState.year, viewState.month);
+            await updateCalendarView();
         } else {
             console.error('Failed to save event:', data.message);
         }
@@ -799,7 +805,7 @@ async function editEvent(eventId) {
     document.getElementById('inlineEventName').focus();
     
     // Add click handler to the save button
-    document.getElementById('saveInlineEventBtn').addEventListener('click', async function() {
+    formContainer.querySelector('#saveInlineEventBtn').addEventListener('click', async function() {
         const form = document.getElementById('editEventForm');
         const eventId = parseInt(form.dataset.eventId);
         
@@ -843,10 +849,13 @@ async function editEvent(eventId) {
             alert('An error occurred while updating the event.');
         }
     });
-    document.querySelector('.cancel-btn').addEventListener('click', function(e) {
-        e.stopPropagation(); // Prevent the click from reaching the document
-        closeEventEditForm();
-    });
+    const inlineCancel = formContainer.querySelector('.cancel-btn');
+    if (inlineCancel) {
+        inlineCancel.addEventListener('click', function(e) {
+            e.stopPropagation();
+            closeEventEditForm();
+        });
+    }
 }
 
 function closeEventEditForm() {
@@ -907,7 +916,7 @@ async function deleteEvent(eventId) {
         const data = await response.json();
         if (data.status === 'success') {
             showSidebar(currentOpenDay);
-            updateMonth(viewState.year, viewState.month);
+            await updateCalendarView();
         } else {
             console.error('Failed to delete event:', data.message);
         }
@@ -917,7 +926,8 @@ async function deleteEvent(eventId) {
 }
 
 function setupTimeInputs() {
-    document.querySelectorAll('.time-input').forEach(timeInput => {
+    document.querySelectorAll('.time-input:not([data-format-bound])').forEach(timeInput => {
+        timeInput.dataset.formatBound = '1';
         timeInput.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length >= 2) {
@@ -941,7 +951,8 @@ function setupTimeInputs() {
         });
     });
 
-    document.querySelectorAll('.date-input').forEach(dateInput => {
+    document.querySelectorAll('.date-input:not([data-format-bound])').forEach(dateInput => {
+        dateInput.dataset.formatBound = '1';
         dateInput.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length >= 2) {
@@ -1316,13 +1327,6 @@ function formatEventTime(event, displayDay) {
     return endTime ? `${startTime} - ${endTime}` : startTime;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Setup diary view button click handler
-    document.getElementById('diaryViewBtn').addEventListener('click', function() {
-        toggleDiaryView();
-    });
-});
-
 // Add these year view functions
 async function loadYearView(year) {
     const yearContent = document.getElementById('yearContent');
@@ -1383,10 +1387,3 @@ async function loadYearView(year) {
         yearContent.innerHTML = '<div class="error-message">Error loading year data</div>';
     }
 }
-// Add event listener for year view button
-document.addEventListener('DOMContentLoaded', function() {
-    // Setup year view button click handler
-    document.getElementById('yearViewBtn').addEventListener('click', function() {
-        toggleYearView();
-    });
-});
