@@ -29,7 +29,7 @@ def test_events_requires_auth(client):
 
 
 def test_login_rejects_bad_password(client, user):
-    response = client.post("/auth/login", data={"username": "alice", "password": "wrong"})
+    response = client.post("/auth/login", data={"username": "grey", "password": "wrong"})
     assert response.status_code == 401
 
 

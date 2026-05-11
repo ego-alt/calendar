@@ -27,7 +27,7 @@ def client(app):
 @pytest.fixture
 def user(app):
     with app.app_context():
-        u = User(username="alice", password_hash=generate_password_hash("pw"))
+        u = User(username="grey", password_hash=generate_password_hash("pw"))
         db.session.add(u)
         db.session.commit()
         return u.id
@@ -35,6 +35,6 @@ def user(app):
 
 @pytest.fixture
 def authed_client(client, user):
-    response = client.post("/auth/login", data={"username": "alice", "password": "pw"})
+    response = client.post("/auth/login", data={"username": "grey", "password": "pw"})
     assert response.status_code == 200
     return client
