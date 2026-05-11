@@ -41,6 +41,13 @@ function parseDateTime(dateTimeStr) {
     return { date: `${day}-${month}-${year}`, time: timePart };
 }
 
+/** Escape user-controlled strings for safe insertion into HTML template literals. */
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     setupGlobalEventListeners();
     setupMonthGridListeners();
@@ -376,17 +383,22 @@ async function showSidebar(day) {
     toggleEventForm(false);
     
     try {
-        const response = await fetch(`/events?year=${viewState.year}&month=${viewState.month}&day=${day}`);
-        const data = await response.json();
-        
+        const dayQuery = `year=${viewState.year}&month=${viewState.month}&day=${day}`;
+        const [eventsResponse, attachmentsResponse] = await Promise.all([
+            fetch(`/events?${dayQuery}`),
+            fetch(`/attachments?${dayQuery}`),
+        ]);
+        const data = await eventsResponse.json();
+        const attachmentsData = await attachmentsResponse.json();
+
         if (data.status === 'success') {
             const date = new Date(viewState.year, viewState.month - 1, day);
             const dateString = `${day} ${date.toLocaleDateString('en-GB', { month: 'long' })}`;
-            
-            let html = `
-                <div class="sidebar-header">${dateString}</div>
-                <div class="event-list">
-            `;
+            const attachments = attachmentsData.status === 'success' ? attachmentsData.attachments : [];
+
+            let html = `<div class="sidebar-header">${dateString}</div>`;
+            html += renderAttachmentsSection(attachments);
+            html += `<div class="event-list">`;
             
             if (data.events.length === 0) {
                 html += `<div class="no-events">No events scheduled</div>`;
@@ -962,6 +974,81 @@ async function handleLogout() {
 
 async function editSubEvent(subEventId, eventId) {
     toggleSubEventForm(true, null, eventId, subEventId);
+}
+
+function renderAttachmentsSection(attachments) {
+    const tiles = attachments.map(a => {
+        const filename = escapeHtml(a.filename);
+        const isImage = a.mime_type && a.mime_type.startsWith('image/');
+        const preview = isImage
+            ? `<img src="/attachments/${a.id}" alt="${filename}" loading="lazy">`
+            : `<div class="attachment-icon"><i class="fas fa-file"></i><span>${filename}</span></div>`;
+        return `
+            <div class="attachment-tile" data-attachment-id="${a.id}">
+                <a class="attachment-link" href="/attachments/${a.id}" target="_blank" title="${filename}">
+                    ${preview}
+                </a>
+                <i class="fas fa-times attachment-delete" onclick="deleteAttachment(${a.id}, event)" title="Delete"></i>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="attachments-section">
+            <div class="attachments-grid">
+                ${tiles}
+                <label class="attachment-upload" title="Add attachments">
+                    <input type="file" multiple style="display:none" onchange="handleAttachmentUpload(event)">
+                    <i class="fas fa-plus"></i>
+                </label>
+            </div>
+        </div>
+    `;
+}
+
+async function handleAttachmentUpload(event) {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('year', viewState.year);
+        formData.append('month', viewState.month);
+        formData.append('day', currentOpenDay);
+
+        try {
+            const response = await fetch('/attachments', { method: 'POST', body: formData });
+            if (!response.ok) {
+                const message = response.status === 413
+                    ? `File too large (max 10 MB): ${file.name}`
+                    : `Upload failed: ${file.name}`;
+                alert(message);
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert(`Upload failed: ${file.name}`);
+        }
+    }
+
+    event.target.value = '';
+    showSidebar(currentOpenDay);
+}
+
+async function deleteAttachment(attachmentId, event) {
+    event.stopPropagation();
+    event.preventDefault();
+
+    try {
+        const response = await fetch(`/attachments/${attachmentId}`, { method: 'DELETE' });
+        if (response.ok) {
+            showSidebar(currentOpenDay);
+        } else {
+            console.error('Failed to delete attachment');
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+    }
 }
 
 async function deleteSubEvent(subEventId, eventId) {
