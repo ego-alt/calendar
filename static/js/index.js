@@ -19,6 +19,28 @@ let moodPickerMenuOpen = false;
 
 let globalListenersAttached = false;
 
+/** Format a Date or "YYYY-MM-DD HH:MM" string as "HH:MM" (24h). */
+function formatTimeOfDay(input) {
+    const date = input instanceof Date ? input : new Date(input);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+/** True when start ends at 00:00 and end ends at 23:59 (legacy all-day encoding). */
+function isAllDayEvent(event) {
+    return Boolean(
+        event.start_time && event.start_time.endsWith('00:00')
+        && event.end_time && event.end_time.endsWith('23:59')
+    );
+}
+
+/** Parse a "YYYY-MM-DD HH:MM" string into form-ready {date: "DD-MM-YYYY", time: "HH:MM"}. */
+function parseDateTime(dateTimeStr) {
+    if (!dateTimeStr) return { date: '', time: '' };
+    const [datePart, timePart] = dateTimeStr.split(' ');
+    const [year, month, day] = datePart.split('-');
+    return { date: `${day}-${month}-${year}`, time: timePart };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     setupGlobalEventListeners();
     setupMonthGridListeners();
@@ -106,6 +128,13 @@ function setupGlobalEventListeners() {
     });
 
     setupTimeInputs();
+
+    document.querySelector('.login-overlay').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeLoginDialog();
+    });
+    document.querySelector('.login-content').addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
 
     if (window.innerWidth <= 480) {
         const sidebar = document.getElementById('sidebar');
@@ -236,43 +265,27 @@ function setupMonthGridListeners() {
 }
 
 function handleKeyPress(event) {
-    // Ignore shortcuts if any input or textarea is focused
-    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
-        // But still handle Escape key for closing forms
-        if (event.key === 'Escape') {
-            toggleSubEventForm(false);
-            event.preventDefault();
-        }
-        return;
-    }
-    
-    switch (event.key) {
-        case 'h':
-            updateMonth('prev');
-            break;
-        case 'l':
-            updateMonth('next');
-            break;
-        case 'k':
-            updateYear('prev');
-            break;
-        case 'j':
-            updateYear('next');
-            break;
-        case 'd':
-            toggleDiaryView();
-            break;
-        case 'y':
-            toggleYearView();
-            break;
-    }
-    
-    // Add ESC key handling
+    const inInput = event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA';
+
     if (event.key === 'Escape') {
         toggleSubEventForm(false);
-        toggleDiaryView(false);
-        toggleYearView(false);
+        if (!inInput) {
+            toggleDiaryView(false);
+            toggleYearView(false);
+        }
         event.preventDefault();
+        return;
+    }
+
+    if (inInput) return;
+
+    switch (event.key) {
+        case 'h': updateMonth('prev'); break;
+        case 'l': updateMonth('next'); break;
+        case 'k': updateYear('prev'); break;
+        case 'j': updateYear('next'); break;
+        case 'd': toggleDiaryView(); break;
+        case 'y': toggleYearView(); break;
     }
 }
 
@@ -445,16 +458,8 @@ async function showSidebar(day) {
 }
 
 function formatSubEventTime(subevent) {
-    // For subevents, we only need to show the time, not the date
-    const formatTime = dateStr => new Date(dateStr).toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false 
-    });
-
-    const startTime = formatTime(subevent.start_time);
-    const endTime = subevent.end_time ? formatTime(subevent.end_time) : '';
-
+    const startTime = formatTimeOfDay(subevent.start_time);
+    const endTime = subevent.end_time ? formatTimeOfDay(subevent.end_time) : '';
     return endTime ? `${startTime} - ${endTime}` : startTime;
 }
 
@@ -604,24 +609,8 @@ async function populateSubEventForm(eventId, subEventId) {
             const subevent = data.subevent;
 
             if (subevent) {
-                // Make sure the form has the correct subevent ID
                 const form = document.getElementById('newSubEventForm');
                 form.dataset.subEventId = subEventId;
-
-                // Parse the datetime strings
-                const parseDateTime = (dateTimeStr) => {
-                    if (!dateTimeStr) return { date: '', time: '' };
-                    
-                    // Parse "YYYY-MM-DD HH:MM" format
-                    const [datePart, timePart] = dateTimeStr.split(' ');
-                    const [year, month, day] = datePart.split('-');
-                    
-                    return {
-                        // Convert to DD-MM-YYYY format for the form
-                        date: `${day}-${month}-${year}`,
-                        time: timePart
-                    };
-                };
 
                 const startDateTime = parseDateTime(subevent.start_time);
                 const endDateTime = parseDateTime(subevent.end_time);
@@ -818,21 +807,6 @@ async function populateEventEditForm(eventId) {
             const event = data.events.find(e => e.id === eventId);
             
             if (event) {
-                // Parse the datetime strings
-                const parseDateTime = (dateTimeStr) => {
-                    if (!dateTimeStr) return { date: '', time: '' };
-                    
-                    // Parse "YYYY-MM-DD HH:MM" format
-                    const [datePart, timePart] = dateTimeStr.split(' ');
-                    const [year, month, day] = datePart.split('-');
-                    
-                    return {
-                        // Convert to DD-MM-YYYY format for the form
-                        date: `${day}-${month}-${year}`,
-                        time: timePart
-                    };
-                };
-
                 const startDateTime = parseDateTime(event.start_time);
                 const endDateTime = parseDateTime(event.end_time);
                 
@@ -921,37 +895,21 @@ function setupTimeInputs() {
 }
 
 function formatEventDisplay(event) {
-    const formatDate = (dateStr) => {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-    };
+    const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
     const startDate = formatDate(event.start_time);
     const endDate = event.end_time ? formatDate(event.end_time) : startDate;
-    
-    // Check if all-day event (both times at midnight)
-    if (event.start_time.endsWith('00:00') && event.end_time.endsWith('23:59')) {
-        // For multi-day all-day events, show full range
-        if (startDate !== endDate) {
-            return `${startDate} -- ${endDate}`;
-        }
-        // For single-day all-day events, just show one date
-        return startDate;
+
+    if (isAllDayEvent(event)) {
+        return startDate === endDate ? startDate : `${startDate} -- ${endDate}`;
     }
 
-    // For timed events
-    const formatTime = dateStr => new Date(dateStr).toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false 
-    });
+    const startTime = formatTimeOfDay(event.start_time);
+    const endTime = event.end_time ? formatTimeOfDay(event.end_time) : '';
 
-    const startTime = formatTime(event.start_time);
-    const endTime = event.end_time ? formatTime(event.end_time) : '';
-
-    return startDate === endDate ? 
-        `${startDate}, ${startTime} -- ${endTime}` : 
-        `${startDate}, ${startTime} -- ${endDate}, ${endTime}`;
+    return startDate === endDate
+        ? `${startDate}, ${startTime} -- ${endTime}`
+        : `${startDate}, ${startTime} -- ${endDate}, ${endTime}`;
 }
 
 function showLoginDialog() {
@@ -999,21 +957,6 @@ async function handleLogout() {
         console.error('Logout error:', error);
     }
 }
-
-// Add these event listeners when the document is ready
-$(document).ready(function() {
-    // Close dialog when clicking outside or on close button
-    $('.login-overlay').on('click', function(e) {
-        if (e.target === this) {
-            closeLoginDialog();
-        }
-    });
-
-    // Prevent closing when clicking inside the login content
-    $('.login-content').on('click', function(e) {
-        e.stopPropagation();
-    });
-});
 
 async function editSubEvent(subEventId, eventId) {
     toggleSubEventForm(true, null, eventId, subEventId);
@@ -1175,72 +1118,41 @@ async function loadMonthEvents() {
 }
 
 function formatEventTime(event, displayDay) {
-    // Extract the current day's date at midnight
-    const currentDayDate = new Date(viewState.year, viewState.month - 1, displayDay);
-    
-    // Parse event times
+    if (isAllDayEvent(event)) return '';
+
     const eventStart = new Date(event.start_time);
     const eventEnd = event.end_time ? new Date(event.end_time) : new Date(event.start_time);
-    
-    // Format time helper function
-    const formatTime = date => date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false 
-    });
-    
     const isMultiDay = eventStart.toDateString() !== eventEnd.toDateString();
-    const isTrueAllDayEvent = (event.start_time.endsWith('00:00') && event.end_time && event.end_time.endsWith('23:59'));
-    if (isTrueAllDayEvent) {
-        return '';
-    }
-    
+
     if (isMultiDay) {
-        // Start of day and end of day times
         const startOfDay = '00:00';
         const endOfDay = '23:59';
-        
-        // Is this the first day of the event?
-        if (eventStart.getDate() === displayDay && 
-            eventStart.getMonth() === viewState.month - 1 && 
-            eventStart.getFullYear() === viewState.year) {
-            
-            // If event starts at beginning of day (00:00), show no time
+
+        const isStartDay = eventStart.getDate() === displayDay
+            && eventStart.getMonth() === viewState.month - 1
+            && eventStart.getFullYear() === viewState.year;
+        if (isStartDay) {
             if (eventStart.getHours() === 0 && eventStart.getMinutes() === 0) {
                 return `${startOfDay} - ${endOfDay}`;
             }
-            
-            // Otherwise show the actual start time to end of day
-            return `${formatTime(eventStart)} - ${endOfDay}`;
+            return `${formatTimeOfDay(eventStart)} - ${endOfDay}`;
         }
-        
-        // Is this the last day of the event?
-        if (eventEnd.getDate() === displayDay && 
-            eventEnd.getMonth() === viewState.month - 1 && 
-            eventEnd.getFullYear() === viewState.year) {
-            
-            // If event ends at end of day (23:59) or beginning of next day (00:00), show no time
+
+        const isEndDay = eventEnd.getDate() === displayDay
+            && eventEnd.getMonth() === viewState.month - 1
+            && eventEnd.getFullYear() === viewState.year;
+        if (isEndDay) {
             if (eventEnd.getHours() === 23 && eventEnd.getMinutes() === 59) {
                 return `${startOfDay} - ${endOfDay}`;
             }
-            
-            // Otherwise show start of day to the actual end time
-            return `${startOfDay} - ${formatTime(eventEnd)}`;
+            return `${startOfDay} - ${formatTimeOfDay(eventEnd)}`;
         }
-        
-        // This is a middle day of the event - spans full day
+
         return '';
     }
-    
-    // Single-day event with specified times
-    const startTime = formatTime(eventStart);
-    const endTime = event.end_time ? formatTime(eventEnd) : '';
-    
-    // If it's a same-day all-day event (starts at 00:00 and ends at 23:59)
-    if (startTime === '00:00' && endTime === '23:59') {
-        return '';
-    }
-    
+
+    const startTime = formatTimeOfDay(eventStart);
+    const endTime = event.end_time ? formatTimeOfDay(eventEnd) : '';
     return endTime ? `${startTime} - ${endTime}` : startTime;
 }
 
