@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
+
 from flask import Blueprint, jsonify, request
 from flask_login import current_user
-from models import db, Event, SubEvent
-from utils import parse_event_datetime
-from ._helpers import json_login_required
 
+from models import Event, SubEvent, db
+from utils import parse_event_datetime
+
+from ._helpers import json_login_required
 
 event_blueprint = Blueprint("events", __name__, url_prefix="/events")
 

@@ -1,7 +1,7 @@
+from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin
+from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
 
@@ -11,7 +11,7 @@ class User(UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))  # New field
+    password_hash = db.Column(db.String)
     created_at = db.Column(db.DateTime, server_default=func.now())
 
     # Relationships

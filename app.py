@@ -3,17 +3,18 @@ import secrets
 
 from flask import Flask
 from flask_login import LoginManager
-from models import db, User
+
+from models import User, db
 from routes import auth_blueprint, event_blueprint, index_blueprint, mood_blueprint
 
 
 def create_app():
     app = Flask(__name__)
+    app.url_map.strict_slashes = False
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///events.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 
-    # Initialize Flask-Login
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
@@ -28,6 +29,8 @@ def create_app():
     app.register_blueprint(mood_blueprint)
 
     db.init_app(app)
+    with app.app_context():
+        db.create_all()
     return app
 
 
