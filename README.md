@@ -47,6 +47,12 @@ uv run flask --app app.py run
 uv run ruff check .
 ```
 
+6. Run tests:
+
+```bash
+uv run pytest
+```
+
 ## Schema changes
 
 After editing `models.py`:

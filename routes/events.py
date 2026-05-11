@@ -147,7 +147,7 @@ def subevents(event_id):
     if not parent_event:
         return jsonify({"status": "error", "message": "Event not found"}), 404
 
-    if not create_event(SubEvent, request.json, event_id=event_id):
+    if not create_event(SubEvent, request.json, parent=parent_event, event_id=event_id):
         return jsonify({
             "status": "error",
             "message": "Subevent must occur within the parent event's timeframe",

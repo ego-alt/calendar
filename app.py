@@ -9,12 +9,14 @@ from models import User, db
 from routes import auth_blueprint, event_blueprint, index_blueprint, mood_blueprint
 
 
-def create_app():
+def create_app(config=None):
     app = Flask(__name__)
     app.url_map.strict_slashes = False
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///events.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+    if config:
+        app.config.update(config)
 
     login_manager = LoginManager()
     login_manager.init_app(app)

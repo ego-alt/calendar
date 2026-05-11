@@ -12,5 +12,8 @@ env/
 # Flask / instance folder
 instance/
 
+# Test
+.pytest_cache/
+
 # OS
 .DS_Store
