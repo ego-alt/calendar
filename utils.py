@@ -5,13 +5,10 @@ from models import Mood, DailyLog, Event
 
 def parse_event_datetime(date_str, time_str=None, is_end: bool = False):
     date = datetime.strptime(date_str, "%d-%m-%Y")
-    time_obj = (
-        datetime.strptime(time_str, "%H:%M").time()
-        if time_str
-        else time(23, 59)
-        if is_end
-        else time(0, 0)
-    )
+    if time_str:
+        time_obj = datetime.strptime(time_str, "%H:%M").time()
+    else:
+        time_obj = time(23, 59) if is_end else time(0, 0)
     return datetime.combine(date, time_obj)
 
 

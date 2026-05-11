@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask import Blueprint, jsonify, request, render_template
-from flask_login import current_user
 from utils import get_month_data
+from ._helpers import current_user_id
 
 
 index_blueprint = Blueprint("index_routes", __name__)
@@ -11,9 +11,7 @@ index_blueprint = Blueprint("index_routes", __name__)
 def index():
     today = datetime.now()
     calendar_data, mood_colors, days_with_events, days_with_marker = get_month_data(
-        today.year,
-        today.month,
-        current_user.id if current_user.is_authenticated else None,
+        today.year, today.month, current_user_id()
     )
 
     return render_template(
@@ -35,7 +33,7 @@ def get_month():
     month = int(request.args.get("month"))
 
     calendar_data, mood_colors, days_with_events, days_with_marker = get_month_data(
-        year, month, current_user.id if current_user.is_authenticated else None
+        year, month, current_user_id()
     )
 
     return jsonify(
@@ -56,7 +54,7 @@ def get_year():
     months_data = []
     for month in range(1, 13):
         calendar_data, mood_colors, days_with_events, days_with_marker = get_month_data(
-            year, month, current_user.id if current_user.is_authenticated else None
+            year, month, current_user_id()
         )
 
         months_data.append(
