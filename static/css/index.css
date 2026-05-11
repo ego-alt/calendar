@@ -67,7 +67,7 @@ h2 {
 }
 
 .attachments-section {
-    margin-bottom: 16px;
+    margin-top: 16px;
 }
 .attachments-grid {
     display: grid;
@@ -90,7 +90,7 @@ h2 {
 .attachment-tile img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
 }
 .attachment-icon {

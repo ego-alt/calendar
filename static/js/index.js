@@ -397,7 +397,6 @@ async function showSidebar(day) {
             const attachments = attachmentsData.status === 'success' ? attachmentsData.attachments : [];
 
             let html = `<div class="sidebar-header">${dateString}</div>`;
-            html += renderAttachmentsSection(attachments);
             html += `<div class="event-list">`;
             
             if (data.events.length === 0) {
@@ -457,7 +456,9 @@ async function showSidebar(day) {
                 });
             }
             
-            html += `</div><button class="add-event-btn" onclick="toggleEventForm(true)">Add Event</button>`;
+            html += `</div>`;
+            html += renderAttachmentsSection(attachments);
+            html += `<button class="add-event-btn" onclick="toggleEventForm(true)">Add Event</button>`;
             sidebarContent.innerHTML = html;
         }
     } catch (error) {
