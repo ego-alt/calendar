@@ -21,6 +21,11 @@ h1, h2, .form-header, .event-form-header, .subevent-form-header {
     font-size: 1.2em;
     text-align: left;
 }
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
 
 h1 {
     font-size: clamp(1.5rem, 4vw, 2rem);
@@ -73,7 +78,7 @@ h2 {
     column-width: 72px;
     column-gap: 6px;
 }
-.attachment-tile, .attachment-upload {
+.attachment-tile {
     break-inside: avoid;
     margin-bottom: 6px;
 }
@@ -99,6 +104,17 @@ h2 {
 .attachment-tile:not(:has(img)) .attachment-link {
     width: 100%;
     height: 100%;
+}
+.attachment-upload-btn {
+    cursor: pointer;
+    color: #928374;
+    transition: color 0.2s;
+    font-size: 0.85em;
+    padding: 4px 6px;
+    line-height: 1;
+}
+.attachment-upload-btn:hover {
+    color: #ebdbb2;
 }
 .attachment-icon {
     width: 100%;
@@ -146,22 +162,6 @@ h2 {
 }
 .attachment-delete:hover {
     background: #8b1a1a;
-}
-.attachment-upload {
-    aspect-ratio: 1;
-    background: rgba(40, 40, 40, 0.3);
-    border: 1px dashed #504945;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #928374;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.attachment-upload:hover {
-    border-color: #ebdbb2;
-    color: #ebdbb2;
 }
 
 .event-form, #newSubEventForm, #editEventForm, #loginForm {

@@ -396,8 +396,15 @@ async function showSidebar(day) {
             const dateString = `${day} ${date.toLocaleDateString('en-GB', { month: 'long' })}`;
             const attachments = attachmentsData.status === 'success' ? attachmentsData.attachments : [];
 
-            let html = `<div class="sidebar-header">${dateString}</div>`;
-            html += `<div class="event-list">`;
+            let html = `
+                <div class="sidebar-header">
+                    <span>${dateString}</span>
+                    <label class="attachment-upload-btn" title="Add attachment">
+                        <input type="file" multiple style="display:none" onchange="handleAttachmentUpload(event)">
+                        <i class="fas fa-plus"></i>
+                    </label>
+                </div>
+                <div class="event-list">`;
             
             if (data.events.length === 0) {
                 html += `<div class="no-events">No events scheduled</div>`;
@@ -978,6 +985,8 @@ async function editSubEvent(subEventId, eventId) {
 }
 
 function renderAttachmentsSection(attachments) {
+    if (attachments.length === 0) return '';
+
     const tiles = attachments.map(a => {
         const filename = escapeHtml(a.filename);
         const isImage = a.mime_type && a.mime_type.startsWith('image/');
@@ -994,17 +1003,7 @@ function renderAttachmentsSection(attachments) {
         `;
     }).join('');
 
-    return `
-        <div class="attachments-section">
-            <div class="attachments-grid">
-                ${tiles}
-                <label class="attachment-upload" title="Add attachments">
-                    <input type="file" multiple style="display:none" onchange="handleAttachmentUpload(event)">
-                    <i class="fas fa-plus"></i>
-                </label>
-            </div>
-        </div>
-    `;
+    return `<div class="attachments-section"><div class="attachments-grid">${tiles}</div></div>`;
 }
 
 async function handleAttachmentUpload(event) {
