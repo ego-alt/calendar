@@ -3,6 +3,7 @@ import secrets
 
 from flask import Flask
 from flask_login import LoginManager
+from flask_migrate import Migrate
 
 from models import User, db
 from routes import auth_blueprint, event_blueprint, index_blueprint, mood_blueprint
@@ -29,8 +30,7 @@ def create_app():
     app.register_blueprint(mood_blueprint)
 
     db.init_app(app)
-    with app.app_context():
-        db.create_all()
+    Migrate(app, db)
     return app
 
 

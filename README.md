@@ -22,14 +22,36 @@
 uv sync
 ```
 
-3. Run the app:
+3. Initialize the database (fresh clones):
+
+```bash
+uv run flask --app app:create_app db upgrade
+```
+
+   If you already have an `instance/events.db` from before migrations were introduced,
+   stamp it once instead of upgrading:
+
+```bash
+uv run flask --app app:create_app db stamp head
+```
+
+4. Run the app:
 
 ```bash
 uv run flask --app app.py run
 ```
 
-4. Run linting:
+5. Run linting:
 
 ```bash
 uv run ruff check .
+```
+
+## Schema changes
+
+After editing `models.py`:
+
+```bash
+uv run flask --app app:create_app db migrate -m "describe the change"
+uv run flask --app app:create_app db upgrade
 ```

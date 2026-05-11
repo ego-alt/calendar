@@ -21,11 +21,10 @@ RUN uv sync --frozen --no-dev
 
 # Set production environment variables
 ENV FLASK_ENV=production
-ENV FLASK_APP=app.py
+ENV FLASK_APP=app:create_app
 
 # Expose the port that the app will run on
 EXPOSE 8001
 
-# Run the Flask application using Gunicorn with the correct module reference.
-# This tells Gunicorn to call the create_app() factory in app.py.
-CMD ["uv", "run", "gunicorn", "app:create_app()", "--bind", "0.0.0.0:8001", "--workers", "3", "--timeout", "120", "--worker-class", "sync"]
+# Apply pending migrations, then start the Flask application via Gunicorn.
+CMD ["sh", "-c", "uv run flask db upgrade && exec uv run gunicorn 'app:create_app()' --bind 0.0.0.0:8001 --workers 3 --timeout 120 --worker-class sync"]
