@@ -457,8 +457,8 @@ async function showSidebar(day) {
             }
             
             html += `</div>`;
-            html += renderAttachmentsSection(attachments);
             html += `<button class="add-event-btn" onclick="toggleEventForm(true)">Add Event</button>`;
+            html += renderAttachmentsSection(attachments);
             sidebarContent.innerHTML = html;
         }
     } catch (error) {
