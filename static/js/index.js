@@ -494,6 +494,7 @@ function toggleSubEventForm(show, parentDate = null, eventId = null, subEventId 
                     <input type="text" id="subEndDate" class="date-input" placeholder="DD-MM-YYYY">
                     <input type="text" id="subEndTime" class="time-input" placeholder="HH:MM">
                 </div>
+                <input type="text" id="subEventWith" placeholder="Who">
                 <input type="text" id="subEventLocation" placeholder="Where">
                 <textarea id="subEventNotes" placeholder="Notes"></textarea>
                 <div class="form-buttons">
@@ -554,7 +555,7 @@ function toggleSubEventForm(show, parentDate = null, eventId = null, subEventId 
                 end_date: document.getElementById('subEndDate').value,
                 end_time: document.getElementById('subEndTime').value || null,
                 where: document.getElementById('subEventLocation').value || null,
-                with_who: null,
+                with_who: document.getElementById('subEventWith').value || null,
                 notes: document.getElementById('subEventNotes').value || null
             };
             
@@ -621,6 +622,7 @@ async function populateSubEventForm(eventId, subEventId) {
                 document.getElementById('subStartTime').value = startDateTime.time;
                 document.getElementById('subEndDate').value = endDateTime.date || startDateTime.date;
                 document.getElementById('subEndTime').value = endDateTime.time || '';
+                document.getElementById('subEventWith').value = subevent.with_who || '';
                 document.getElementById('subEventLocation').value = subevent.where || '';
                 document.getElementById('subEventNotes').value = subevent.notes || '';
             }
