@@ -9,7 +9,7 @@ __pycache__/
 venv/
 env/
 
-# Flask / instance folder
+# Flask / instance folder (database, uploaded attachments)
 instance/
 
 # Test

@@ -45,9 +45,30 @@ class DailyLog(db.Model):
     # Make date unique per user
     __table_args__ = (db.UniqueConstraint("user_id", "date", name="unique_user_date"),)
 
-    # Relationships
     user = db.relationship("User", back_populates="daily_logs")
     mood = db.relationship("Mood", uselist=False)
+    attachments = db.relationship(
+        "Attachment",
+        back_populates="daily_log",
+        cascade="all, delete-orphan",
+        order_by="Attachment.created_at",
+    )
+
+
+class Attachment(db.Model):
+    __tablename__ = "attachments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    daily_log_id = db.Column(db.Integer, db.ForeignKey("daily_logs.id"), nullable=False)
+    original_filename = db.Column(db.String, nullable=False)
+    stored_name = db.Column(db.String, nullable=False, unique=True)
+    mime_type = db.Column(db.String, nullable=False)
+    size_bytes = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, server_default=func.now())
+
+    __table_args__ = (db.Index("ix_attachments_daily_log", "daily_log_id"),)
+
+    daily_log = db.relationship("DailyLog", back_populates="attachments")
 
 
 class Event(db.Model):
