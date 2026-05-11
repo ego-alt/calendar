@@ -1,5 +1,6 @@
 import calendar
 from datetime import datetime, time, timedelta
+from sqlalchemy import func
 from models import Mood, DailyLog, Event
 
 
@@ -56,19 +57,19 @@ def get_daily_logs(start_date, end_date, user_id: int):
 
 
 def get_month_events(start_date, end_date, user_id: int):
-    # Get events that overlap with the month
+    # Treat null end_time as a single-day event ending at start_time.
+    effective_end = func.coalesce(Event.end_time, Event.start_time)
     days_with_events = set()
     events = Event.query.filter(
         Event.user_id == user_id,
         Event.start_time < end_date,
-        Event.end_time >= start_date,
+        effective_end >= start_date,
     ).all()
 
-    # Generate all days that have events
     for event in events:
-        # Get the date range bounds within the month
+        end_time = event.end_time or event.start_time
         event_start = max(event.start_time.date(), start_date)
-        event_end = min(event.end_time.date(), end_date - timedelta(days=1))
+        event_end = min(end_time.date(), end_date - timedelta(days=1))
 
         current_date = event_start
         while current_date <= event_end:
