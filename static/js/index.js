@@ -57,16 +57,7 @@ function setupGlobalEventListeners() {
                         })
                     });
 
-                    const rawText = await response.text();
-                    console.log('Raw response:', rawText);
-
-                    let data;
-                    try {
-                        data = JSON.parse(rawText);
-                    } catch (e) {
-                        console.error('Failed to parse response as JSON:', e);
-                        throw new Error('Invalid JSON response');
-                    }
+                    const data = await response.json();
 
                     if (data.status === 'success') {
                         moodPickerSelectedDay.style.backgroundColor = color;
@@ -366,7 +357,6 @@ async function updateCalendarView() {
 async function showSidebar(day) {
     const sidebar = document.getElementById('sidebar');
     const sidebarContent = document.getElementById('sidebarContent');
-    const eventForm = document.getElementById('eventForm');
 
     requestAnimationFrame(() => {sidebar.classList.add('active');});
     currentOpenDay = day;
@@ -452,47 +442,6 @@ async function showSidebar(day) {
     
     // Close any open subevent forms
     toggleSubEventForm(false);
-}
-
-function displaySubEvents(eventId, subevents) {
-    const eventCard = document.querySelector(`.event-card[data-event-id="${eventId}"]`);
-    if (!eventCard) return;
-    
-    // Remove any existing subevents container
-    const existingContainer = document.getElementById(`subevents-${eventId}`);
-    if (existingContainer) {
-        existingContainer.remove();
-    }
-    
-    if (subevents && subevents.length > 0) {
-        // Only create container if there are subevents to display
-        const container = document.createElement('div');
-        container.className = 'subevents-container';
-        container.id = `subevents-${eventId}`;
-        
-        let html = `<div class="subevents-list">`;
-        subevents.forEach(subevent => {
-            html += `
-                <div class="subevent-card" data-subevent-id="${subevent.id}">
-                    <div class="subevent-actions">
-                        <i class="fas fa-edit" onclick="editSubEvent(${subevent.id}, ${eventId})"></i>
-                        <i class="fas fa-trash" onclick="deleteSubEvent(${subevent.id}, ${eventId})"></i>
-                    </div>
-                    <div class="subevent-time">${formatSubEventTime(subevent)}</div>
-                    <div class="subevent-name">${subevent.name}</div>
-                    <div class="subevent-details">
-                        ${subevent.with_who ? `<div class="subevent-detail-item"><i class="fas fa-user"></i> ${subevent.with_who}</div>` : ''}
-                        ${subevent.where ? `<div class="subevent-detail-item"><i class="fas fa-map-marker-alt"></i> ${subevent.where}</div>` : ''}
-                    </div>
-                </div>
-            `;
-        });
-        html += `</div>`;
-        container.innerHTML = html;
-        
-        // Append the container to the event card
-        eventCard.appendChild(container);
-    }
 }
 
 function formatSubEventTime(subevent) {
@@ -648,20 +597,17 @@ function insertFormIntoEventCard(eventCard, formContainer) {
 
 async function populateSubEventForm(eventId, subEventId) {
     try {
-        console.log('Populating form for subevent:', subEventId, 'in event:', eventId);
         const response = await fetch(`/events/subevents/${subEventId}`);
         const data = await response.json();
-        
+
         if (data.status === 'success') {
             const subevent = data.subevent;
-            console.log('Found subevent data:', subevent);
-            
+
             if (subevent) {
                 // Make sure the form has the correct subevent ID
                 const form = document.getElementById('newSubEventForm');
                 form.dataset.subEventId = subEventId;
-                console.log('Set form dataset.subEventId to:', form.dataset.subEventId);
-                
+
                 // Parse the datetime strings
                 const parseDateTime = (dateTimeStr) => {
                     if (!dateTimeStr) return { date: '', time: '' };
@@ -1008,32 +954,6 @@ function formatEventDisplay(event) {
         `${startDate}, ${startTime} -- ${endDate}, ${endTime}`;
 }
 
-function displayEvents(events) {
-    const eventsList = document.getElementById('eventsList');
-    eventsList.innerHTML = '';
-    
-    events.forEach(event => {
-        const eventCard = document.createElement('div');
-        eventCard.className = 'event-card';
-        eventCard.dataset.eventId = event.id;
-        
-        eventCard.innerHTML = `
-            <h3>${event.name}</h3>
-            <p class="event-time">${formatEventDisplay(event)}</p>
-            ${event.where ? `<p class="event-location">📍 ${event.where}</p>` : ''}
-            ${event.with_who ? `<p class="event-with">👥 ${event.with_who}</p>` : ''}
-            ${event.notes ? `<p class="event-notes">📝 ${event.notes}</p>` : ''}
-            <div class="event-actions">
-                <button onclick="editEvent(${event.id})">Edit</button>
-                <button onclick="deleteEvent(${event.id})">Delete</button>
-            </div>
-        `;
-        
-        eventsList.appendChild(eventCard);
-    });
-}
-
-// Add these login-related functions at the end of your script
 function showLoginDialog() {
     $('#loginOverlay').css('display', 'flex').fadeIn();
     $('#username').focus();
@@ -1051,16 +971,13 @@ async function handleLogin(event) {
     const formData = new FormData(event.target);
     
     try {
-        console.log('Attempting login...');
         const response = await fetch('/auth/login', {
             method: 'POST',
             body: formData
         });
-        
-        console.log('Response status:', response.status);
+
         const data = await response.json();
-        console.log('Response data:', data);
-        
+
         if (response.ok) {
             location.reload();
         } else {

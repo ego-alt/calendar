@@ -33,10 +33,6 @@ def index():
 def get_month():
     year = int(request.args.get("year"))
     month = int(request.args.get("month"))
-    # Handle year transition
-    if month == 13:
-        month = 1
-        year += 1
 
     calendar_data, mood_colors, days_with_events, days_with_marker = get_month_data(
         year, month, current_user.id if current_user.is_authenticated else None

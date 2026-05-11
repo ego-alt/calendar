@@ -1,12 +1,7 @@
 from flask import Flask
 from flask_login import LoginManager
-import logging
 from models import db, User
 from routes import auth_blueprint, event_blueprint, index_blueprint, mood_blueprint
-
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def create_app():

@@ -1,7 +1,6 @@
 import calendar
 from datetime import datetime, time, timedelta
-from models import db, User, Mood, DailyLog, Event
-from sqlalchemy.sql import func
+from models import Mood, DailyLog, Event
 
 
 def parse_event_datetime(date_str, time_str=None, is_end: bool = False):
