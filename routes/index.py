@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 from flask import Blueprint, jsonify, render_template, request
 
-from utils import get_month_data
+from utils import get_month_data, get_week_data, get_year_data
 
 from ._helpers import current_user_id
 
@@ -49,24 +49,28 @@ def get_month():
     )
 
 
+@index_blueprint.route("/get_week", methods=["GET"])
+def get_week():
+    year = int(request.args.get("year"))
+    month = int(request.args.get("month"))
+    day = int(request.args.get("day"))
+
+    week_data = get_week_data(year, month, day, current_user_id())
+
+    week_start = date.fromisoformat(week_data["week_start"])
+    week_end = week_start + timedelta(days=6)
+    if week_start.month == week_end.month:
+        label = f"{week_start.strftime('%b %d')} – {week_end.strftime('%d, %Y')}"
+    elif week_start.year == week_end.year:
+        label = f"{week_start.strftime('%b %d')} – {week_end.strftime('%b %d, %Y')}"
+    else:
+        label = f"{week_start.strftime('%b %d, %Y')} – {week_end.strftime('%b %d, %Y')}"
+
+    return jsonify({**week_data, "week_label": label, "status": "success"})
+
+
 @index_blueprint.route("/get_year", methods=["GET"])
 def get_year():
     year = int(request.args.get("year"))
-
-    months_data = []
-    for month in range(1, 13):
-        calendar_data, mood_colors, days_with_events, days_with_marker = get_month_data(
-            year, month, current_user_id()
-        )
-
-        months_data.append(
-            {
-                "month": month,
-                "calendar_data": calendar_data,
-                "mood_colors": mood_colors,
-                "days_with_events": days_with_events,
-                "days_with_marker": days_with_marker,
-            }
-        )
-
+    months_data = get_year_data(year, current_user_id())
     return jsonify({"status": "success", "year": year, "months": months_data})

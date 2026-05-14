@@ -29,6 +29,9 @@
     <button class="year-button" id="yearViewBtn">
         <i class="fas fa-calendar-alt"></i>
     </button>
+    <button class="week-button" id="weekViewBtn">
+        <i class="fas fa-calendar-week"></i>
+    </button>
     {% if current_user.is_authenticated %}
         <button class="login-button" onclick="handleLogout()">
             <i class="fas fa-door-closed"></i>
@@ -68,6 +71,7 @@
                     <div class="day next-month" data-day="{{ day }}"></div>
                 {% endfor %}
             </div>
+            <div class="week-grid" id="viewWeek" style="display: none;"></div>
         </div>
     </div>
 

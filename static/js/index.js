@@ -7,7 +7,9 @@ const CURRENT_DAY = TODAY.getDate();
 // View state (changes as user navigates)
 let viewState = {
     year: CURRENT_YEAR,
-    month: CURRENT_MONTH
+    month: CURRENT_MONTH,
+    mode: 'month',
+    weekAnchor: { year: CURRENT_YEAR, month: CURRENT_MONTH, day: CURRENT_DAY },
 };
 
 let isLoading = false;
@@ -41,6 +43,19 @@ function parseDateTime(dateTimeStr) {
     return { date: `${day}-${month}-${year}`, time: timePart };
 }
 
+/** Parse "YYYY-MM-DD HH:MM" as a local-time Date — explicit to dodge browser parsing differences. */
+function parseLocalDateTime(str) {
+    const [datePart, timePart] = str.split(' ');
+    const [y, m, d] = datePart.split('-').map(Number);
+    const [hh, mm] = (timePart || '00:00').split(':').map(Number);
+    return new Date(y, m - 1, d, hh, mm);
+}
+
+/** Format a Date as a local "YYYY-MM-DD" ISO date string. */
+function isoFromDate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /** Escape user-controlled strings for safe insertion into HTML template literals. */
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, c => ({
@@ -57,6 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('yearViewBtn').addEventListener('click', () => {
         toggleYearView();
+    });
+    document.getElementById('weekViewBtn').addEventListener('click', () => {
+        toggleWeekView();
     });
 });
 
@@ -111,7 +129,7 @@ function setupGlobalEventListeners() {
         const yearView = document.getElementById('yearView');
 
         const isInteractiveClick = event.target.closest(
-            '#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn'
+            '#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn, #weekViewBtn, .week-grid'
         );
 
         if (!isInteractiveClick) {
@@ -298,7 +316,12 @@ function handleKeyPress(event) {
 
 async function updateMonth(direction) {
     if (isLoading) return;
-    
+
+    if (viewState.mode === 'week') {
+        await shiftWeek(direction);
+        return;
+    }
+
     if (direction === 'next') {
         viewState.month++;
         if (viewState.month > 12) {
@@ -318,10 +341,28 @@ async function updateMonth(direction) {
 async function updateYear(direction) {
     if (isLoading) return;
     viewState.year += direction === 'next' ? 1 : -1;
+    if (viewState.mode === 'week') {
+        const a = viewState.weekAnchor;
+        viewState.weekAnchor = { year: a.year + (direction === 'next' ? 1 : -1), month: a.month, day: a.day };
+    }
     await updateCalendarView();
 }
 
+async function shiftWeek(direction) {
+    const a = viewState.weekAnchor;
+    const d = new Date(a.year, a.month - 1, a.day);
+    d.setDate(d.getDate() + (direction === 'next' ? 7 : -7));
+    viewState.weekAnchor = { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
+    viewState.year = viewState.weekAnchor.year;
+    viewState.month = viewState.weekAnchor.month;
+    await renderWeek();
+}
+
 async function updateCalendarView() {
+    if (viewState.mode === 'week') {
+        await renderWeek();
+        return;
+    }
     isLoading = true;
 
     try {
@@ -332,34 +373,32 @@ async function updateCalendarView() {
         document.querySelector('h1').textContent = data.month_label;
         const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         
-        // Generate the new month HTML
-        const monthHTML = `
-            <div class="month-grid" id="viewMonth">
-                ${weekdays.map(day => `
-                    <div class="weekday">${day}</div>
-                `).join('')}
-                ${data.calendar_data.prev_days.map(day => `
-                    <div class="day prev-month" data-day="${day}"></div>
-                `).join('')}
-                ${data.calendar_data.current_days.map(day => `
-                    <div class="day current-month ${(viewState.year < CURRENT_YEAR || 
-                            (viewState.year === CURRENT_YEAR && viewState.month < CURRENT_MONTH) ||
-                            (viewState.year === CURRENT_YEAR && viewState.month === CURRENT_MONTH && day < CURRENT_DAY)) 
-                            ? 'past' : ''}" 
-                         data-day="${day}" 
-                         onclick="showSidebar(${day})"
-                         ${data.mood_colors[day] ? `style="background-color: ${data.mood_colors[day]}"` : ''}>
-                        ${data.days_with_events.includes(day) ? '<div class="event-indicator"></div>' : ''}
-                        ${data.days_with_marker.includes(day) ? '<div class="marker-indicator"></div>' : ''}
-                    </div>
-                `).join('')}
-                ${data.calendar_data.next_days.map(day => `
-                    <div class="day next-month" data-day="${day}"></div>
-                `).join('')}
-            </div>
+        // Generate the new month HTML (inside #viewMonth so the sibling #viewWeek survives)
+        const monthInner = `
+            ${weekdays.map(day => `
+                <div class="weekday">${day}</div>
+            `).join('')}
+            ${data.calendar_data.prev_days.map(day => `
+                <div class="day prev-month" data-day="${day}"></div>
+            `).join('')}
+            ${data.calendar_data.current_days.map(day => `
+                <div class="day current-month ${(viewState.year < CURRENT_YEAR ||
+                        (viewState.year === CURRENT_YEAR && viewState.month < CURRENT_MONTH) ||
+                        (viewState.year === CURRENT_YEAR && viewState.month === CURRENT_MONTH && day < CURRENT_DAY))
+                        ? 'past' : ''}"
+                     data-day="${day}"
+                     onclick="showSidebar(${day})"
+                     ${data.mood_colors[day] ? `style="background-color: ${data.mood_colors[day]}"` : ''}>
+                    ${data.days_with_events.includes(day) ? '<div class="event-indicator"></div>' : ''}
+                    ${data.days_with_marker.includes(day) ? '<div class="marker-indicator"></div>' : ''}
+                </div>
+            `).join('')}
+            ${data.calendar_data.next_days.map(day => `
+                <div class="day next-month" data-day="${day}"></div>
+            `).join('')}
         `;
-        
-        document.getElementById('calendarContainer').innerHTML = monthHTML;
+
+        document.getElementById('viewMonth').innerHTML = monthInner;
         setupMonthGridListeners();
         
         // Refresh diary view if it's open
@@ -372,6 +411,177 @@ async function updateCalendarView() {
     } finally {
         isLoading = false;
     }
+}
+
+function toggleWeekView(show) {
+    const weekBtn = document.getElementById('weekViewBtn');
+    const monthGrid = document.getElementById('viewMonth');
+    const weekGrid = document.getElementById('viewWeek');
+
+    if (show === undefined) show = viewState.mode !== 'week';
+
+    if (show) {
+        if (viewState.mode !== 'week') {
+            const inDisplayedMonth =
+                viewState.year === CURRENT_YEAR && viewState.month === CURRENT_MONTH;
+            viewState.weekAnchor = {
+                year: viewState.year,
+                month: viewState.month,
+                day: inDisplayedMonth ? CURRENT_DAY : 1,
+            };
+        }
+        viewState.mode = 'week';
+        monthGrid.style.display = 'none';
+        weekGrid.style.display = '';
+        weekBtn.classList.add('active');
+        renderWeek();
+    } else {
+        viewState.mode = 'month';
+        viewState.year = viewState.weekAnchor.year;
+        viewState.month = viewState.weekAnchor.month;
+        monthGrid.style.display = '';
+        weekGrid.style.display = 'none';
+        weekBtn.classList.remove('active');
+        updateCalendarView();
+    }
+}
+
+async function renderWeek() {
+    if (isLoading) return;
+    isLoading = true;
+    try {
+        const a = viewState.weekAnchor;
+        const response = await fetch(`/get_week?year=${a.year}&month=${a.month}&day=${a.day}`);
+        const data = await response.json();
+        if (data.status !== 'success') {
+            console.error('Failed to load week data');
+            return;
+        }
+
+        document.querySelector('h1').textContent = data.week_label;
+
+        const weekRoot = document.getElementById('viewWeek');
+        const hourHRaw = getComputedStyle(weekRoot).getPropertyValue('--hour-h').trim();
+        const HOUR_H = parseFloat(hourHRaw) || 40;
+
+        const todayISO = `${CURRENT_YEAR}-${String(CURRENT_MONTH).padStart(2, '0')}-${String(CURRENT_DAY).padStart(2, '0')}`;
+        const isoByIndex = data.days.map(d => d.date);
+
+        const dayHeaders = data.days.map(d => `
+            <div class="week-day-header ${d.date === todayISO ? 'today' : ''}"
+                 onclick="openDayFromWeek(${d.year}, ${d.month}, ${d.day})">
+                <div class="week-day-weekday">${d.weekday}</div>
+                <div class="week-day-date">${d.day}</div>
+            </div>
+        `).join('');
+
+        const allDayEvents = [];
+        const timedEventsByISO = {};
+        data.events.forEach(e => {
+            const start = parseLocalDateTime(e.start_time);
+            const end = e.end_time ? parseLocalDateTime(e.end_time) : new Date(start);
+            const startISO = isoFromDate(start);
+            const endISO = isoFromDate(end);
+            const isAllDay = isAllDayEvent(e);
+            const isMultiDay = startISO !== endISO;
+            const enriched = { ...e, _start: start, _end: end, _startISO: startISO, _endISO: endISO };
+            if (isAllDay || isMultiDay) {
+                allDayEvents.push(enriched);
+            } else {
+                (timedEventsByISO[startISO] ||= []).push(enriched);
+            }
+        });
+
+        const allDayBars = allDayEvents.map(e => {
+            const startIdxRaw = isoByIndex.indexOf(e._startISO);
+            const endIdxRaw = isoByIndex.indexOf(e._endISO);
+            const startIdx = startIdxRaw === -1 ? 0 : startIdxRaw;
+            const endIdx = endIdxRaw === -1 ? 6 : endIdxRaw;
+            const colStart = startIdx + 2;
+            const span = Math.max(1, endIdx - startIdx + 1);
+            const anchorDay = data.days[startIdx];
+            return `
+                <div class="week-allday-block"
+                     style="grid-column: ${colStart} / span ${span};"
+                     onclick="openDayFromWeek(${anchorDay.year}, ${anchorDay.month}, ${anchorDay.day})"
+                     title="${escapeHtml(e.name)}">
+                    ${escapeHtml(e.name)}
+                </div>
+            `;
+        }).join('');
+
+        const dayColumns = data.days.map(d => {
+            const iso = d.date;
+            const events = timedEventsByISO[iso] || [];
+            const moodColor = data.mood_colors[iso];
+            const hasMarker = data.markers.includes(iso);
+            const isToday = iso === todayISO;
+            const blocks = events.map(e => {
+                const startMins = e._start.getHours() * 60 + e._start.getMinutes();
+                const endMins = e.end_time
+                    ? (e._end.getHours() * 60 + e._end.getMinutes())
+                    : startMins + 30;
+                const durMins = Math.max(20, endMins - startMins);
+                const top = (startMins / 60) * HOUR_H;
+                const height = (durMins / 60) * HOUR_H;
+                const timeLabel = e.end_time
+                    ? `${formatTimeOfDay(e._start)} - ${formatTimeOfDay(e._end)}`
+                    : formatTimeOfDay(e._start);
+                return `
+                    <div class="week-event-block" style="top: ${top}px; height: ${height}px;"
+                         onclick="event.stopPropagation(); openDayFromWeek(${d.year}, ${d.month}, ${d.day})"
+                         title="${escapeHtml(e.name)}">
+                        <div class="week-event-time">${timeLabel}</div>
+                        <div class="week-event-name">${escapeHtml(e.name)}</div>
+                    </div>
+                `;
+            }).join('');
+            return `
+                <div class="week-day-column ${isToday ? 'today' : ''}"
+                     data-iso="${iso}"
+                     ${moodColor ? `style="background-color: ${moodColor};"` : ''}
+                     onclick="openDayFromWeek(${d.year}, ${d.month}, ${d.day})">
+                    ${blocks}
+                    ${hasMarker ? '<div class="marker-indicator week-marker"></div>' : ''}
+                </div>
+            `;
+        }).join('');
+
+        const hourLabels = Array.from({ length: 24 }, (_, h) =>
+            `<div class="week-hour-label">${String(h).padStart(2, '0')}:00</div>`
+        ).join('');
+
+        weekRoot.innerHTML = `
+            <div class="week-grid-header">
+                <div class="week-corner"></div>
+                ${dayHeaders}
+            </div>
+            ${allDayEvents.length > 0 ? `
+                <div class="week-allday-row">
+                    <div class="week-allday-label">all-day</div>
+                    ${allDayBars}
+                </div>
+            ` : ''}
+            <div class="week-grid-body">
+                <div class="week-time-gutter">${hourLabels}</div>
+                ${dayColumns}
+            </div>
+        `;
+
+        const body = weekRoot.querySelector('.week-grid-body');
+        if (body) body.scrollTop = 7 * HOUR_H;
+    } catch (error) {
+        console.error('Error loading week:', error);
+    } finally {
+        isLoading = false;
+    }
+}
+
+function openDayFromWeek(year, month, day) {
+    viewState.year = year;
+    viewState.month = month;
+    viewState.weekAnchor = { year, month, day };
+    showSidebar(day);
 }
 
 async function showSidebar(day) {
