@@ -4,6 +4,7 @@ from datetime import datetime
 
 from flask import Blueprint, current_app, jsonify, request, send_from_directory
 from flask_login import current_user
+from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
 from models import Attachment, DailyLog, db
@@ -24,7 +25,10 @@ def _attachment_payload(attachment):
 
 def _get_owned_attachment(attachment_id):
     return (
-        Attachment.query.join(DailyLog)
+        Attachment.query.options(
+            joinedload(Attachment.daily_log).joinedload(DailyLog.attachments)
+        )
+        .join(DailyLog)
         .filter(Attachment.id == attachment_id, DailyLog.user_id == current_user.id)
         .first()
     )
@@ -38,7 +42,11 @@ def list_attachments():
     day = int(request.args.get("day"))
     date = datetime(year, month, day).date()
 
-    daily_log = DailyLog.query.filter_by(user_id=current_user.id, date=date).first()
+    daily_log = (
+        DailyLog.query.options(joinedload(DailyLog.attachments))
+        .filter_by(user_id=current_user.id, date=date)
+        .first()
+    )
     attachments = daily_log.attachments if daily_log else []
     return jsonify({
         "status": "success",

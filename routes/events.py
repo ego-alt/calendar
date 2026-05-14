@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, jsonify, request
 from flask_login import current_user
+from sqlalchemy import func
+from sqlalchemy.orm import selectinload
 
 from models import Event, SubEvent, db
 from utils import parse_event_datetime
@@ -12,12 +14,14 @@ event_blueprint = Blueprint("events", __name__, url_prefix="/events")
 
 
 def retrieve_events_within_range(start_date, end_date):
-    """Query events for the current user and specified dates."""
+    """Query events for the current user and specified dates (subevents eager-loaded)."""
+    effective_end = func.coalesce(Event.end_time, Event.start_time)
     return (
-        Event.query.filter(
+        Event.query.options(selectinload(Event.subevents))
+        .filter(
             Event.user_id == current_user.id,
             Event.start_time < end_date,
-            Event.end_time >= start_date,
+            effective_end >= start_date,
         )
         .order_by(Event.start_time)
         .all()
@@ -105,15 +109,12 @@ def events():
 
         events_data = []
         for event in events:
-            subevents = (
-                SubEvent.query.filter(
-                    SubEvent.event_id == event.id,
-                    SubEvent.start_time >= start_date,
-                    SubEvent.start_time < end_date,
-                )
-                .order_by(SubEvent.start_time)
-                .all()
-            )
+            subevents = [
+                s
+                for s in event.subevents
+                if start_date <= s.start_time < end_date
+            ]
+            subevents.sort(key=lambda s: s.start_time)
 
             subevents_data = [retrieve_event_data(subevent) for subevent in subevents]
             events_data.append({**retrieve_event_data(event), "subevents": subevents_data})
@@ -192,11 +193,7 @@ def month_events():
     end_date = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
     events_data = []
     for event in retrieve_events_within_range(start_date, end_date):
-        subevents = (
-            SubEvent.query.filter_by(event_id=event.id)
-            .order_by(SubEvent.start_time)
-            .all()
-        )
+        subevents = sorted(event.subevents, key=lambda s: s.start_time)
         event_data = retrieve_event_data(event)
         event_data["subevents"] = [retrieve_event_data(s) for s in subevents]
         events_data.append(event_data)
