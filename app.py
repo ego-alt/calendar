@@ -37,7 +37,7 @@ def create_app(config=None):
 
     pathlib.Path(app.config["ATTACHMENT_DIR"]).mkdir(parents=True, exist_ok=True)
 
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_prefix=1)
 
     @app.get("/healthz")
     def healthz():
