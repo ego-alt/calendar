@@ -143,6 +143,8 @@
         <div class="year-content" id="yearContent"></div>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app_root.js') }}"></script>
+    <script>window.APP_ROOT = "{{ request.script_root }}";</script>
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 </body>
 </html>

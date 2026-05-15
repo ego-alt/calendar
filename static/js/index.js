@@ -91,7 +91,7 @@ function setupGlobalEventListeners() {
                 const color = window.getComputedStyle(option).backgroundColor;
 
                 try {
-                    const response = await fetch('/mood/update', {
+                    const response = await fetch(appUrl('/mood/update'), {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -206,7 +206,7 @@ function setupMonthGridListeners() {
             if (moodPickerMenuOpen && moodPickerSelectedDay === day && day.style.backgroundColor) {
                 // Clear the mood
                 try {
-                    const response = await fetch('/mood/update', {
+                    const response = await fetch(appUrl('/mood/update'), {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -259,7 +259,7 @@ function setupMonthGridListeners() {
             e.stopPropagation();
 
             try {
-                const response = await fetch('/mood/marker/toggle', {
+                const response = await fetch(appUrl('/mood/marker/toggle'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -366,7 +366,7 @@ async function updateCalendarView() {
     isLoading = true;
 
     try {
-        const response = await fetch(`/get_month?year=${viewState.year}&month=${viewState.month}`);
+        const response = await fetch(appUrl(`/get_month?year=${viewState.year}&month=${viewState.month}`));
         const data = await response.json();
         
         // Update main header
@@ -451,7 +451,7 @@ async function renderWeek() {
     isLoading = true;
     try {
         const a = viewState.weekAnchor;
-        const response = await fetch(`/get_week?year=${a.year}&month=${a.month}&day=${a.day}`);
+        const response = await fetch(appUrl(`/get_week?year=${a.year}&month=${a.month}&day=${a.day}`));
         const data = await response.json();
         if (data.status !== 'success') {
             console.error('Failed to load week data');
@@ -595,8 +595,8 @@ async function showSidebar(day) {
     try {
         const dayQuery = `year=${viewState.year}&month=${viewState.month}&day=${day}`;
         const [eventsResponse, attachmentsResponse] = await Promise.all([
-            fetch(`/events?${dayQuery}`),
-            fetch(`/attachments?${dayQuery}`),
+            fetch(appUrl(`/events?${dayQuery}`)),
+            fetch(appUrl(`/attachments?${dayQuery}`)),
         ]);
         const data = await eventsResponse.json();
         const attachmentsData = await attachmentsResponse.json();
@@ -791,10 +791,10 @@ function toggleSubEventForm(show, parentDate = null, eventId = null, subEventId 
             
             // Determine if this is an edit or a new subevent
             const method = subEventId ? 'PUT' : 'POST';
-            const url = subEventId ? 
-                `/events/subevents/${subEventId}` : 
-                `/events/${eventId}/subevents`;
-            
+            const url = subEventId ?
+                appUrl(`/events/subevents/${subEventId}`) :
+                appUrl(`/events/${eventId}/subevents`);
+
             fetch(url, {
                 method,
                 headers: {
@@ -833,7 +833,7 @@ function insertFormIntoEventCard(eventCard, formContainer) {
 
 async function populateSubEventForm(eventId, subEventId) {
     try {
-        const response = await fetch(`/events/subevents/${subEventId}`);
+        const response = await fetch(appUrl(`/events/subevents/${subEventId}`));
         const data = await response.json();
 
         if (data.status === 'success') {
@@ -898,8 +898,8 @@ document.getElementById('newEventForm').addEventListener('submit', async (e) => 
     try {
         const eventId = form.dataset.eventId;
         const method = eventId ? 'PUT' : 'POST';
-        const url = eventId ? `/events/${eventId}` : '/events';
-        
+        const url = eventId ? appUrl(`/events/${eventId}`) : appUrl('/events');
+
         const response = await fetch(url, {
             method,
             headers: {
@@ -995,7 +995,7 @@ async function editEvent(eventId) {
         };
         
         try {
-            const response = await fetch(`/events/${eventId}`, {
+            const response = await fetch(appUrl(`/events/${eventId}`), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1032,7 +1032,7 @@ function closeEventEditForm() {
 
 async function populateEventEditForm(eventId) {
     try {
-        const response = await fetch(`/events?year=${viewState.year}&month=${viewState.month}&day=${currentOpenDay}`);
+        const response = await fetch(appUrl(`/events?year=${viewState.year}&month=${viewState.month}&day=${currentOpenDay}`));
         const data = await response.json();
         
         if (data.status === 'success') {
@@ -1061,7 +1061,7 @@ async function populateEventEditForm(eventId) {
 
 async function deleteEvent(eventId) {
     try {
-        const response = await fetch(`/events/${eventId}`, {
+        const response = await fetch(appUrl(`/events/${eventId}`), {
             method: 'DELETE'
         });
         
@@ -1161,7 +1161,7 @@ async function handleLogin(event) {
     const formData = new FormData(event.target);
     
     try {
-        const response = await fetch('/auth/login', {
+        const response = await fetch(appUrl('/auth/login'), {
             method: 'POST',
             body: formData
         });
@@ -1181,7 +1181,7 @@ async function handleLogin(event) {
 
 async function handleLogout() {
     try {
-        const response = await fetch('/auth/logout');
+        const response = await fetch(appUrl('/auth/logout'));
         if (response.ok) {
             location.reload();
         }
@@ -1201,11 +1201,11 @@ function renderAttachmentsSection(attachments) {
         const filename = escapeHtml(a.filename);
         const isImage = a.mime_type && a.mime_type.startsWith('image/');
         const preview = isImage
-            ? `<img src="/attachments/${a.id}" alt="${filename}" loading="lazy">`
+            ? `<img src="${appUrl(`/attachments/${a.id}`)}" alt="${filename}" loading="lazy">`
             : `<div class="attachment-icon"><i class="fas fa-file"></i><span>${filename}</span></div>`;
         return `
             <div class="attachment-tile" data-attachment-id="${a.id}">
-                <a class="attachment-link" href="/attachments/${a.id}" target="_blank" title="${filename}">
+                <a class="attachment-link" href="${appUrl(`/attachments/${a.id}`)}" target="_blank" title="${filename}">
                     ${preview}
                 </a>
                 <i class="fas fa-times attachment-delete" onclick="deleteAttachment(${a.id}, event)" title="Delete"></i>
@@ -1228,7 +1228,7 @@ async function handleAttachmentUpload(event) {
         formData.append('day', currentOpenDay);
 
         try {
-            const response = await fetch('/attachments', { method: 'POST', body: formData });
+            const response = await fetch(appUrl('/attachments'), { method: 'POST', body: formData });
             if (!response.ok) {
                 const message = response.status === 413
                     ? `File too large (max 10 MB): ${file.name}`
@@ -1250,7 +1250,7 @@ async function deleteAttachment(attachmentId, event) {
     event.preventDefault();
 
     try {
-        const response = await fetch(`/attachments/${attachmentId}`, { method: 'DELETE' });
+        const response = await fetch(appUrl(`/attachments/${attachmentId}`), { method: 'DELETE' });
         if (response.ok) {
             showSidebar(currentOpenDay);
         } else {
@@ -1263,7 +1263,7 @@ async function deleteAttachment(attachmentId, event) {
 
 async function deleteSubEvent(subEventId, eventId) {
     try {
-        const response = await fetch(`/events/subevents/${subEventId}`, {
+        const response = await fetch(appUrl(`/events/subevents/${subEventId}`), {
             method: 'DELETE'
         });
         
@@ -1325,7 +1325,7 @@ async function loadMonthEvents() {
     diaryContent.innerHTML = '<div class="loading-indicator">Loading events...</div>';
     
     try {
-        const response = await fetch(`/events/month?year=${viewState.year}&month=${viewState.month}`);
+        const response = await fetch(appUrl(`/events/month?year=${viewState.year}&month=${viewState.month}`));
         const data = await response.json();
         
         if (data.status === 'success') {
@@ -1461,7 +1461,7 @@ async function loadYearView(year) {
     yearContent.innerHTML = '<div class="loading-indicator">Loading year data...</div>';
     
     try {
-        const response = await fetch(`/get_year?year=${year}`);
+        const response = await fetch(appUrl(`/get_year?year=${year}`));
         const data = await response.json();
         
         if (data.status === 'success') {

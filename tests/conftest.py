@@ -7,10 +7,13 @@ from models import Mood, User, db
 
 @pytest.fixture
 def app(tmp_path):
+    attachment_dir = tmp_path / "attachments"
+    attachment_dir.mkdir()
     app = create_app({
         "SQLALCHEMY_DATABASE_URI": f"sqlite:///{tmp_path/'test.db'}",
         "TESTING": True,
         "SECRET_KEY": "test-secret",
+        "ATTACHMENT_DIR": str(attachment_dir),
     })
     with app.app_context():
         db.create_all()

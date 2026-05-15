@@ -53,6 +53,26 @@ uv run ruff check .
 uv run pytest
 ```
 
+## Home stack (with dashboard)
+
+Served at `/calendar/` behind the [dashboard](../dashboard) nginx proxy. Set:
+
+```bash
+AUTH_PROXY_HEADER=X-Forwarded-User
+APPLICATION_ROOT=/calendar
+```
+
+Dashboard handles login; this app trusts `X-Forwarded-User` and stores events and
+mood data against local `users` rows. Omit both variables for standalone dev.
+
+After adding a user in dashboard:
+
+```bash
+cd ../dashboard && uv run python scripts/sync_household_users.py
+```
+
+The DB lives at `instance/events.db` (bind-mounted in compose).
+
 ## Schema changes
 
 After editing `models.py`:
