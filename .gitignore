@@ -17,3 +17,4 @@ instance/
 
 # OS
 .DS_Store
+nohup.out
