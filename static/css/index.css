@@ -104,6 +104,8 @@ h1, h2, .form-header, .event-form-header, .subevent-form-header {
 
 h1 {
     font-size: var(--text-xl);
+    font-weight: 500;
+    letter-spacing: -0.01em;
     margin: 0 0 20px;
 }
 
