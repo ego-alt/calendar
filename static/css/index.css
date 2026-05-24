@@ -32,9 +32,12 @@
     --radius-md: 8px;
     --radius-lg: 16px;
     --radius-pill: 9999px;
-    --text-sm: 0.875rem;
-    --text-base: 1rem;
-    --text-lg: 1.25rem;
+    --text-sm: 0.875rem;       /* 14px — secondary */
+    --text-base: 1rem;         /* 16px — body */
+    --text-lg: 1.125rem;       /* 18px — emphasized body */
+    --text-xs: 0.75rem;        /* 12px — captions, tiny labels */
+    --text-xl: 1.25rem;        /* 20px — h2 */
+    --text-2xl: 2rem;          /* 32px — h1 */
     --font-sans: 'Arial', sans-serif;
     --font-mono: 'SF Mono', Menlo, Consolas, monospace;
 }
@@ -96,7 +99,7 @@ h1, h2, .form-header, .event-form-header, .subevent-form-header {
 .sidebar-header, .diary-header h2, .year-header h2 {
     color: var(--color-text-primary);
     margin-bottom: 20px;
-    font-size: 1.2em;
+    font-size: var(--text-xl);
     text-align: left;
 }
 .sidebar-header {
@@ -106,7 +109,7 @@ h1, h2, .form-header, .event-form-header, .subevent-form-header {
 }
 
 h1 {
-    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-size: var(--text-2xl);
     margin: 0 0 20px;
 }
 
@@ -116,18 +119,18 @@ h2 {
 }
 
 .form-header {
-    font-size: 1.1em;
+    font-size: var(--text-lg);
     padding-top: 20px;
     border-top: 1px solid var(--color-border);
     text-align: left;
 }
 
 .sidebar-header, .diary-header, .year-header {
-    font-size: 1.2em;
+    font-size: var(--text-xl);
 }
 
 .event-form-header, .subevent-form-header {
-    font-size: 0.95em;
+    font-size: var(--text-sm);
     font-weight: bold;
     border-bottom: 1px solid var(--color-border);
     padding-bottom: 5px;
@@ -187,7 +190,7 @@ h2 {
     cursor: pointer;
     color: var(--color-text-faint);
     transition: color 0.2s;
-    font-size: 0.85em;
+    font-size: var(--text-sm);
     padding: 4px 6px;
     line-height: 1;
 }
@@ -206,11 +209,11 @@ h2 {
     box-sizing: border-box;
 }
 .attachment-icon i {
-    font-size: 1.4em;
+    font-size: var(--text-xl);
     margin-bottom: 4px;
 }
 .attachment-icon span {
-    font-size: 0.65em;
+    font-size: var(--text-xs);
     text-align: center;
     word-break: break-all;
     overflow: hidden;
@@ -227,7 +230,7 @@ h2 {
     background: var(--color-bg-overlay);
     border-radius: var(--radius-pill);
     color: var(--color-text-primary);
-    font-size: 0.7em;
+    font-size: var(--text-xs);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -268,7 +271,7 @@ h2 {
 }
 
 .subevents-loading, .subevents-error {
-    font-size: 0.8em;
+    font-size: var(--text-sm);
     padding: 5px 0;
 }
 
@@ -303,7 +306,7 @@ h2 {
 }
 
 .subevent-actions i {
-    font-size: 0.85em;
+    font-size: var(--text-sm);
 }
 
 .event-actions i:hover, .subevent-actions i:hover {
@@ -347,14 +350,14 @@ h2 {
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
-    font-size: clamp(0.8rem, 2vw, 1rem);
+    font-size: var(--text-base);
 }
 .day::after {
     content: attr(data-day);
     position: absolute;
     top: 5px;
     right: 5px;
-    font-size: clamp(0.6rem, 1.5vw, 0.7rem);
+    font-size: var(--text-xs);
     color: var(--color-text-faint);
     opacity: 0.8;
 }
@@ -372,7 +375,7 @@ h2 {
 .weekday {
     text-align: center;
     padding: 5px;
-    font-size: clamp(0.7rem, 1.8vw, 0.8rem);
+    font-size: var(--text-xs);
     color: var(--color-text-muted);
 }
 .color-picker {
@@ -427,7 +430,7 @@ h2 {
     transition: opacity 0.2s ease;
     color: var(--color-text-faint);
     cursor: pointer;
-    font-size: 0.9em;
+    font-size: var(--text-sm);
 }
 .day:hover .eye-icon {
     opacity: 1;
@@ -500,7 +503,7 @@ h2 {
 }
 .event-time, .diary-event-time {
     color: var(--color-text-muted);
-    font-size: 0.9em;
+    font-size: var(--text-sm);
     margin-bottom: 5px;
 }
 .event-name, .diary-event-name {
@@ -510,7 +513,7 @@ h2 {
 }
 .event-details, .subevent-details, .diary-event-detail {
     color: var(--color-text-faint);
-    font-size: 0.9em;
+    font-size: var(--text-sm);
 }
 /* Form text fields — base chrome via .input; sub-event/edit forms tighten the
  * type size to fit the narrower nested panels. */
@@ -642,11 +645,11 @@ h2 {
     border-left: 2px solid var(--color-text-muted);
     position: relative;
     margin-bottom: 3px;
-    font-size: 0.9em;
+    font-size: var(--text-sm);
 }
 .subevent-time {
     color: var(--color-text-muted);
-    font-size: 0.85em;
+    font-size: var(--text-sm);
     margin-bottom: 3px;
 }
 .subevent-name {
@@ -684,7 +687,7 @@ h2 {
 }
 .diary-subevent-title {
     color: var(--color-text-secondary);
-    font-size: 0.85em;
+    font-size: var(--text-sm);
     font-weight: bold;
     text-decoration: underline;
     text-underline-offset: 2px;
@@ -692,7 +695,7 @@ h2 {
 }
 .diary-subevent-content {
     color: var(--color-text-faint);
-    font-size: 0.82em;
+    font-size: var(--text-sm);
     white-space: pre-line;
 }
 
@@ -775,14 +778,14 @@ h2 {
 }
 .year-weekday {
     text-align: center;
-    font-size: 0.6em;
+    font-size: var(--text-xs);
     color: var(--color-text-muted);
 }
 .year-day {
     aspect-ratio: 1;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    font-size: 0.6em;
+    font-size: var(--text-xs);
     position: relative;
     display: flex;
     align-items: center;
@@ -791,7 +794,7 @@ h2 {
 .year-day::after {
     content: attr(data-day);
     position: absolute;
-    font-size: 1em;
+    font-size: var(--text-base);
     color: var(--color-text-faint);
 }
 
@@ -818,7 +821,7 @@ h2 {
     text-align: center;
     padding: 6px 2px;
     cursor: pointer;
-    font-size: 0.85em;
+    font-size: var(--text-sm);
     color: var(--color-text-muted);
     border-right: 1px solid var(--color-border-soft);
     transition: background-color 0.2s ease;
@@ -836,11 +839,11 @@ h2 {
     display: inline-block;
 }
 .week-day-weekday {
-    font-size: 0.85em;
+    font-size: var(--text-sm);
     text-transform: uppercase;
 }
 .week-day-date {
-    font-size: 1.2em;
+    font-size: var(--text-xl);
     color: var(--color-text-primary);
     margin-top: 2px;
 }
@@ -853,7 +856,7 @@ h2 {
     gap: 2px;
 }
 .week-allday-label {
-    font-size: 0.65em;
+    font-size: var(--text-xs);
     color: var(--color-text-faint);
     text-align: right;
     padding-right: 6px;
@@ -864,7 +867,7 @@ h2 {
     color: var(--color-text-primary);
     border-radius: var(--radius-sm);
     padding: 2px 6px;
-    font-size: 0.75em;
+    font-size: var(--text-xs);
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -888,7 +891,7 @@ h2 {
 }
 .week-hour-label {
     height: var(--hour-h);
-    font-size: 0.65em;
+    font-size: var(--text-xs);
     color: var(--color-text-faint);
     text-align: right;
     padding-right: 6px;
@@ -932,7 +935,7 @@ h2 {
     background: var(--color-bg-overlay-strong);
 }
 .week-event-time {
-    font-size: 0.65em;
+    font-size: var(--text-xs);
     color: var(--color-text-muted);
     margin-bottom: 1px;
     white-space: nowrap;
@@ -940,7 +943,7 @@ h2 {
     text-overflow: ellipsis;
 }
 .week-event-name {
-    font-size: 0.75em;
+    font-size: var(--text-xs);
     color: var(--color-text-primary);
     font-weight: bold;
     line-height: 1.1;
@@ -965,10 +968,10 @@ h2 {
         --gutter-w: 32px;
     }
     .week-day-weekday {
-        font-size: 0.7em;
+        font-size: var(--text-xs);
     }
     .week-day-date {
-        font-size: 1em;
+        font-size: var(--text-base);
     }
     .week-event-name {
         -webkit-line-clamp: 1;
