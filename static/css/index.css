@@ -32,7 +32,7 @@
     --text-base: 1rem;         /* 16px — body */
     --text-lg: 1.25rem;        /* 20px — h2, emphasis */
     --text-xl: 2rem;           /* 32px — h1 */
-    --font-sans: Arial, Helvetica, sans-serif;
+    --font-sans: 'Inter', Arial, Helvetica, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -104,7 +104,7 @@ h1, h2, .form-header, .event-form-header, .subevent-form-header {
 
 h1 {
     font-size: var(--text-xl);
-    font-weight: 500;
+    font-weight: 550;
     letter-spacing: -0.01em;
     margin: 0 0 20px;
 }
