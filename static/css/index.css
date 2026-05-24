@@ -9,15 +9,11 @@
     --color-bg-overlay-strong: rgba(60, 56, 54, 0.95);
     --color-border: #504945;
     --color-border-soft: rgba(80, 73, 69, 0.5);
-    --color-border-strong: #928374;
     --color-text-primary: #ebdbb2;
     --color-text-secondary: #d5c4a1;
     --color-text-muted: #a89984;
-    --color-text-faint: #928374;
     --color-accent: #689d6a;
     --color-accent-hover: #8ec07c;
-    --color-accent-soft: rgba(104, 157, 106, 0.35);
-    --color-accent-soft-hover: rgba(104, 157, 106, 0.55);
     --color-danger: #cc241d;
     --color-danger-hover: #fb4934;
     --color-stripe: rgba(235, 219, 178, 0.03);
@@ -60,7 +56,7 @@
 .btn-secondary:hover { background: var(--color-bg-inset); color: var(--color-text-primary); }
 .btn-danger    { background: var(--color-danger); color: var(--color-text-primary); }
 .btn-danger:hover    { background: var(--color-danger-hover); color: var(--color-bg-base); }
-.btn-ghost     { background: transparent; color: var(--color-text-faint); padding: var(--space-2); }
+.btn-ghost     { background: transparent; color: var(--color-text-muted); padding: var(--space-2); }
 .btn-ghost:hover     { color: var(--color-text-primary); }
 
 /* Input primitive — monospace is deliberate (terminal flavor). */
@@ -75,7 +71,7 @@
     transition: border-color 0.2s ease;
 }
 .input:focus { outline: none; border-color: var(--color-accent); }
-.input::placeholder { color: var(--color-text-faint); }
+.input::placeholder { color: var(--color-text-muted); }
 
 body {
     background-color: var(--color-bg-base);
@@ -186,7 +182,7 @@ h2 {
 }
 .attachment-upload-btn {
     cursor: pointer;
-    color: var(--color-text-faint);
+    color: var(--color-text-muted);
     transition: color 0.2s;
     font-size: var(--text-sm);
     padding: 4px 6px;
@@ -259,7 +255,7 @@ h2 {
 }
 
 .loading-indicator, .error-message, .no-events, .subevents-loading, .subevents-error {
-    color: var(--color-text-faint);
+    color: var(--color-text-muted);
     text-align: center;
     font-style: italic;
 }
@@ -299,7 +295,7 @@ h2 {
 
 .event-actions i, .subevent-actions i {
     cursor: pointer;
-    color: var(--color-text-faint);
+    color: var(--color-text-muted);
     transition: color 0.2s;
 }
 
@@ -340,7 +336,7 @@ h2 {
 }
 .day {
     aspect-ratio: 1;
-    border: 1px solid var(--color-border-strong);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     display: flex;
     align-items: center;
@@ -356,7 +352,7 @@ h2 {
     top: 5px;
     right: 5px;
     font-size: var(--text-sm);
-    color: var(--color-text-faint);
+    color: var(--color-text-muted);
     opacity: 0.8;
 }
 .day:hover {
@@ -426,7 +422,7 @@ h2 {
     left: 5px;
     opacity: 0;
     transition: opacity 0.2s ease;
-    color: var(--color-text-faint);
+    color: var(--color-text-muted);
     cursor: pointer;
     font-size: var(--text-sm);
 }
@@ -510,7 +506,7 @@ h2 {
     margin-bottom: 8px;
 }
 .event-details, .subevent-details, .diary-event-detail {
-    color: var(--color-text-faint);
+    color: var(--color-text-muted);
     font-size: var(--text-sm);
 }
 /* Form text fields — base chrome via .input; sub-event/edit forms tighten the
@@ -692,7 +688,7 @@ h2 {
     margin-bottom: 6px;
 }
 .diary-subevent-content {
-    color: var(--color-text-faint);
+    color: var(--color-text-muted);
     font-size: var(--text-sm);
     white-space: pre-line;
 }
@@ -748,7 +744,7 @@ h2 {
         transform: translateX(-50%);
         width: 40px;
         height: 4px;
-        background-color: var(--color-text-faint);
+        background-color: var(--color-text-muted);
         border-radius: 2px;
         cursor: grab;
     }
@@ -793,7 +789,7 @@ h2 {
     content: attr(data-day);
     position: absolute;
     font-size: var(--text-base);
-    color: var(--color-text-faint);
+    color: var(--color-text-muted);
 }
 
 /* Week view */
@@ -829,7 +825,7 @@ h2 {
 }
 .week-day-header.today .week-day-date {
     color: var(--color-text-primary);
-    background: var(--color-accent-soft);
+    background: var(--color-accent-hover);
     border-radius: var(--radius-pill);
     width: 24px;
     height: 24px;
@@ -855,13 +851,13 @@ h2 {
 }
 .week-allday-label {
     font-size: var(--text-sm);
-    color: var(--color-text-faint);
+    color: var(--color-text-muted);
     text-align: right;
     padding-right: 6px;
     align-self: center;
 }
 .week-allday-block {
-    background: var(--color-accent-soft);
+    background: var(--color-accent-hover);
     color: var(--color-text-primary);
     border-radius: var(--radius-sm);
     padding: 2px 6px;
@@ -890,7 +886,7 @@ h2 {
 .week-hour-label {
     height: var(--hour-h);
     font-size: var(--text-sm);
-    color: var(--color-text-faint);
+    color: var(--color-text-muted);
     text-align: right;
     padding-right: 6px;
     line-height: 1;
