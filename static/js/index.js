@@ -674,7 +674,7 @@ async function showSidebar(day) {
             }
             
             html += `</div>`;
-            html += `<button class="add-event-btn" onclick="toggleEventForm(true)">Add Event</button>`;
+            html += `<button class="add-event-btn btn btn-primary" onclick="toggleEventForm(true)">Add Event</button>`;
             html += renderAttachmentsSection(attachments);
             sidebarContent.innerHTML = html;
         }
@@ -715,21 +715,21 @@ function toggleSubEventForm(show, parentDate = null, eventId = null, subEventId 
         formContainer.innerHTML = `
             <div class="subevent-form-header">${headerText}</div>
             <form id="newSubEventForm" data-event-id="${eventId}" ${isEdit ? `data-subevent-id="${subEventId}"` : ''}>
-                <input type="text" id="subEventName" placeholder="Subevent Name" required>
+                <input class="input" type="text" id="subEventName" placeholder="Subevent Name" required>
                 <div class="form-row">
-                    <input type="text" id="subStartDate" class="date-input" placeholder="DD-MM-YYYY" required>
-                    <input type="text" id="subStartTime" class="time-input" placeholder="HH:MM">
+                    <input type="text" id="subStartDate" class="input date-input" placeholder="DD-MM-YYYY" required>
+                    <input type="text" id="subStartTime" class="input time-input" placeholder="HH:MM">
                 </div>
                 <div class="form-row">
-                    <input type="text" id="subEndDate" class="date-input" placeholder="DD-MM-YYYY">
-                    <input type="text" id="subEndTime" class="time-input" placeholder="HH:MM">
+                    <input type="text" id="subEndDate" class="input date-input" placeholder="DD-MM-YYYY">
+                    <input type="text" id="subEndTime" class="input time-input" placeholder="HH:MM">
                 </div>
-                <input type="text" id="subEventWith" placeholder="Who">
-                <input type="text" id="subEventLocation" placeholder="Where">
+                <input class="input" type="text" id="subEventWith" placeholder="Who">
+                <input class="input" type="text" id="subEventLocation" placeholder="Where">
                 <textarea id="subEventNotes" placeholder="Notes"></textarea>
                 <div class="form-buttons">
-                    <button type="button" class="cancel-btn" onclick="toggleSubEventForm(false)">Cancel</button>
-                    <button type="button" class="save-btn" id="saveSubEventBtn">Save</button>
+                    <button type="button" class="cancel-btn btn btn-secondary" onclick="toggleSubEventForm(false)">Cancel</button>
+                    <button type="button" class="save-btn btn btn-primary" id="saveSubEventBtn">Save</button>
                 </div>
             </form>
         `;
@@ -940,21 +940,21 @@ async function editEvent(eventId) {
     formContainer.innerHTML = `
         <div class="event-form-header">Edit Event</div>
         <form id="editEventForm" data-event-id="${eventId}">
-            <input type="text" id="inlineEventName" placeholder="Event Name" required>
+            <input class="input" type="text" id="inlineEventName" placeholder="Event Name" required>
             <div class="form-row">
-                <input type="text" id="inlineStartDate" class="date-input" placeholder="DD-MM-YYYY" required>
-                <input type="text" id="inlineStartTime" class="time-input" placeholder="HH:MM">
+                <input type="text" id="inlineStartDate" class="input date-input" placeholder="DD-MM-YYYY" required>
+                <input type="text" id="inlineStartTime" class="input time-input" placeholder="HH:MM">
             </div>
             <div class="form-row">
-                <input type="text" id="inlineEndDate" class="date-input" placeholder="DD-MM-YYYY">
-                <input type="text" id="inlineEndTime" class="time-input" placeholder="HH:MM">
+                <input type="text" id="inlineEndDate" class="input date-input" placeholder="DD-MM-YYYY">
+                <input type="text" id="inlineEndTime" class="input time-input" placeholder="HH:MM">
             </div>
-            <input type="text" id="inlineEventWith" placeholder="With Who">
-            <input type="text" id="inlineEventLocation" placeholder="Where">
+            <input class="input" type="text" id="inlineEventWith" placeholder="With Who">
+            <input class="input" type="text" id="inlineEventLocation" placeholder="Where">
             <textarea id="inlineEventNotes" placeholder="Notes"></textarea>
             <div class="form-buttons">
-                <button type="button" class="cancel-btn" onclick="closeEventEditForm()">Cancel</button>
-                <button type="button" class="save-btn" id="saveInlineEventBtn">Save</button>
+                <button type="button" class="cancel-btn btn btn-secondary" onclick="closeEventEditForm()">Cancel</button>
+                <button type="button" class="save-btn btn btn-primary" id="saveInlineEventBtn">Save</button>
             </div>
         </form>
     `;

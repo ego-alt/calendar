@@ -13,31 +13,31 @@
             <h2>Login</h2>
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group">
-                    <input type="text" id="username" name="username" required placeholder="Username">
+                    <input class="input" type="text" id="username" name="username" required placeholder="Username">
                 </div>
                 <div class="form-group">
-                    <input type="password" id="password" name="password" required placeholder="Password">
+                    <input class="input" type="password" id="password" name="password" required placeholder="Password">
                 </div>
                 <div id="loginError" class="error" style="display: none;"></div>
-                <button type="submit">Login</button>
+                <button type="submit" class="btn btn-primary">Login</button>
             </form>
         </div>
     </div>
-    <button class="diary-button" id="diaryViewBtn">
+    <button class="diary-button btn btn-ghost" id="diaryViewBtn">
         <i class="fas fa-book"></i>
     </button>
-    <button class="year-button" id="yearViewBtn">
+    <button class="year-button btn btn-ghost" id="yearViewBtn">
         <i class="fas fa-calendar-alt"></i>
     </button>
-    <button class="week-button" id="weekViewBtn">
+    <button class="week-button btn btn-ghost" id="weekViewBtn">
         <i class="fas fa-calendar-week"></i>
     </button>
     {% if current_user.is_authenticated %}
-        <button class="login-button" onclick="handleLogout()">
+        <button class="login-button btn btn-ghost" onclick="handleLogout()">
             <i class="fas fa-door-closed"></i>
         </button>
     {% else %}
-        <button class="login-button" onclick="showLoginDialog()">
+        <button class="login-button btn btn-ghost" onclick="showLoginDialog()">
             <i class="fas fa-door-open"></i>
         </button>
     {% endif %}
@@ -76,11 +76,11 @@
     </div>
 
     <div class="color-picker" id="colorPicker">
-        <div class="color-option" style="background: #2ecc7180"></div>  <!-- Emerald Green -->
-        <div class="color-option" style="background: #16a58580"></div>  <!-- Sea Green -->
-        <div class="color-option" style="background: #00959580"></div>  <!-- Turquoise -->
-        <div class="color-option" style="background: #3674b580"></div>  <!-- Royal Blue -->
-        <div class="color-option" style="background: #5b5bb580"></div>  <!-- Blue Purple -->
+        <div class="color-option" data-mood="emerald"  title="Emerald"></div>
+        <div class="color-option" data-mood="sea"      title="Sea green"></div>
+        <div class="color-option" data-mood="turquoise" title="Turquoise"></div>
+        <div class="color-option" data-mood="royal"    title="Royal blue"></div>
+        <div class="color-option" data-mood="purple"   title="Blue purple"></div>
     </div>
 
     <div class="sidebar" id="sidebar">
@@ -89,43 +89,43 @@
         <div id="eventForm" style="display: none;">
             <div class="form-header">New Event</div>
             <form id="newEventForm" class="event-form">
-                <input type="text" id="eventName" placeholder="Event name" required>
+                <input class="input" type="text" id="eventName" placeholder="Event name" required>
                 <div class="start-inputs">
-                    <input type="text" 
-                           id="startDate" 
-                           class="date-input"
-                           placeholder="DD-MM-YYYY" 
+                    <input type="text"
+                           id="startDate"
+                           class="input date-input"
+                           placeholder="DD-MM-YYYY"
                            pattern="\d{2}-\d{2}-\d{4}"
                            maxlength="10"
                            required>
-                    <input type="text" 
-                           id="startTime" 
-                           class="time-input" 
+                    <input type="text"
+                           id="startTime"
+                           class="input time-input"
                            placeholder="HH:MM"
                            pattern="[0-9]{2}:[0-9]{2}"
                            maxlength="5">
                 </div>
                 <div class="end-inputs">
-                    <input type="text" 
-                            id="endDate" 
-                            class="date-input"
+                    <input type="text"
+                            id="endDate"
+                            class="input date-input"
                             placeholder="DD-MM-YYYY"
                             pattern="\d{2}-\d{2}-\d{4}"
                             maxlength="10"
-                            required> 
-                    <input type="text" 
-                           id="endTime" 
-                           class="time-input" 
+                            required>
+                    <input type="text"
+                           id="endTime"
+                           class="input time-input"
                            placeholder="HH:MM"
                            pattern="[0-9]{2}:[0-9]{2}"
                            maxlength="5">
                 </div>
-                <input type="text" id="eventWith" placeholder="Who">
-                <input type="text" id="eventLocation" placeholder="Where">
-                <textarea id="eventNotes" placeholder="Notes"></textarea>
+                <input class="input" type="text" id="eventWith" placeholder="Who">
+                <input class="input" type="text" id="eventLocation" placeholder="Where">
+                <textarea class="input" id="eventNotes" placeholder="Notes"></textarea>
                 <div class="form-buttons">
-                    <button type="button" class="cancel-btn" onclick="toggleEventForm(false)">Cancel</button>
-                    <button type="submit" class="save-btn">Save</button>
+                    <button type="button" class="cancel-btn btn btn-secondary" onclick="toggleEventForm(false)">Cancel</button>
+                    <button type="submit" class="save-btn btn btn-primary">Save</button>
                 </div>
             </form>
         </div>

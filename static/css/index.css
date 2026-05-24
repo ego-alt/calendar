@@ -1,7 +1,85 @@
+/* Design tokens — Gruvbox dark medium. Role names will be the contract for the
+ * shared spec across library + dashboard; only the values change per-app. */
+:root {
+    --color-bg-base: #282828;
+    --color-bg-elevated: #3c3836;
+    --color-bg-inset: rgba(40, 40, 40, 0.5);
+    --color-bg-inset-soft: rgba(40, 40, 40, 0.3);
+    --color-bg-overlay: rgba(40, 40, 40, 0.85);
+    --color-bg-overlay-strong: rgba(60, 56, 54, 0.95);
+    --color-border: #504945;
+    --color-border-soft: rgba(80, 73, 69, 0.5);
+    --color-border-strong: #928374;
+    --color-text-primary: #ebdbb2;
+    --color-text-secondary: #d5c4a1;
+    --color-text-muted: #a89984;
+    --color-text-faint: #928374;
+    --color-accent: #689d6a;
+    --color-accent-hover: #8ec07c;
+    --color-accent-soft: rgba(104, 157, 106, 0.35);
+    --color-accent-soft-hover: rgba(104, 157, 106, 0.55);
+    --color-danger: #cc241d;
+    --color-danger-hover: #fb4934;
+    --color-stripe: rgba(235, 219, 178, 0.03);
+    --color-highlight-soft: rgba(235, 219, 178, 0.05);
+    --color-shadow-soft: rgba(0, 0, 0, 0.2);
+    --color-shadow: rgba(0, 0, 0, 0.3);
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-5: 20px;
+    --space-8: 40px;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 16px;
+    --radius-pill: 9999px;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.25rem;
+    --font-sans: 'Arial', sans-serif;
+    --font-mono: 'SF Mono', Menlo, Consolas, monospace;
+}
+
+/* Button primitives — use .btn + one variant. */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font: inherit;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.btn:focus-visible { outline: 2px solid var(--color-accent-hover); outline-offset: 2px; }
+.btn-primary   { background: var(--color-accent); color: var(--color-text-primary); }
+.btn-primary:hover   { background: var(--color-accent-hover); color: var(--color-bg-base); }
+.btn-secondary { background: transparent; border-color: var(--color-border); color: var(--color-text-secondary); }
+.btn-secondary:hover { background: var(--color-bg-inset); color: var(--color-text-primary); }
+.btn-danger    { background: var(--color-danger); color: var(--color-text-primary); }
+.btn-danger:hover    { background: var(--color-danger-hover); color: var(--color-bg-base); }
+.btn-ghost     { background: transparent; color: var(--color-text-faint); padding: var(--space-2); }
+.btn-ghost:hover     { color: var(--color-text-primary); }
+
+/* Input primitive — monospace is deliberate (terminal flavor). */
+.input {
+    background: var(--color-bg-base);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: var(--text-base);
+    transition: border-color 0.2s ease;
+}
+.input:focus { outline: none; border-color: var(--color-accent); }
+.input::placeholder { color: var(--color-text-faint); }
+
 body {
-    background-color: #282828;
-    color: #ebdbb2;
-    font-family: 'Arial', sans-serif;
+    background-color: var(--color-bg-base);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
     display: flex;
     justify-content: center;
     min-height: 100vh;
@@ -10,13 +88,13 @@ body {
 }
 
 h1, h2, .form-header, .event-form-header, .subevent-form-header {
-    color: #ebdbb2;
+    color: var(--color-text-primary);
     text-align: center;
     margin-bottom: 20px;
 }
 
 .sidebar-header, .diary-header h2, .year-header h2 {
-    color: #ebdbb2;
+    color: var(--color-text-primary);
     margin-bottom: 20px;
     font-size: 1.2em;
     text-align: left;
@@ -40,7 +118,7 @@ h2 {
 .form-header {
     font-size: 1.1em;
     padding-top: 20px;
-    border-top: 1px solid #504945;
+    border-top: 1px solid var(--color-border);
     text-align: left;
 }
 
@@ -51,7 +129,7 @@ h2 {
 .event-form-header, .subevent-form-header {
     font-size: 0.95em;
     font-weight: bold;
-    border-bottom: 1px solid #504945;
+    border-bottom: 1px solid var(--color-border);
     padding-bottom: 5px;
     margin-bottom: 8px;
     text-align: left;
@@ -93,12 +171,12 @@ h2 {
     width: 100%;
     height: auto;
     display: block;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
 }
 .attachment-tile:not(:has(img)) {
     aspect-ratio: 1;
-    background: rgba(40, 40, 40, 0.5);
-    border-radius: 6px;
+    background: var(--color-bg-inset);
+    border-radius: var(--radius-sm);
     overflow: hidden;
 }
 .attachment-tile:not(:has(img)) .attachment-link {
@@ -107,14 +185,14 @@ h2 {
 }
 .attachment-upload-btn {
     cursor: pointer;
-    color: #928374;
+    color: var(--color-text-faint);
     transition: color 0.2s;
     font-size: 0.85em;
     padding: 4px 6px;
     line-height: 1;
 }
 .attachment-upload-btn:hover {
-    color: #ebdbb2;
+    color: var(--color-text-primary);
 }
 .attachment-icon {
     width: 100%;
@@ -123,7 +201,7 @@ h2 {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #a89984;
+    color: var(--color-text-muted);
     padding: 4px;
     box-sizing: border-box;
 }
@@ -146,9 +224,9 @@ h2 {
     right: 4px;
     width: 18px;
     height: 18px;
-    background: rgba(40, 40, 40, 0.75);
-    border-radius: 50%;
-    color: #ebdbb2;
+    background: var(--color-bg-overlay);
+    border-radius: var(--radius-pill);
+    color: var(--color-text-primary);
     font-size: 0.7em;
     display: flex;
     align-items: center;
@@ -161,7 +239,7 @@ h2 {
     opacity: 1;
 }
 .attachment-delete:hover {
-    background: #8b1a1a;
+    background: var(--color-danger);
 }
 
 .event-form, #newSubEventForm, #editEventForm, #loginForm {
@@ -171,16 +249,16 @@ h2 {
 }
 
 .event-form-container, .subevent-form-container {
-    background: rgba(40, 40, 40, 0.5);
-    border-radius: 8px;
+    background: var(--color-bg-inset);
+    border-radius: var(--radius-md);
     padding: 12px;
     margin: 10px 0;
     animation: fadeIn 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px var(--color-shadow-soft);
 }
 
 .loading-indicator, .error-message, .no-events, .subevents-loading, .subevents-error {
-    color: #928374;
+    color: var(--color-text-faint);
     text-align: center;
     font-style: italic;
 }
@@ -220,7 +298,7 @@ h2 {
 
 .event-actions i, .subevent-actions i {
     cursor: pointer;
-    color: #928374;
+    color: var(--color-text-faint);
     transition: color 0.2s;
 }
 
@@ -229,43 +307,26 @@ h2 {
 }
 
 .event-actions i:hover, .subevent-actions i:hover {
-    color: #ebdbb2;
+    color: var(--color-text-primary);
 }
 
 .event-card:hover .event-actions, .subevent-card:hover .subevent-actions {
     opacity: 1;
 }
 
+/* Header icon buttons — positional only; chrome lives in .btn + .btn-ghost. */
 .login-button, .diary-button, .year-button, .week-button {
     position: fixed;
-    top: 20px;
-    background: none;
-    border: none;
-    color: #928374;
-    cursor: pointer;
-    font-size: 1.2em;
-    padding: 8px;
-    transition: color 0.2s ease;
+    top: var(--space-5);
+    font-size: var(--text-lg);
     z-index: 1001;
 }
-
-.login-button {
-    right: 40px;
-}
-.diary-button {
-    right: 80px;
-}
-.year-button {
-    right: 120px;
-}
-.week-button {
-    right: 160px;
-}
-.login-button:hover, .diary-button:hover, .year-button:hover, .week-button:hover {
-    color: #ebdbb2;
-}
+.login-button { right: var(--space-8); }
+.diary-button { right: calc(var(--space-8) * 2); }
+.year-button  { right: calc(var(--space-8) * 3); }
+.week-button  { right: calc(var(--space-8) * 4); }
 .week-button.active {
-    color: #ebdbb2;
+    color: var(--color-text-primary);
 }
 
 .calendar {
@@ -278,8 +339,8 @@ h2 {
 }
 .day {
     aspect-ratio: 1;
-    border: 1px solid #928374;
-    border-radius: 8px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -294,11 +355,11 @@ h2 {
     top: 5px;
     right: 5px;
     font-size: clamp(0.6rem, 1.5vw, 0.7rem);
-    color: #928374;
+    color: var(--color-text-faint);
     opacity: 0.8;
 }
 .day:hover {
-    border-color: #ebdbb2;
+    border-color: var(--color-text-primary);
 }
 .prev-month,
 .next-month,
@@ -312,7 +373,7 @@ h2 {
     text-align: center;
     padding: 5px;
     font-size: clamp(0.7rem, 1.8vw, 0.8rem);
-    color: #a89984;
+    color: var(--color-text-muted);
 }
 .color-picker {
     display: none;  /* Hide by default */
@@ -326,7 +387,7 @@ h2 {
 .color-option {
     width: 30px;
     height: 30px;
-    border-radius: 50%;
+    border-radius: var(--radius-pill);
     margin: 5px;
     cursor: pointer;
     border: 2px solid transparent;
@@ -335,6 +396,13 @@ h2 {
 .color-option:hover {
     transform: scale(1.1);
 }
+/* Mood palette — values are persisted per-day in the DB, so editing these
+ * shifts only newly-picked moods (existing rows keep their stored colors). */
+.color-option[data-mood="emerald"]   { background: #2ecc7180; }
+.color-option[data-mood="sea"]       { background: #16a58580; }
+.color-option[data-mood="turquoise"] { background: #00959580; }
+.color-option[data-mood="royal"]     { background: #3674b580; }
+.color-option[data-mood="purple"]    { background: #5b5bb580; }
 .month-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -357,7 +425,7 @@ h2 {
     left: 5px;
     opacity: 0;
     transition: opacity 0.2s ease;
-    color: #928374;
+    color: var(--color-text-faint);
     cursor: pointer;
     font-size: 0.9em;
 }
@@ -368,8 +436,8 @@ h2 {
     position: fixed;
     width: min(300px, 80vw);
     height: 100vh;
-    background-color: #3c3836;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    background-color: var(--color-bg-elevated);
+    box-shadow: 0 0 10px var(--color-shadow);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1000;
     opacity: 0;
@@ -380,19 +448,19 @@ h2 {
 .sidebar, .diary-sidebar {
     background-image: repeating-linear-gradient(
         45deg,
-        rgba(235, 219, 178, 0.03),
-        rgba(235, 219, 178, 0.03) 4px,
+        var(--color-stripe),
+        var(--color-stripe) 4px,
         transparent 4px,
         transparent 8px
     );
 }
 .sidebar {
     left: -300px;
-    border-radius: 0px 8px 8px 0px;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 .diary-sidebar, .year-sidebar {
     right: -400px;
-    border-radius: 8px 0 0 8px;
+    border-radius: var(--radius-md) 0 0 8px;
 }
 .sidebar.active {
     left: 0;
@@ -405,8 +473,8 @@ h2 {
 .day.past {
     background-image: repeating-linear-gradient(
         45deg,
-        rgba(235, 219, 178, 0.03),
-        rgba(235, 219, 178, 0.03) 2px,
+        var(--color-stripe),
+        var(--color-stripe) 2px,
         transparent 2px,
         transparent 4px
     );
@@ -420,53 +488,37 @@ h2 {
     margin: auto;
 }
 .event-card, .diary-event {
-    background: rgba(40, 40, 40, 0.5);
-    border-radius: 8px;
+    background: var(--color-bg-inset);
+    border-radius: var(--radius-md);
     padding: 8px;
     padding-left: 12px;
-    border-left: 3px solid #ebdbb2;
+    border-left: 3px solid var(--color-text-primary);
     position: relative;
     margin-bottom: 8px;
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
 .event-time, .diary-event-time {
-    color: #a89984;
+    color: var(--color-text-muted);
     font-size: 0.9em;
     margin-bottom: 5px;
 }
 .event-name, .diary-event-name {
-    color: #ebdbb2;
+    color: var(--color-text-primary);
     font-weight: bold;
     margin-bottom: 8px;
 }
 .event-details, .subevent-details, .diary-event-detail {
-    color: #928374;
+    color: var(--color-text-faint);
     font-size: 0.9em;
 }
-.event-form input,
-.event-form textarea,
-#newSubEventForm input, 
+/* Form text fields — base chrome via .input; sub-event/edit forms tighten the
+ * type size to fit the narrower nested panels. */
+#newSubEventForm input,
 #newSubEventForm textarea,
 #editEventForm input,
 #editEventForm textarea {
-    background: #282828;
-    border: 1px solid #504945;
-    color: #ebdbb2;
-    border-radius: 4px;
-    font-family: monospace;
-}
-.event-form input,
-.event-form textarea {
-    padding: 6px;
-    font-size: 1em;
-}
-#newSubEventForm input, 
-#newSubEventForm textarea,
-#editEventForm input,
-#editEventForm textarea {
-    padding: 8px;
-    font-size: 0.9em;
+    font-size: var(--text-sm);
 }
 .event-form textarea,
 #newSubEventForm textarea,
@@ -479,23 +531,13 @@ h2 {
     display: flex;
     gap: 8px;
 }
+/* Form action buttons — layout only; chrome via .btn + variant. */
 .add-event-btn, .cancel-btn, .save-btn {
     flex: 1;
-    padding: 8px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.2s;
-    background: #2ecc7180;
-    color: #ebdbb2;
 }
 .add-event-btn {
-    padding: 8px 16px;
-    margin-top: 10px;
+    margin-top: var(--space-3);
     width: 100%;
-}
-.add-event-btn:hover, .cancel-btn:hover, .save-btn:hover {
-    background: #16a58580;
 }
 .event-detail-item, .subevent-detail-item, .diary-event-detail {
     margin-bottom: 4px;
@@ -510,17 +552,14 @@ h2 {
     font-style: italic;
     white-space: pre-line;
 }
+/* Date/time inputs share the row via flex; date is wider to fit DD-MM-YYYY. */
 .date-input,
 .time-input {
-    background: #282828;
-    border: 1px solid #504945;
-    color: #ebdbb2;
-    padding: 8px;
-    border-radius: 4px;
-    font-size: 0.9em;
-    width: 80px;
-    font-family: monospace;
+    font-size: var(--text-sm);
+    min-width: 0;
 }
+.date-input { flex: 2; }
+.time-input { flex: 1; }
 .time-input::-webkit-inner-spin-button,
 .time-input::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -538,8 +577,8 @@ h2 {
     right: 4px;
     width: 6px;
     height: 6px;
-    background-color: #ebdbb2;
-    border-radius: 50%;
+    background-color: var(--color-text-primary);
+    border-radius: var(--radius-pill);
     opacity: 0.8;
 }
 .marker-indicator {
@@ -548,8 +587,8 @@ h2 {
     left: 4px;
     width: 6px;
     height: 6px;
-    background-color: #8b1a1a;
-    border-radius: 50%;
+    background-color: var(--color-danger);
+    border-radius: var(--radius-pill);
     opacity: 0.85;
 }
 .login-overlay {
@@ -559,78 +598,59 @@ h2 {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(40, 40, 40, 0.85);
+    background-color: var(--color-bg-overlay);
     z-index: 1000;
     justify-content: center;
     align-items: center;
 }
 .login-content {
-    background-color: #3c3836;
+    background-color: var(--color-bg-elevated);
     padding: 1.5rem;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     width: 90%;
     max-width: 320px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    border: 1px solid #504945;
+    box-shadow: 0 4px 20px var(--color-shadow);
+    border: 1px solid var(--color-border);
     text-align: center;
 }
 .form-group {
     margin-bottom: 1.5rem;
 }
+/* Login inputs override .input's monospace with sans (different vibe from the
+ * terminal-style event forms — login feels like an entry portal). */
 .form-group input {
     width: 90%;
-    padding: 0.6rem;
-    background: #282828;
-    border: 1px solid #504945;
-    border-radius: 6px;
-    color: #ebdbb2;
-    font-family: 'Arial', sans-serif;
-    font-size: 1rem;
-    transition: border-color 0.2s ease;
-}
-.form-group input:focus {
-    outline: none;
-    border-color: #928374;
+    font-family: var(--font-sans);
 }
 #loginForm h2 {
     margin-bottom: 1.5rem;
-    color: #ebdbb2;
+    color: var(--color-text-primary);
 }
+/* Login submit button: layout only; chrome from .btn + .btn-primary. */
 #loginForm button {
     width: 100%;
-    padding: 0.8rem;
-    background-color: #2ecc7180;
-    color: #ebdbb2;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    font-size: 1rem;
-}
-#loginForm button:hover {
-    background-color: #16a58580;
 }
 .subevents-container {
     margin-top: 10px;
-    border-top: 1px dashed #504945;
+    border-top: 1px dashed var(--color-border);
     padding-top: 8px;
 }
 .subevent-card {
-    background: rgba(40, 40, 40, 0.3);
-    border-radius: 6px;
+    background: var(--color-bg-inset-soft);
+    border-radius: var(--radius-sm);
     padding: 8px;
-    border-left: 2px solid #a89984;
+    border-left: 2px solid var(--color-text-muted);
     position: relative;
     margin-bottom: 3px;
     font-size: 0.9em;
 }
 .subevent-time {
-    color: #a89984;
+    color: var(--color-text-muted);
     font-size: 0.85em;
     margin-bottom: 3px;
 }
 .subevent-name {
-    color: #ebdbb2;
+    color: var(--color-text-primary);
     font-weight: bold;
     margin-bottom: 5px;
 }
@@ -652,18 +672,18 @@ h2 {
 }
 .diary-date, .year-month-title {
     font-weight: bold;
-    color: #ebdbb2;
+    color: var(--color-text-primary);
     padding-bottom: 5px;
-    border-bottom: 1px solid #504945;
+    border-bottom: 1px solid var(--color-border);
     margin-bottom: 10px;
 }
 .diary-subevent {
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px dashed #504945;
+    border-top: 1px dashed var(--color-border);
 }
 .diary-subevent-title {
-    color: #d5c4a1;
+    color: var(--color-text-secondary);
     font-size: 0.85em;
     font-weight: bold;
     text-decoration: underline;
@@ -671,7 +691,7 @@ h2 {
     margin-bottom: 6px;
 }
 .diary-subevent-content {
-    color: #928374;
+    color: var(--color-text-faint);
     font-size: 0.82em;
     white-space: pre-line;
 }
@@ -708,7 +728,7 @@ h2 {
         top: auto;
         width: 90vw;
         height: 20vh;
-        border-radius: 16px 16px 0 0;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         transition: bottom 0.3s ease;
         overflow: hidden;
     }
@@ -727,7 +747,7 @@ h2 {
         transform: translateX(-50%);
         width: 40px;
         height: 4px;
-        background-color: #928374;
+        background-color: var(--color-text-faint);
         border-radius: 2px;
         cursor: grab;
     }
@@ -756,12 +776,12 @@ h2 {
 .year-weekday {
     text-align: center;
     font-size: 0.6em;
-    color: #a89984;
+    color: var(--color-text-muted);
 }
 .year-day {
     aspect-ratio: 1;
-    border: 1px solid #504945;
-    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
     font-size: 0.6em;
     position: relative;
     display: flex;
@@ -772,7 +792,7 @@ h2 {
     content: attr(data-day);
     position: absolute;
     font-size: 1em;
-    color: #928374;
+    color: var(--color-text-faint);
 }
 
 /* Week view */
@@ -789,27 +809,27 @@ h2 {
     display: grid;
     grid-template-columns: var(--gutter-w) repeat(7, 1fr);
     gap: 0;
-    border-bottom: 1px solid #504945;
+    border-bottom: 1px solid var(--color-border);
 }
 .week-corner {
-    border-right: 1px solid #504945;
+    border-right: 1px solid var(--color-border);
 }
 .week-day-header {
     text-align: center;
     padding: 6px 2px;
     cursor: pointer;
     font-size: 0.85em;
-    color: #a89984;
-    border-right: 1px solid #50494533;
+    color: var(--color-text-muted);
+    border-right: 1px solid var(--color-border-soft);
     transition: background-color 0.2s ease;
 }
 .week-day-header:hover {
-    background-color: rgba(235, 219, 178, 0.05);
+    background-color: var(--color-highlight-soft);
 }
 .week-day-header.today .week-day-date {
-    color: #ebdbb2;
-    background: #2ecc7180;
-    border-radius: 50%;
+    color: var(--color-text-primary);
+    background: var(--color-accent-soft);
+    border-radius: var(--radius-pill);
     width: 24px;
     height: 24px;
     line-height: 24px;
@@ -821,28 +841,28 @@ h2 {
 }
 .week-day-date {
     font-size: 1.2em;
-    color: #ebdbb2;
+    color: var(--color-text-primary);
     margin-top: 2px;
 }
 .week-allday-row {
     display: grid;
     grid-template-columns: var(--gutter-w) repeat(7, 1fr);
     grid-auto-rows: minmax(22px, auto);
-    border-bottom: 1px solid #504945;
+    border-bottom: 1px solid var(--color-border);
     padding: 4px 0;
     gap: 2px;
 }
 .week-allday-label {
     font-size: 0.65em;
-    color: #928374;
+    color: var(--color-text-faint);
     text-align: right;
     padding-right: 6px;
     align-self: center;
 }
 .week-allday-block {
-    background: rgba(46, 204, 113, 0.35);
-    color: #ebdbb2;
-    border-radius: 4px;
+    background: var(--color-accent-soft);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-sm);
     padding: 2px 6px;
     font-size: 0.75em;
     overflow: hidden;
@@ -850,10 +870,10 @@ h2 {
     text-overflow: ellipsis;
     cursor: pointer;
     margin: 1px 2px;
-    border-left: 2px solid #ebdbb2;
+    border-left: 2px solid var(--color-text-primary);
 }
 .week-allday-block:hover {
-    background: rgba(46, 204, 113, 0.55);
+    background: var(--color-accent-soft-hover);
 }
 .week-grid-body {
     display: grid;
@@ -869,7 +889,7 @@ h2 {
 .week-hour-label {
     height: var(--hour-h);
     font-size: 0.65em;
-    color: #928374;
+    color: var(--color-text-faint);
     text-align: right;
     padding-right: 6px;
     line-height: 1;
@@ -879,41 +899,41 @@ h2 {
 .week-day-column {
     position: relative;
     height: calc(24 * var(--hour-h));
-    border-right: 1px solid #50494533;
+    border-right: 1px solid var(--color-border-soft);
     background:
         repeating-linear-gradient(
             to bottom,
             transparent 0,
             transparent calc(var(--hour-h) - 1px),
-            rgba(80, 73, 69, 0.5) calc(var(--hour-h) - 1px),
-            rgba(80, 73, 69, 0.5) var(--hour-h)
+            var(--color-border-soft) calc(var(--hour-h) - 1px),
+            var(--color-border-soft) var(--hour-h)
         );
     cursor: pointer;
 }
 .week-day-column.today {
-    background-color: rgba(235, 219, 178, 0.04);
+    background-color: var(--color-highlight-soft);
     background-blend-mode: lighten;
 }
 .week-event-block {
     position: absolute;
     left: 3px;
     right: 3px;
-    background: rgba(40, 40, 40, 0.85);
-    border-left: 3px solid #ebdbb2;
-    border-radius: 4px;
+    background: var(--color-bg-overlay);
+    border-left: 3px solid var(--color-text-primary);
+    border-radius: var(--radius-sm);
     padding: 3px 5px;
     overflow: hidden;
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 3px var(--color-shadow);
     transition: background-color 0.2s ease;
     box-sizing: border-box;
 }
 .week-event-block:hover {
-    background: rgba(60, 56, 54, 0.95);
+    background: var(--color-bg-overlay-strong);
 }
 .week-event-time {
     font-size: 0.65em;
-    color: #a89984;
+    color: var(--color-text-muted);
     margin-bottom: 1px;
     white-space: nowrap;
     overflow: hidden;
@@ -921,7 +941,7 @@ h2 {
 }
 .week-event-name {
     font-size: 0.75em;
-    color: #ebdbb2;
+    color: var(--color-text-primary);
     font-weight: bold;
     line-height: 1.1;
     overflow: hidden;
