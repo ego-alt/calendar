@@ -319,6 +319,7 @@ h2 {
     position: fixed;
     top: var(--space-5);
     font-size: var(--text-lg);
+    color: var(--color-text-primary);
     z-index: 1001;
 }
 .login-button { right: var(--space-8); }
