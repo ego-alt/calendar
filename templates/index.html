@@ -26,24 +26,26 @@
             </form>
         </div>
     </div>
-    <button class="diary-button btn btn-ghost" id="diaryViewBtn">
-        <i class="fas fa-book"></i>
-    </button>
-    <button class="year-button btn btn-ghost" id="yearViewBtn">
-        <i class="fas fa-calendar-alt"></i>
-    </button>
-    <button class="week-button btn btn-ghost" id="weekViewBtn">
-        <i class="fas fa-calendar-week"></i>
-    </button>
-    {% if current_user.is_authenticated %}
-        <button class="login-button btn btn-ghost" onclick="handleLogout()">
-            <i class="fas fa-door-closed"></i>
+    <div class="header-buttons">
+        <button class="week-button btn btn-ghost" id="weekViewBtn">
+            <i class="fas fa-calendar-week"></i>
         </button>
-    {% else %}
-        <button class="login-button btn btn-ghost" onclick="showLoginDialog()">
-            <i class="fas fa-door-open"></i>
+        <button class="year-button btn btn-ghost" id="yearViewBtn">
+            <i class="fas fa-calendar-alt"></i>
         </button>
-    {% endif %}
+        <button class="diary-button btn btn-ghost" id="diaryViewBtn">
+            <i class="fas fa-book"></i>
+        </button>
+        {% if current_user.is_authenticated %}
+            <button class="login-button btn btn-ghost" onclick="handleLogout()">
+                <i class="fas fa-door-closed"></i>
+            </button>
+        {% else %}
+            <button class="login-button btn btn-ghost" onclick="showLoginDialog()">
+                <i class="fas fa-door-open"></i>
+            </button>
+        {% endif %}
+    </div>
     <div class="content-wrapper">
         <h1>{{ date_label }}</h1>
         <div class="calendar" id="calendarContainer">
