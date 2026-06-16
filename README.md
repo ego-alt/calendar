@@ -38,7 +38,7 @@ uv run flask --app app:create_app db stamp head
 4. Run the app:
 
 ```bash
-uv run flask --app app.py run
+uv run flask --app app:create_app run --port 8001
 ```
 
 5. Run linting:
@@ -55,7 +55,9 @@ uv run pytest
 
 ## Home stack (with dashboard)
 
-Served at `/calendar/` behind the [dashboard](../dashboard) nginx proxy. Set:
+Served at `/calendar/` behind the [dashboard](../dashboard) nginx proxy, gated by
+its `auth_request` and wired into `../dashboard/docker-compose.yml` (internal
+port `5002`). Set:
 
 ```bash
 AUTH_PROXY_HEADER=X-Forwarded-User
@@ -71,7 +73,12 @@ After adding a user in dashboard:
 cd ../dashboard && uv run python scripts/sync_household_users.py
 ```
 
-The DB lives at `instance/events.db` (bind-mounted in compose).
+> Code is baked into the image at build time. After pulling changes, rebuild:
+> `docker compose build calendar && docker compose up -d calendar`. A bare
+> `up -d` reuses the old image.
+
+The DB lives at `instance/events.db` (bind-mounted in compose). The container
+runs `flask db upgrade` on start, so migrations apply automatically.
 
 ## Schema changes
 
