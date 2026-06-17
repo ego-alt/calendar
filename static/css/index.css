@@ -81,7 +81,11 @@ body {
     font-family: var(--font-sans);
     display: flex;
     justify-content: center;
+    /* dvh tracks the *visible* viewport: 100vh on mobile is the large viewport
+     * (toolbar excluded), so it forces the body taller than the screen and the
+     * page scrolls a little even when content fits. dvh removes that. */
     min-height: 100vh;
+    min-height: 100dvh;
     margin: 0;
     padding: 0 var(--space-3);
 }
@@ -983,6 +987,13 @@ h2 {
         --hour-h: 36px;
         --gutter-w: 32px;
         overflow-x: auto;  /* 7 columns won't fit a phone — scroll the grid as a unit */
+        margin-bottom: var(--space-4);
+    }
+    /* Cap the scrollable body to the space the header row, the h1, and page
+     * chrome leave behind so the whole week view fits one screen instead of
+     * pushing a second, page-level scroll. */
+    .week-grid-body {
+        max-height: calc(100dvh - 180px);
     }
     /* Header, all-day row, and body share a min-width so they scroll together
      * and each day column stays wide enough to read (~70px). */
