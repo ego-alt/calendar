@@ -66,6 +66,7 @@ function escapeHtml(value) {
 document.addEventListener('DOMContentLoaded', () => {
     setupGlobalEventListeners();
     setupMonthGridListeners();
+    setupSwipeNavigation();
     document.addEventListener('keydown', handleKeyPress);
     document.getElementById('diaryViewBtn').addEventListener('click', () => {
         toggleDiaryView();
@@ -323,6 +324,47 @@ function handleKeyPress(event) {
         case 'd': toggleDiaryView(); break;
         case 'y': toggleYearView(); break;
     }
+}
+
+/** Horizontal swipes on the calendar mirror the h/l keys: left = next, right
+ *  = prev (works in both month and week mode, since updateMonth routes by
+ *  view). A detected swipe suppresses the trailing click so it doesn't also
+ *  open a day. Vertical-dominant gestures are left alone so week-grid/sidebar
+ *  scrolling still works. */
+let suppressClickUntil = 0;
+function setupSwipeNavigation() {
+    const surface = document.getElementById('calendarContainer');
+    if (!surface) return;
+
+    let startX = 0, startY = 0, startT = 0, tracking = false;
+    surface.addEventListener('touchstart', (e) => {
+        tracking = e.touches.length === 1;
+        if (!tracking) return;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        startT = e.timeStamp;
+    }, { passive: true });
+
+    surface.addEventListener('touchend', (e) => {
+        if (!tracking) return;
+        tracking = false;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
+        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && e.timeStamp - startT < 600) {
+            suppressClickUntil = e.timeStamp + 500;
+            updateMonth(dx < 0 ? 'next' : 'prev');
+        }
+    }, { passive: true });
+
+    // Swallow the synthetic click that follows the swipe, before it reaches a day.
+    document.addEventListener('click', (e) => {
+        if (e.timeStamp < suppressClickUntil) {
+            suppressClickUntil = 0;
+            e.stopPropagation();
+            e.preventDefault();
+        }
+    }, true);
 }
 
 async function updateMonth(direction) {

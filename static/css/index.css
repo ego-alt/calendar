@@ -88,6 +88,9 @@ body {
     min-height: 100dvh;
     margin: 0;
     padding: 0 var(--space-3);
+    /* border-box so any vertical padding (mobile top offset) stays inside the
+     * 100dvh and doesn't push the page into a scroll. */
+    box-sizing: border-box;
 }
 
 h1, h2, .form-header, .event-form-header, .subevent-form-header {
@@ -788,6 +791,11 @@ h2 {
 }
 /* Mobile styles */
 @media (max-width: 480px) {
+    /* Nudge the centered views down so they sit clear below the fixed top bar
+     * (the centering then happens within the remaining space). */
+    body {
+        padding-top: var(--space-8);
+    }
     /* Smaller title on phones — the 32px desktop h1 looks oversized and crowds
      * the fixed top bar; shrinking it also gives the centered content more
      * clearance below the bar. */
