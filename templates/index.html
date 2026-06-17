@@ -26,10 +26,12 @@
             </form>
         </div>
     </div>
-    <div class="view-toggle" role="group" aria-label="Calendar view">
-        <button class="view-toggle-btn active" id="monthViewBtn" type="button">Month</button>
-        <button class="view-toggle-btn" id="weekViewBtn" type="button">Week</button>
-    </div>
+    <button class="view-toggle" id="viewToggleBtn" type="button"
+            role="switch" aria-checked="false" aria-label="Toggle week view" data-active="month">
+        <span class="view-toggle-thumb" aria-hidden="true"></span>
+        <span class="view-toggle-label" data-mode="month">Month</span>
+        <span class="view-toggle-label" data-mode="week">Week</span>
+    </button>
     <div class="header-buttons">
         <button class="year-button btn btn-ghost" id="yearViewBtn">
             <i class="fas fa-calendar-alt"></i>

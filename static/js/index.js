@@ -73,11 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('yearViewBtn').addEventListener('click', () => {
         toggleYearView();
     });
-    document.getElementById('weekViewBtn').addEventListener('click', () => {
-        toggleWeekView(true);
-    });
-    document.getElementById('monthViewBtn').addEventListener('click', () => {
-        toggleWeekView(false);
+    document.getElementById('viewToggleBtn').addEventListener('click', () => {
+        toggleWeekView();
     });
 });
 
@@ -428,8 +425,7 @@ async function updateCalendarView() {
 }
 
 function toggleWeekView(show) {
-    const weekBtn = document.getElementById('weekViewBtn');
-    const monthBtn = document.getElementById('monthViewBtn');
+    const toggle = document.getElementById('viewToggleBtn');
     const monthGrid = document.getElementById('viewMonth');
     const weekGrid = document.getElementById('viewWeek');
 
@@ -448,8 +444,8 @@ function toggleWeekView(show) {
         viewState.mode = 'week';
         monthGrid.style.display = 'none';
         weekGrid.style.display = '';
-        weekBtn.classList.add('active');
-        monthBtn.classList.remove('active');
+        toggle.dataset.active = 'week';
+        toggle.setAttribute('aria-checked', 'true');
         renderWeek();
     } else {
         viewState.mode = 'month';
@@ -457,8 +453,8 @@ function toggleWeekView(show) {
         viewState.month = viewState.weekAnchor.month;
         monthGrid.style.display = '';
         weekGrid.style.display = 'none';
-        weekBtn.classList.remove('active');
-        monthBtn.classList.add('active');
+        toggle.dataset.active = 'month';
+        toggle.setAttribute('aria-checked', 'false');
         updateCalendarView();
     }
 }
@@ -478,8 +474,7 @@ async function renderWeek() {
         document.querySelector('h1').textContent = data.week_label;
 
         const weekRoot = document.getElementById('viewWeek');
-        const hourHRaw = getComputedStyle(weekRoot).getPropertyValue('--hour-h').trim();
-        const HOUR_H = parseFloat(hourHRaw) || 40;
+        const isMobile = window.innerWidth <= 480;
 
         const todayISO = `${CURRENT_YEAR}-${String(CURRENT_MONTH).padStart(2, '0')}-${String(CURRENT_DAY).padStart(2, '0')}`;
         const isoByIndex = data.days.map(d => d.date);
@@ -526,6 +521,19 @@ async function renderWeek() {
                 </div>
             `;
         }).join('');
+
+        // Hour height: desktop uses the CSS token; mobile shrinks it so the
+        // whole 24h day fits the viewport in one fixed view (no nested scroll),
+        // clamped to stay legible — below the floor it falls back to scrolling.
+        let HOUR_H;
+        if (isMobile) {
+            const reserved = 176 + (allDayEvents.length ? 34 : 0);
+            HOUR_H = Math.max(16, Math.min(36, (window.innerHeight - reserved) / 24));
+            weekRoot.style.setProperty('--hour-h', `${HOUR_H}px`);
+        } else {
+            weekRoot.style.removeProperty('--hour-h');
+            HOUR_H = parseFloat(getComputedStyle(weekRoot).getPropertyValue('--hour-h')) || 40;
+        }
 
         const dayColumns = data.days.map(d => {
             const iso = d.date;
