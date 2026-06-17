@@ -26,29 +26,31 @@
             </form>
         </div>
     </div>
-    <button class="view-toggle" id="viewToggleBtn" type="button"
-            role="switch" aria-checked="false" aria-label="Toggle week view" data-active="month">
-        <span class="view-toggle-thumb" aria-hidden="true"></span>
-        <span class="view-toggle-label" data-mode="month">Month</span>
-        <span class="view-toggle-label" data-mode="week">Week</span>
-    </button>
-    <div class="header-buttons">
-        <button class="year-button btn btn-ghost" id="yearViewBtn">
-            <i class="fas fa-calendar-alt"></i>
+    <header class="app-header">
+        <button class="view-toggle" id="viewToggleBtn" type="button"
+                role="switch" aria-checked="false" aria-label="Toggle week view" data-active="month">
+            <span class="view-toggle-thumb" aria-hidden="true"></span>
+            <span class="view-toggle-label" data-mode="month">Month</span>
+            <span class="view-toggle-label" data-mode="week">Week</span>
         </button>
-        <button class="diary-button btn btn-ghost" id="diaryViewBtn">
-            <i class="fas fa-book"></i>
-        </button>
-        {% if current_user.is_authenticated %}
-            <button class="login-button btn btn-ghost" onclick="handleLogout()">
-                <i class="fas fa-door-closed"></i>
+        <div class="header-buttons">
+            <button class="year-button btn btn-ghost" id="yearViewBtn">
+                <i class="fas fa-calendar-alt"></i>
             </button>
-        {% else %}
-            <button class="login-button btn btn-ghost" onclick="showLoginDialog()">
-                <i class="fas fa-door-open"></i>
+            <button class="diary-button btn btn-ghost" id="diaryViewBtn">
+                <i class="fas fa-book"></i>
             </button>
-        {% endif %}
-    </div>
+            {% if current_user.is_authenticated %}
+                <button class="login-button btn btn-ghost" onclick="handleLogout()">
+                    <i class="fas fa-door-closed"></i>
+                </button>
+            {% else %}
+                <button class="login-button btn btn-ghost" onclick="showLoginDialog()">
+                    <i class="fas fa-door-open"></i>
+                </button>
+            {% endif %}
+        </div>
+    </header>
     <div class="content-wrapper">
         <h1>{{ date_label }}</h1>
         <div class="calendar" id="calendarContainer">

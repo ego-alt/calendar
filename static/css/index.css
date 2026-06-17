@@ -319,33 +319,34 @@ h2 {
     opacity: 1;
 }
 
-/* Header icon-button row — fixed to the top-right of the viewport, spaced
- * via space tokens instead of per-button px offsets. Chrome lives in
- * .btn + .btn-ghost (markup carries both). Position preserved from the
- * pre-cleanup per-button layout (top 20, right 40, ~4 between buttons). */
-.header-buttons {
+/* Fixed top bar holding the view toggle (left) and the icon buttons (right) in
+ * one vertically-centered row, so the two never drift onto different lines. */
+.app-header {
     position: fixed;
     top: max(var(--space-5), env(safe-area-inset-top));
+    left: max(var(--space-5), env(safe-area-inset-left));
     right: max(var(--space-5), env(safe-area-inset-right));
     display: flex;
-    gap: var(--space-1);
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-3);
     z-index: 1001;
+}
+/* Icon-button cluster — chrome lives in .btn + .btn-ghost (markup carries both). */
+.header-buttons {
+    display: flex;
+    gap: var(--space-1);
 }
 .header-buttons .btn-ghost {
     font-size: var(--text-lg);
     color: var(--color-text-primary);
 }
-/* Segmented Month|Week control — fixed top-left, mirroring .header-buttons top
- * -right. This switches the main grid in place, so it's kept visually separate
- * from the year/diary buttons, which open drawers. */
 /* Single-press view toggle — one button, click anywhere flips month<->week
  * (no aiming at a segment, no mouse travel). The thumb slides to the active
  * mode. Equal-width labels (min-width covers the longer one) so the 50% thumb
- * lines up under either. */
+ * lines up under either. Lives at the left of .app-header. */
 .view-toggle {
-    position: fixed;
-    top: max(var(--space-5), env(safe-area-inset-top));
-    left: max(var(--space-5), env(safe-area-inset-left));
+    position: relative;  /* containing block for the absolutely-placed thumb */
     display: inline-flex;
     padding: 2px;
     font: inherit;
@@ -775,18 +776,19 @@ h2 {
 }
 /* Mobile styles */
 @media (max-width: 480px) {
-    /* Larger, better-spaced tap targets for the fixed header icon row. */
+    /* Tuck the whole header up into the corners on phones. */
+    .app-header {
+        top: max(var(--space-3), env(safe-area-inset-top));
+        left: max(var(--space-3), env(safe-area-inset-left));
+        right: max(var(--space-3), env(safe-area-inset-right));
+    }
     .header-buttons {
         gap: var(--space-2);
     }
     .header-buttons .btn-ghost {
-        padding: var(--space-3);
+        padding: var(--space-2);
     }
-    /* Smaller, tucked-in view toggle on phones — web size is too big here. */
-    .view-toggle {
-        top: max(var(--space-3), env(safe-area-inset-top));
-        left: max(var(--space-3), env(safe-area-inset-left));
-    }
+    /* Smaller view toggle on phones — web size is too big here. */
     .view-toggle-label {
         font-size: 0.6875rem;  /* 11px */
         min-width: 2.5rem;
@@ -884,6 +886,7 @@ h2 {
 /* Week view */
 .week-grid {
     --hour-h: 40px;
+    --block-h: var(--hour-h);  /* grid-line/label spacing; mobile uses 2h blocks */
     --gutter-w: 44px;
     display: flex;
     flex-direction: column;
@@ -973,7 +976,7 @@ h2 {
     flex-direction: column;
 }
 .week-hour-label {
-    height: var(--hour-h);
+    height: var(--block-h);
     font-size: var(--text-sm);
     color: var(--color-text-muted);
     text-align: right;
@@ -990,9 +993,9 @@ h2 {
         repeating-linear-gradient(
             to bottom,
             transparent 0,
-            transparent calc(var(--hour-h) - 1px),
-            var(--color-border-soft) calc(var(--hour-h) - 1px),
-            var(--color-border-soft) var(--hour-h)
+            transparent calc(var(--block-h) - 1px),
+            var(--color-border-soft) calc(var(--block-h) - 1px),
+            var(--color-border-soft) var(--block-h)
         );
     cursor: pointer;
 }
@@ -1046,38 +1049,37 @@ h2 {
 }
 
 @media (max-width: 480px) {
+    /* The 7 columns are squeezed to fit the screen (no horizontal scroll) and
+     * renderWeek() draws the time axis in 2h blocks, sizing --hour-h so the
+     * whole day fits in one fixed view. Fallback values below apply until JS
+     * sets them. */
     .week-grid {
-        --hour-h: 36px;
-        --gutter-w: 32px;
-        overflow-x: auto;  /* 7 columns won't fit a phone — scroll the grid as a unit */
+        --hour-h: 18px;
+        --block-h: 36px;  /* 2h blocks */
+        --gutter-w: 30px;
         margin-bottom: var(--space-4);
     }
-    /* renderWeek() sizes --hour-h so all 24h fit just inside this cap, so the
-     * day shows in one fixed view with no nested scroll. The cap only kicks in
-     * on very small screens where the hour height hits its legibility floor. */
+    /* Safety cap only — the day is normally sized to fit inside this. */
     .week-grid-body {
-        max-height: calc(100dvh - 150px);
+        max-height: calc(100dvh - 120px);
     }
-    /* Header, all-day row, and body share a min-width so they scroll together
-     * and each day column stays wide enough to read (~70px). */
-    .week-grid-header,
-    .week-allday-row,
-    .week-grid-body {
-        min-width: 520px;
+    .week-day-header {
+        padding: var(--space-1) 1px;
     }
     .week-day-weekday {
-        font-size: var(--text-sm);
+        font-size: 0.625rem;  /* 10px — narrow columns */
     }
     .week-day-date {
-        font-size: var(--text-base);
+        font-size: var(--text-sm);
+    }
+    .week-hour-label {
+        font-size: 0.625rem;  /* 10px */
+    }
+    .week-event-time {
+        font-size: 0.625rem;
     }
     .week-event-name {
+        font-size: 0.6875rem;
         -webkit-line-clamp: 1;
-    }
-    /* Top-align instead of vertically centering: centering pushed the title up
-     * under the fixed toggle/header on the taller week view. The offset clears
-     * that fixed chrome. */
-    .content-wrapper {
-        margin: 52px auto auto;
     }
 }

@@ -475,6 +475,7 @@ async function renderWeek() {
 
         const weekRoot = document.getElementById('viewWeek');
         const isMobile = window.innerWidth <= 480;
+        const STEP = isMobile ? 2 : 1;  // hours per time-axis block/label
 
         const todayISO = `${CURRENT_YEAR}-${String(CURRENT_MONTH).padStart(2, '0')}-${String(CURRENT_DAY).padStart(2, '0')}`;
         const isoByIndex = data.days.map(d => d.date);
@@ -523,15 +524,19 @@ async function renderWeek() {
         }).join('');
 
         // Hour height: desktop uses the CSS token; mobile shrinks it so the
-        // whole 24h day fits the viewport in one fixed view (no nested scroll),
-        // clamped to stay legible — below the floor it falls back to scrolling.
+        // whole 24h day fits the (vertically-centered) viewport in one fixed
+        // view, drawn in 2h blocks. Clamped to stay legible — below the floor
+        // it falls back to scrolling. `reserved` is the title + day-header +
+        // margins plus top/bottom breathing room that clears the fixed header.
         let HOUR_H;
         if (isMobile) {
-            const reserved = 176 + (allDayEvents.length ? 34 : 0);
-            HOUR_H = Math.max(16, Math.min(36, (window.innerHeight - reserved) / 24));
+            const reserved = 210 + (allDayEvents.length ? 34 : 0);
+            HOUR_H = Math.max(13, Math.min(30, (window.innerHeight - reserved) / 24));
             weekRoot.style.setProperty('--hour-h', `${HOUR_H}px`);
+            weekRoot.style.setProperty('--block-h', `${HOUR_H * STEP}px`);
         } else {
             weekRoot.style.removeProperty('--hour-h');
+            weekRoot.style.removeProperty('--block-h');
             HOUR_H = parseFloat(getComputedStyle(weekRoot).getPropertyValue('--hour-h')) || 40;
         }
 
@@ -572,8 +577,8 @@ async function renderWeek() {
             `;
         }).join('');
 
-        const hourLabels = Array.from({ length: 24 }, (_, h) =>
-            `<div class="week-hour-label">${String(h).padStart(2, '0')}:00</div>`
+        const hourLabels = Array.from({ length: Math.ceil(24 / STEP) }, (_, i) =>
+            `<div class="week-hour-label">${String(i * STEP).padStart(2, '0')}:00</div>`
         ).join('');
 
         weekRoot.innerHTML = `
