@@ -788,11 +788,21 @@ h2 {
 }
 /* Mobile styles */
 @media (max-width: 480px) {
-    /* Tuck the whole header up into the corners on phones. */
+    /* Smaller title on phones — the 32px desktop h1 looks oversized and crowds
+     * the fixed top bar; shrinking it also gives the centered content more
+     * clearance below the bar. */
+    h1 {
+        font-size: var(--text-lg);
+        margin-bottom: var(--space-3);
+    }
+    /* Tuck the whole header up into the corners on phones, and drop it below the
+     * drawers (z 1000) so a sliding sidebar covers the header/pill instead of
+     * the pill floating on top of it. */
     .app-header {
         top: max(var(--space-3), env(safe-area-inset-top));
         left: max(var(--space-3), env(safe-area-inset-left));
         right: max(var(--space-3), env(safe-area-inset-right));
+        z-index: 999;
     }
     .header-buttons {
         gap: var(--space-2);
