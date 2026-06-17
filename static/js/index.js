@@ -143,7 +143,7 @@ function setupGlobalEventListeners() {
             sidebar.classList.remove('active');
             if (window.innerWidth <= 480) {
                 sidebar.classList.remove('expanded');
-                sidebar.style.height = '20vh';
+                sidebar.style.height = '';
             }
 
             diaryView.classList.remove('active');
@@ -180,16 +180,27 @@ function setupGlobalEventListeners() {
             e.preventDefault();
             const vh = window.innerHeight / 100;
             const height = window.innerHeight - e.touches[0].clientY;
-            sidebar.style.height = `${Math.min(Math.max(height, 15 * vh), 60 * vh)}px`;
+            sidebar.style.height = `${Math.min(Math.max(height, 15 * vh), 92 * vh)}px`;
         }, { passive: false });
 
         document.addEventListener('touchend', () => {
             if (!isDragging) return;
             isDragging = false;
             sidebar.style.transition = 'height 0.3s ease';
-            const isExpanded = sidebar.offsetHeight > window.innerHeight * 0.45;
-            sidebar.style.height = isExpanded ? '60vh' : '15vh';
-            sidebar.classList.toggle('expanded', isExpanded);
+            // Snap to one of three rest heights based on where the drag ended:
+            // full (expanded), the near-full default, or a small peek.
+            const h = sidebar.offsetHeight;
+            const vh = window.innerHeight / 100;
+            if (h > 85 * vh) {
+                sidebar.style.height = '92vh';
+                sidebar.classList.add('expanded');
+            } else if (h < 40 * vh) {
+                sidebar.style.height = '25vh';
+                sidebar.classList.remove('expanded');
+            } else {
+                sidebar.style.height = '78vh';
+                sidebar.classList.remove('expanded');
+            }
         });
     }
 }
@@ -594,6 +605,12 @@ async function showSidebar(day) {
     const sidebar = document.getElementById('sidebar');
     const sidebarContent = document.getElementById('sidebarContent');
 
+    // Clear any height left behind by a previous drag/close so the drawer opens
+    // at the CSS default (near-full) every time, not a stale peek height.
+    if (window.innerWidth <= 480) {
+        sidebar.classList.remove('expanded');
+        sidebar.style.height = '';
+    }
     requestAnimationFrame(() => {sidebar.classList.add('active');});
     currentOpenDay = day;
     toggleEventForm(false);
