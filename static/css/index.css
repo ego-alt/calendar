@@ -773,6 +773,18 @@ h2 {
     .color-option {
         margin: 3px;
     }
+    /* The day sidebar slides in full-height from the left, so the top-left spot
+     * is taken. Float the toggle in the bottom-left corner instead (clear of the
+     * sidebar's date header) and let the icon cluster keep the top row alone. */
+    .app-header {
+        justify-content: flex-end;
+    }
+    .view-toggle {
+        position: fixed;
+        bottom: max(var(--space-5), env(safe-area-inset-bottom));
+        left: max(var(--space-5), env(safe-area-inset-left));
+        z-index: 1001;
+    }
 }
 /* Mobile styles */
 @media (max-width: 480px) {
