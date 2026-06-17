@@ -334,11 +334,15 @@ h2 {
     justify-content: flex-end;
     align-items: center;
     z-index: 1003;
+    /* The bar spans full width but only the icons are interactive — let taps in
+     * the empty area fall through to the toggle, which sits beneath it. */
+    pointer-events: none;
 }
 /* Icon-button cluster — chrome lives in .btn + .btn-ghost (markup carries both). */
 .header-buttons {
     display: flex;
     gap: var(--space-1);
+    pointer-events: auto;
 }
 .header-buttons .btn-ghost {
     font-size: var(--text-lg);
@@ -812,15 +816,12 @@ h2 {
         top: max(var(--space-3), env(safe-area-inset-top));
         left: max(var(--space-3), env(safe-area-inset-left));
         right: max(var(--space-3), env(safe-area-inset-right));
-        height: var(--space-8);
     }
-    /* Toggle tucks into the top-left, height-matched to the icon row so the two
-     * read as one row, but at z 999 so a drawer slides over it. */
+    /* Toggle tucks into the top-left, top-aligned with the icon row, at z 999 so
+     * a drawer slides over it. */
     .view-toggle {
         top: max(var(--space-3), env(safe-area-inset-top));
         left: max(var(--space-3), env(safe-area-inset-left));
-        height: var(--space-8);
-        align-items: center;
         z-index: 999;
     }
     .header-buttons {
