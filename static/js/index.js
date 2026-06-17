@@ -140,7 +140,6 @@ function setupGlobalEventListeners() {
 
             sidebar.classList.remove('active');
             if (window.innerWidth <= 480) {
-                sidebar.classList.remove('expanded');
                 sidebar.style.height = '';
             }
 
@@ -163,44 +162,30 @@ function setupGlobalEventListeners() {
     });
 
     if (window.innerWidth <= 480) {
-        const sidebar = document.getElementById('sidebar');
+        // The bottom sheet has two states only: open at its default height, or
+        // dismissed. Tapping or swiping down on the handle slides it away (same
+        // as tapping the backdrop) — no half-heights, no pull-to-expand.
         const handle = document.querySelector('.sidebar-handle');
-        let isDragging = false;
+        let startY = null;
 
+        handle.addEventListener('click', dismissSidebar);
         handle.addEventListener('touchstart', (e) => {
-            isDragging = true;
-            sidebar.style.transition = 'none';
-            e.preventDefault();
-        }, { passive: false });
-
-        document.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            const vh = window.innerHeight / 100;
-            const height = window.innerHeight - e.touches[0].clientY;
-            sidebar.style.height = `${Math.min(Math.max(height, 15 * vh), 92 * vh)}px`;
-        }, { passive: false });
-
-        document.addEventListener('touchend', () => {
-            if (!isDragging) return;
-            isDragging = false;
-            sidebar.style.transition = 'height 0.3s ease';
-            // Snap to one of three rest heights based on where the drag ended:
-            // full (expanded), the near-full default, or a small peek.
-            const h = sidebar.offsetHeight;
-            const vh = window.innerHeight / 100;
-            if (h > 85 * vh) {
-                sidebar.style.height = '92vh';
-                sidebar.classList.add('expanded');
-            } else if (h < 40 * vh) {
-                sidebar.style.height = '25vh';
-                sidebar.classList.remove('expanded');
-            } else {
-                sidebar.style.height = '78vh';
-                sidebar.classList.remove('expanded');
-            }
-        });
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+        handle.addEventListener('touchend', (e) => {
+            if (startY === null) return;
+            const dy = e.changedTouches[0].clientY - startY;
+            startY = null;
+            if (dy > 10) dismissSidebar();  // a downward drag dismisses too
+        }, { passive: true });
     }
+}
+
+/** Slide the bottom-sheet day view back down (mobile). */
+function dismissSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.remove('active');
+    sidebar.style.height = '';
 }
 
 /** Day cells are replaced when the month changes — reattach only these listeners. */
@@ -660,10 +645,8 @@ async function showSidebar(day) {
     const sidebar = document.getElementById('sidebar');
     const sidebarContent = document.getElementById('sidebarContent');
 
-    // Clear any height left behind by a previous drag/close so the drawer opens
-    // at the CSS default (near-full) every time, not a stale peek height.
+    // Clear any leftover inline height so the drawer opens at its CSS default.
     if (window.innerWidth <= 480) {
-        sidebar.classList.remove('expanded');
         sidebar.style.height = '';
     }
     requestAnimationFrame(() => {sidebar.classList.add('active');});

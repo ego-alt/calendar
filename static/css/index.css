@@ -845,9 +845,8 @@ h2 {
         height: 25px;
         margin: var(--space-1);
     }
-    /* Bottom-sheet event drawer. Opens near-full by default so the day's events
-     * are readable without a manual drag; the handle still drags it taller
-     * (expanded) or down to a peek. */
+    /* Bottom-sheet event drawer. Two states only: open at this default height,
+     * or dismissed — tapping/swiping the handle slides it back down. */
     .sidebar {
         left: 0;
         bottom: -100vh;
@@ -861,24 +860,21 @@ h2 {
     .sidebar.active {
         bottom: 0;
     }
-    .sidebar.expanded {
-        height: 92dvh;
-        transition: height 0.3s ease;
-        overflow-y: auto;
-    }
+    /* Visible bar is 40x4, but padding (drawn transparent via background-clip)
+     * gives it a comfortable tap target for dismissing. */
     .sidebar-handle {
         position: absolute;
-        top: var(--space-2);
+        top: 0;
         left: 50%;
         transform: translateX(-50%);
         width: 40px;
         height: 4px;
+        padding: var(--space-2) var(--space-3);
+        box-sizing: content-box;
         background-color: var(--color-text-muted);
+        background-clip: content-box;
         border-radius: 2px;
-        cursor: grab;
-    }
-    .sidebar-handle:active {
-        cursor: grabbing;
+        cursor: pointer;
     }
     .diary-sidebar, .year-sidebar {
         width: 90vw;
