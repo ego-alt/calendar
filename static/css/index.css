@@ -321,8 +321,8 @@ h2 {
  * pre-cleanup per-button layout (top 20, right 40, ~4 between buttons). */
 .header-buttons {
     position: fixed;
-    top: var(--space-5);
-    right: var(--space-5);
+    top: max(var(--space-5), env(safe-area-inset-top));
+    right: max(var(--space-5), env(safe-area-inset-right));
     display: flex;
     gap: var(--space-1);
     z-index: 1001;
@@ -392,6 +392,7 @@ h2 {
     justify-content: center;
     max-width: 300px;
     width: 90%;
+    z-index: 1002;  /* Above the bottom-sheet sidebar (1000) on mobile */
 }
 .color-option {
     width: 30px;
@@ -720,9 +721,26 @@ h2 {
 }
 /* Mobile styles */
 @media (max-width: 480px) {
+    /* Larger, better-spaced tap targets for the fixed header icon row. */
+    .header-buttons {
+        gap: var(--space-2);
+    }
+    .header-buttons .btn-ghost {
+        padding: var(--space-3);
+    }
+    /* iOS zooms the page when focusing any field under 16px and never zooms
+     * back out. Keep the visual scale but lift these to 16px on phones. */
+    .date-input,
+    .time-input,
+    #newSubEventForm input,
+    #newSubEventForm textarea,
+    #editEventForm input,
+    #editEventForm textarea {
+        font-size: var(--text-base);
+    }
     .color-picker {
         position: fixed;
-        bottom: var(--space-5);
+        bottom: max(var(--space-5), env(safe-area-inset-bottom));
         left: 50%;
         flex-direction: row;  /* Horizontal layout */
     }
@@ -736,7 +754,7 @@ h2 {
         bottom: -100vh;
         top: auto;
         width: 90vw;
-        height: 20vh;
+        height: 40vh;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         transition: bottom 0.3s ease;
         overflow: hidden;
@@ -964,6 +982,14 @@ h2 {
     .week-grid {
         --hour-h: 36px;
         --gutter-w: 32px;
+        overflow-x: auto;  /* 7 columns won't fit a phone — scroll the grid as a unit */
+    }
+    /* Header, all-day row, and body share a min-width so they scroll together
+     * and each day column stays wide enough to read (~70px). */
+    .week-grid-header,
+    .week-allday-row,
+    .week-grid-body {
+        min-width: 520px;
     }
     .week-day-weekday {
         font-size: var(--text-sm);
