@@ -322,18 +322,18 @@ h2 {
     opacity: 1;
 }
 
-/* Fixed top bar holding the view toggle (left) and the icon buttons (right) in
- * one vertically-centered row, so the two never drift onto different lines. */
+/* Fixed top-right icon-button bar. z 1003 keeps it above the sliding drawers so
+ * the icons stay tappable to close a drawer (the view toggle is a separate
+ * element so it can sit *below* the drawers — see .view-toggle). */
 .app-header {
     position: fixed;
     top: max(var(--space-5), env(safe-area-inset-top));
     left: max(var(--space-5), env(safe-area-inset-left));
     right: max(var(--space-5), env(safe-area-inset-right));
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    gap: var(--space-3);
-    z-index: 1001;
+    z-index: 1003;
 }
 /* Icon-button cluster — chrome lives in .btn + .btn-ghost (markup carries both). */
 .header-buttons {
@@ -347,9 +347,11 @@ h2 {
 /* Single-press view toggle — one button, click anywhere flips month<->week
  * (no aiming at a segment, no mouse travel). The thumb slides to the active
  * mode. Equal-width labels (min-width covers the longer one) so the 50% thumb
- * lines up under either. Lives at the left of .app-header. */
+ * lines up under either. A standalone fixed element (not in .app-header) at
+ * z 1001 — below the drawers (1002) so they slide over it, above the left day
+ * drawer (1000). Coordinates are set per breakpoint. */
 .view-toggle {
-    position: relative;  /* containing block for the absolutely-placed thumb */
+    position: fixed;  /* fixed = containing block for the absolute thumb */
     display: inline-flex;
     padding: 2px;
     font: inherit;
@@ -512,6 +514,12 @@ h2 {
     overflow-y: auto;
     padding: var(--space-5);
     top: 0;
+}
+/* Right-hand drawers layer above the view toggle (1001) but below the icon
+ * buttons (1003), so the icons stay tappable to close them. The left day drawer
+ * stays at 1000 (below the toggle). */
+.diary-sidebar, .year-sidebar {
+    z-index: 1002;
 }
 .sidebar, .diary-sidebar {
     background-image: repeating-linear-gradient(
@@ -777,16 +785,11 @@ h2 {
         margin: 3px;
     }
     /* The day sidebar slides in full-height from the left, so the top-left spot
-     * is taken. Float the toggle in the bottom-left corner instead (clear of the
-     * sidebar's date header) and let the icon cluster keep the top row alone. */
-    .app-header {
-        justify-content: flex-end;
-    }
+     * is taken. Float the toggle in the bottom-left corner instead, clear of the
+     * sidebar's date header. */
     .view-toggle {
-        position: fixed;
         bottom: max(var(--space-5), env(safe-area-inset-bottom));
         left: max(var(--space-5), env(safe-area-inset-left));
-        z-index: 1001;
     }
 }
 /* Mobile styles */
@@ -803,13 +806,21 @@ h2 {
         font-size: var(--text-lg);
         margin-bottom: var(--space-3);
     }
-    /* Tuck the whole header up into the corners on phones, and drop it below the
-     * drawers (z 1000) so a sliding sidebar covers the header/pill instead of
-     * the pill floating on top of it. */
+    /* Tuck the icon bar up into the top corner. It keeps z 1003 (above drawers)
+     * so the icons stay tappable to close a drawer. */
     .app-header {
         top: max(var(--space-3), env(safe-area-inset-top));
         left: max(var(--space-3), env(safe-area-inset-left));
         right: max(var(--space-3), env(safe-area-inset-right));
+        height: var(--space-8);
+    }
+    /* Toggle tucks into the top-left, height-matched to the icon row so the two
+     * read as one row, but at z 999 so a drawer slides over it. */
+    .view-toggle {
+        top: max(var(--space-3), env(safe-area-inset-top));
+        left: max(var(--space-3), env(safe-area-inset-left));
+        height: var(--space-8);
+        align-items: center;
         z-index: 999;
     }
     .header-buttons {
