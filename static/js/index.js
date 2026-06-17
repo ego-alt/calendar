@@ -74,7 +74,10 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleYearView();
     });
     document.getElementById('weekViewBtn').addEventListener('click', () => {
-        toggleWeekView();
+        toggleWeekView(true);
+    });
+    document.getElementById('monthViewBtn').addEventListener('click', () => {
+        toggleWeekView(false);
     });
 });
 
@@ -129,7 +132,7 @@ function setupGlobalEventListeners() {
         const yearView = document.getElementById('yearView');
 
         const isInteractiveClick = event.target.closest(
-            '#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn, #weekViewBtn, .week-grid'
+            '#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn, .view-toggle, .week-grid'
         );
 
         if (!isInteractiveClick) {
@@ -415,6 +418,7 @@ async function updateCalendarView() {
 
 function toggleWeekView(show) {
     const weekBtn = document.getElementById('weekViewBtn');
+    const monthBtn = document.getElementById('monthViewBtn');
     const monthGrid = document.getElementById('viewMonth');
     const weekGrid = document.getElementById('viewWeek');
 
@@ -434,6 +438,7 @@ function toggleWeekView(show) {
         monthGrid.style.display = 'none';
         weekGrid.style.display = '';
         weekBtn.classList.add('active');
+        monthBtn.classList.remove('active');
         renderWeek();
     } else {
         viewState.mode = 'month';
@@ -442,6 +447,7 @@ function toggleWeekView(show) {
         monthGrid.style.display = '';
         weekGrid.style.display = 'none';
         weekBtn.classList.remove('active');
+        monthBtn.classList.add('active');
         updateCalendarView();
     }
 }
