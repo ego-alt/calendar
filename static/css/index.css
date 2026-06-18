@@ -817,10 +817,11 @@ h2 {
         left: max(var(--space-3), env(safe-area-inset-left));
         right: max(var(--space-3), env(safe-area-inset-right));
     }
-    /* Toggle tucks into the top-left, top-aligned with the icon row, at z 999 so
-     * a drawer slides over it. */
+    /* Toggle tucks into the top-left at z 999 (a drawer slides over it). The
+     * +6px centers the short pill against the taller icon row so it reads as
+     * sitting in the same bar. */
     .view-toggle {
-        top: max(var(--space-3), env(safe-area-inset-top));
+        top: calc(max(var(--space-3), env(safe-area-inset-top)) + 6px);
         left: max(var(--space-3), env(safe-area-inset-left));
         z-index: 999;
     }

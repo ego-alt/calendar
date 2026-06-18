@@ -162,21 +162,26 @@ function setupGlobalEventListeners() {
     });
 
     if (window.innerWidth <= 480) {
-        // The bottom sheet has two states only: open at its default height, or
-        // dismissed. Tapping or swiping down on the handle slides it away (same
-        // as tapping the backdrop) — no half-heights, no pull-to-expand.
+        // Dismiss the bottom sheet by tapping the handle, or by pressing and
+        // swiping down anywhere on the card. The swipe only counts when the
+        // content is scrolled to the top, so it doesn't fight content scrolling.
+        const sheet = document.getElementById('sidebar');
         const handle = document.querySelector('.sidebar-handle');
-        let startY = null;
-
         handle.addEventListener('click', dismissSidebar);
-        handle.addEventListener('touchstart', (e) => {
+
+        let startY = null, atTop = false;
+        sheet.addEventListener('touchstart', (e) => {
             startY = e.touches[0].clientY;
+            atTop = sheet.scrollTop <= 0;
         }, { passive: true });
-        handle.addEventListener('touchend', (e) => {
+        sheet.addEventListener('touchend', (e) => {
             if (startY === null) return;
             const dy = e.changedTouches[0].clientY - startY;
             startY = null;
-            if (dy > 10) dismissSidebar();  // a downward drag dismisses too
+            if (atTop && dy > 60) {
+                suppressClickUntil = e.timeStamp + 500;  // swallow the trailing tap
+                dismissSidebar();
+            }
         }, { passive: true });
     }
 }
