@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Calendar · Stats</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/structural.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/stats.css') }}">
+</head>
+<body class="stats-page">
+    <div class="st-wrap">
+        <header class="st-header">
+            <a class="btn btn-ghost st-back" href="{{ url_for('index_routes.index') }}"><i class="fas fa-chevron-left"></i> Calendar</a>
+            <h1>Your year in moods</h1>
+            <div class="st-range" id="range"></div>
+        </header>
+
+        <section class="st-tiles" id="tiles"></section>
+
+        <section class="st-card">
+            <h2>Mood calendar</h2>
+            <p class="hint">Every logged day, coloured by mood — the last 12 months.</p>
+            <div class="st-hm-scroll">
+                <div class="st-hm-months" id="hmMonths"></div>
+                <div class="st-hm-body">
+                    <div class="st-hm-dows"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span>Sun</span></div>
+                    <div class="st-hm-grid" id="hmGrid"></div>
+                </div>
+            </div>
+            <div class="st-legend" id="legend"></div>
+        </section>
+
+        <div class="st-2col">
+            <section class="st-card st-dist">
+                <h2>Mood distribution</h2>
+                <p class="hint">Share of logged days.</p>
+                <div id="dist"></div>
+            </section>
+            <section class="st-card">
+                <h2>Mood mix by month</h2>
+                <p class="hint">How your mood composition shifted over the year.</p>
+                <div class="st-stack" id="monthMix" style="grid-template-columns: repeat(12, 1fr);"></div>
+                <div class="st-stack-labels" id="monthMixLabels" style="grid-template-columns: repeat(12, 1fr);"></div>
+            </section>
+        </div>
+
+        <div class="st-2col">
+            <section class="st-card">
+                <h2>Mood by weekday</h2>
+                <p class="hint">Are some days consistently better?</p>
+                <div class="st-stack" id="weekday" style="grid-template-columns: repeat(7, 1fr);"></div>
+                <div class="st-stack-labels" style="grid-template-columns: repeat(7, 1fr);">
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                </div>
+            </section>
+            <section class="st-card">
+                <h2>Events per month</h2>
+                <p class="hint">How busy each month was.</p>
+                <div class="st-ev" id="ev"></div>
+                <div class="st-ev-labels" id="evLabels"></div>
+            </section>
+        </div>
+
+        <div class="st-2col">
+            <section class="st-card st-rank">
+                <h2>Top people</h2>
+                <p class="hint">Who you spent the most time with.</p>
+                <div id="people"></div>
+            </section>
+            <section class="st-card st-rank">
+                <h2>Top places</h2>
+                <p class="hint">Where you were most often.</p>
+                <div id="places"></div>
+            </section>
+        </div>
+    </div>
+
+    <script id="stats-data" type="application/json">{{ data | tojson }}</script>
+    <script src="{{ url_for('static', filename='js/stats.js') }}"></script>
+</body>
+</html>

@@ -15,6 +15,7 @@ from routes import (
     event_blueprint,
     index_blueprint,
     mood_blueprint,
+    stats_blueprint,
 )
 
 
@@ -62,6 +63,7 @@ def create_app(config=None):
     app.register_blueprint(event_blueprint)
     app.register_blueprint(index_blueprint)
     app.register_blueprint(mood_blueprint)
+    app.register_blueprint(stats_blueprint)
 
     db.init_app(app)
     Migrate(app, db)

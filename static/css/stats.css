@@ -1,0 +1,71 @@
+/* Stats page. Tokens come from structural.css (skeleton) + index.css (colours).
+   Everything here is `st-` prefixed / scoped so it can't collide with the
+   calendar's own component CSS in index.css. */
+body.stats-page {
+    display: block;
+    background: var(--color-bg-base);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: var(--space-5);
+    min-height: 100vh;
+}
+.st-wrap { max-width: 1040px; margin: 0 auto; }
+.st-header { margin-bottom: var(--space-5); }
+.st-back { margin-bottom: var(--space-3); }
+.st-header h1 { font-size: var(--text-xl); font-weight: 550; letter-spacing: -0.01em; margin: var(--space-2) 0 0; }
+.st-range { color: var(--color-text-muted); font-size: var(--text-sm); }
+
+.st-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin-bottom: var(--space-4); }
+.st-tile { background: var(--color-bg-elevated); border: 1px solid var(--color-border-soft); border-radius: var(--radius-md); padding: var(--space-4); }
+.st-tile .n { font-size: 1.9rem; font-weight: 650; line-height: 1; }
+.st-tile .l { color: var(--color-text-muted); font-size: var(--text-sm); margin-top: var(--space-2); }
+.st-tile .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+
+.st-card { background: var(--color-bg-elevated); border: 1px solid var(--color-border-soft); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-4); }
+.st-card h2 { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-1); }
+.st-card .hint { color: var(--color-text-muted); font-size: var(--text-sm); margin: 0 0 var(--space-4); }
+.st-2col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+
+/* heatmap */
+.st-hm-scroll { overflow-x: auto; padding-bottom: var(--space-2); }
+.st-hm-months { display: grid; grid-auto-flow: column; gap: 3px; margin-left: 26px; margin-bottom: 4px; }
+.st-hm-months span { font-size: 0.7rem; color: var(--color-text-muted); }
+.st-hm-body { display: flex; gap: 6px; }
+.st-hm-dows { display: grid; grid-template-rows: repeat(7, 13px); gap: 3px; font-size: 0.62rem; color: var(--color-text-muted); }
+.st-hm-dows span { line-height: 13px; }
+.st-hm-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 13px); gap: 3px; }
+.st-cell { width: 13px; height: 13px; border-radius: 3px; background: var(--color-bg-inset); }
+.st-legend { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.st-legend .item { display: inline-flex; align-items: center; gap: 6px; }
+.st-legend .sw { width: 12px; height: 12px; border-radius: 3px; }
+
+/* distribution */
+.st-dist .row { display: grid; grid-template-columns: 70px 1fr 64px; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); font-size: var(--text-sm); }
+.st-dist .bar { height: 14px; border-radius: var(--radius-sm); background: var(--color-bg-inset); overflow: hidden; }
+.st-dist .fill { height: 100%; border-radius: var(--radius-sm); }
+.st-dist .val { color: var(--color-text-muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* stacked columns (weekday + month mix) */
+.st-stack { display: grid; gap: var(--space-2); align-items: end; height: 150px; }
+.st-stack .col { display: flex; flex-direction: column-reverse; height: 100%; border-radius: var(--radius-sm); overflow: hidden; background: var(--color-bg-inset); }
+.st-stack .seg { width: 100%; }
+.st-stack-labels { display: grid; gap: var(--space-2); margin-top: var(--space-2); font-size: 0.7rem; color: var(--color-text-muted); text-align: center; }
+
+/* events per month */
+.st-ev { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--space-2); align-items: end; height: 150px; }
+.st-ev .col { background: var(--color-accent); border-radius: var(--radius-sm) var(--radius-sm) 0 0; opacity: 0.85; min-height: 2px; }
+.st-ev-labels { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--space-2); margin-top: var(--space-2); font-size: 0.66rem; color: var(--color-text-muted); text-align: center; }
+
+/* ranked lists */
+.st-rank .row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border-soft); font-size: var(--text-sm); }
+.st-rank .row:last-child { border-bottom: 0; }
+.st-rank .meter { height: 8px; background: var(--color-bg-inset); border-radius: var(--radius-sm); margin-top: 4px; overflow: hidden; }
+.st-rank .meter > div { height: 100%; background: var(--color-accent); border-radius: var(--radius-sm); }
+.st-rank .count { color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.st-empty { color: var(--color-text-muted); font-size: var(--text-sm); }
+
+@media (max-width: 640px) {
+    .st-tiles { grid-template-columns: repeat(2, 1fr); }
+    .st-2col { grid-template-columns: 1fr; }
+}

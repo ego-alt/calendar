@@ -5,7 +5,7 @@ from datetime import date, datetime, time, timedelta
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
-from models import DailyLog, Event
+from models import DailyLog, Event, Mood
 
 
 def parse_event_datetime(date_str, time_str=None, is_end: bool = False):
@@ -232,3 +232,173 @@ def get_year_data(year: int, user_id: int | None) -> list[dict]:
             }
         )
     return months_data
+
+
+def _trailing_months(today: date, n: int = 12):
+    """The last `n` (year, month) slots ending with today's month, oldest first."""
+    slots = []
+    for i in range(n - 1, -1, -1):
+        y, m = today.year, today.month - i
+        while m <= 0:
+            m += 12
+            y -= 1
+        slots.append((y, m))
+    return slots
+
+
+def _rank(counter: dict, limit: int = 6) -> list[dict]:
+    return [
+        {"name": k, "count": v}
+        for k, v in sorted(counter.items(), key=lambda kv: -kv[1])[:limit]
+    ]
+
+
+def _tally_freetext(counter: dict, display: dict, raw: str):
+    """Group free-text people/places case-insensitively, keeping first-seen spelling.
+    `with_who` may be a comma-separated list; `where` is treated as one value."""
+    for part in (p.strip() for p in raw.split(",")):
+        if not part:
+            continue
+        key = part.lower()
+        display.setdefault(key, part)
+        counter[display[key]] = counter.get(display[key], 0) + 1
+
+
+def get_stats_data(user_id: int) -> dict:
+    """Aggregate a user's last-12-months mood + event activity for the stats page.
+
+    Mood stats are count-based (no ordinal mood scale exists), so we report a
+    monthly mood *mix* rather than an average. All computed server-side; the
+    template embeds this as JSON and stats.js renders it.
+    """
+    today = date.today()
+    end = today
+    start = end - timedelta(days=364)
+    grid_start = start - timedelta(days=start.weekday())  # back to Monday for the grid
+
+    moods = Mood.query.all()  # palette order (also legend order)
+
+    logs = (
+        DailyLog.query.options(joinedload(DailyLog.mood))
+        .filter(
+            DailyLog.user_id == user_id,
+            DailyLog.date >= grid_start,
+            DailyLog.date <= end,
+        )
+        .all()
+    )
+    mood_by_date = {log.date: log.mood for log in logs if log.mood}
+
+    # Heatmap cells: every day grid_start..end, coloured if logged.
+    days = []
+    d = grid_start
+    while d <= end:
+        m = mood_by_date.get(d)
+        days.append({"d": d.isoformat(), "c": m.color if m else None, "n": m.name if m else None})
+        d += timedelta(days=1)
+
+    # Stats window is the trailing 365 days (exclude the pre-Monday grid padding).
+    window = {dt: m for dt, m in mood_by_date.items() if dt >= start}
+    logged_dates = set(window)
+
+    def _mix(sample):  # [{color, share}] in palette order
+        n = len(sample)
+        if not n:
+            return []
+        by_name = defaultdict(int)
+        for m in sample:
+            by_name[m.name] += 1
+        return [
+            {"color": m.color, "share": round(by_name[m.name] / n * 100, 1)}
+            for m in moods
+            if by_name.get(m.name)
+        ]
+
+    # Distribution + top mood (palette order, then sorted by count).
+    counts = defaultdict(int)
+    for m in window.values():
+        counts[m.name] += 1
+    distribution = sorted(
+        (
+            {
+                "name": m.name,
+                "color": m.color,
+                "count": counts[m.name],
+                "pct": round(counts[m.name] / len(window) * 100) if window else 0,
+            }
+            for m in moods
+            if counts.get(m.name)
+        ),
+        key=lambda x: -x["count"],
+    )
+    top_mood = (
+        {"name": distribution[0]["name"], "color": distribution[0]["color"]}
+        if distribution
+        else None
+    )
+
+    # Streaks (consecutive logged days).
+    current = 0
+    dd = end
+    while dd in logged_dates:
+        current += 1
+        dd -= timedelta(days=1)
+    longest = run = 0
+    dd = start
+    while dd <= end:
+        run = run + 1 if dd in logged_dates else 0
+        longest = max(longest, run)
+        dd += timedelta(days=1)
+
+    weekday = [_mix([m for dt, m in window.items() if dt.weekday() == wd]) for wd in range(7)]
+
+    slots = _trailing_months(today)
+    slot_index = {s: i for i, s in enumerate(slots)}
+    month_mix = [
+        {
+            "label": date(y, m, 1).strftime("%b"),
+            "segments": _mix([mo for dt, mo in window.items() if (dt.year, dt.month) == (y, m)]),
+        }
+        for (y, m) in slots
+    ]
+
+    # Events.
+    events = (
+        Event.query.filter(
+            Event.user_id == user_id,
+            Event.start_time >= datetime.combine(start, time.min),
+        ).all()
+    )
+    ev_counts = [0] * len(slots)
+    people, people_disp, places, places_disp = {}, {}, {}, {}
+    for e in events:
+        idx = slot_index.get((e.start_time.year, e.start_time.month))
+        if idx is not None:
+            ev_counts[idx] += 1
+        if e.with_who:
+            _tally_freetext(people, people_disp, e.with_who)
+        if e.where:
+            _tally_freetext(places, places_disp, e.where)
+    events_per_month = [
+        {"label": date(y, m, 1).strftime("%b"), "count": ev_counts[i]}
+        for i, (y, m) in enumerate(slots)
+    ]
+
+    return {
+        "range_start": start.isoformat(),
+        "range_end": end.isoformat(),
+        "days": days,
+        "tiles": {
+            "logged": len(window),
+            "total": (end - start).days + 1,
+            "current_streak": current,
+            "longest_streak": longest,
+            "top_mood": top_mood,
+        },
+        "distribution": distribution,
+        "weekday": weekday,
+        "month_mix": month_mix,
+        "events_per_month": events_per_month,
+        "people": _rank(people),
+        "places": _rank(places),
+    }
