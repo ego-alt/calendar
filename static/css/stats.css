@@ -40,11 +40,6 @@ body.stats-page {
 .st-legend .item { display: inline-flex; align-items: center; gap: 6px; }
 .st-legend .sw { width: 12px; height: 12px; border-radius: 3px; }
 
-/* distribution */
-.st-dist .row { display: grid; grid-template-columns: 70px 1fr 64px; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); font-size: var(--text-sm); }
-.st-dist .bar { height: 14px; border-radius: var(--radius-sm); background: var(--color-bg-inset); overflow: hidden; }
-.st-dist .fill { height: 100%; border-radius: var(--radius-sm); }
-.st-dist .val { color: var(--color-text-muted); text-align: right; font-variant-numeric: tabular-nums; }
 
 /* stacked columns (weekday + month mix) */
 .st-stack { display: grid; gap: var(--space-2); align-items: end; height: 150px; }
@@ -64,6 +59,19 @@ body.stats-page {
 .st-rank .meter > div { height: 100%; background: var(--color-accent); border-radius: var(--radius-sm); }
 .st-rank .count { color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
 .st-empty { color: var(--color-text-muted); font-size: var(--text-sm); }
+
+/* mood mix toggle */
+.st-mix-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-1); }
+.st-mix-header h2 { margin: 0; }
+.st-toggle { display: flex; gap: 2px; background: var(--color-bg-inset); border-radius: var(--radius-sm); padding: 2px; }
+.st-tab { background: none; border: none; color: var(--color-text-muted); font-size: var(--text-sm); font-family: var(--font-sans); padding: 4px 12px; border-radius: var(--radius-sm); cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
+.st-tab.active { background: var(--color-bg-elevated); color: var(--color-text-primary); }
+.st-tab:hover:not(.active) { color: var(--color-text-secondary); }
+
+/* mood trend */
+.st-tgrid { stroke: var(--color-border-soft); stroke-width: 1; }
+.st-tline { stroke: var(--color-accent); stroke-width: 2; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.st-tlabel { font-size: 10px; fill: var(--color-text-muted); font-family: var(--font-sans); }
 
 @media (max-width: 640px) {
     .st-tiles { grid-template-columns: repeat(2, 1fr); }

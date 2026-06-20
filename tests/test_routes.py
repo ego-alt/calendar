@@ -108,12 +108,12 @@ def test_subevent_crud(authed_client):
 
 def test_mood_update_and_marker(authed_client):
     update = authed_client.post("/mood/update", json={
-        "year": 2026, "month": 5, "day": 11, "color": "rgb(46, 204, 113)",
+        "year": 2026, "month": 5, "day": 11, "mood": "great",
     })
     assert update.status_code == 200
 
     month = authed_client.get("/get_month?year=2026&month=5").get_json()
-    assert month["mood_colors"]["11"] == "rgb(46, 204, 113)"
+    assert month["mood_colors"]["11"] == "#2ecc7180"
 
     toggle = authed_client.post("/mood/marker/toggle", json={
         "year": 2026, "month": 5, "day": 11,

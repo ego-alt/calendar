@@ -125,7 +125,7 @@ def delete_attachment(attachment_id):
     daily_log = attachment.daily_log
     db.session.delete(attachment)
 
-    if not daily_log.has_marker and daily_log.mood_id is None and len(daily_log.attachments) <= 1:
+    if not daily_log.has_marker and daily_log.mood_key is None and len(daily_log.attachments) <= 1:
         db.session.delete(daily_log)
 
     db.session.commit()

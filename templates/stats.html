@@ -24,7 +24,7 @@
 
         <section class="st-card">
             <h2>Mood calendar</h2>
-            <p class="hint">Every logged day, coloured by mood — the last 12 months.</p>
+            <p class="hint">Every logged day, coloured by mood — the last 12 months</p>
             <div class="st-hm-scroll">
                 <div class="st-hm-months" id="hmMonths"></div>
                 <div class="st-hm-body">
@@ -35,32 +35,35 @@
             <div class="st-legend" id="legend"></div>
         </section>
 
-        <div class="st-2col">
-            <section class="st-card st-dist">
-                <h2>Mood distribution</h2>
-                <p class="hint">Share of logged days.</p>
-                <div id="dist"></div>
-            </section>
-            <section class="st-card">
-                <h2>Mood mix by month</h2>
-                <p class="hint">How your mood composition shifted over the year.</p>
-                <div class="st-stack" id="monthMix" style="grid-template-columns: repeat(12, 1fr);"></div>
-                <div class="st-stack-labels" id="monthMixLabels" style="grid-template-columns: repeat(12, 1fr);"></div>
-            </section>
-        </div>
+        <section class="st-card">
+            <div class="st-mix-header">
+                <h2>28-day Rolling Average of Mood</h2>
+                <div class="st-toggle" role="tablist">
+                    <button class="st-tab" data-days="90"  role="tab">3M</button>
+                    <button class="st-tab" data-days="180" role="tab">6M</button>
+                    <button class="st-tab active" data-days="365" role="tab">1Y</button>
+                </div>
+            </div>
+            <p class="hint">Smoothed mood score over time</p>
+            <div id="trend"></div>
+        </section>
 
         <div class="st-2col">
             <section class="st-card">
-                <h2>Mood by weekday</h2>
-                <p class="hint">Are some days consistently better?</p>
-                <div class="st-stack" id="weekday" style="grid-template-columns: repeat(7, 1fr);"></div>
-                <div class="st-stack-labels" style="grid-template-columns: repeat(7, 1fr);">
-                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                <div class="st-mix-header">
+                    <h2>Mood mix</h2>
+                    <div class="st-toggle" role="tablist">
+                        <button class="st-tab active" data-view="month" role="tab">Month</button>
+                        <button class="st-tab" data-view="weekday" role="tab">Weekday</button>
+                    </div>
                 </div>
+                <p class="hint">How your mood composition shifted</p>
+                <div class="st-stack" id="mixStack"></div>
+                <div class="st-stack-labels" id="mixLabels"></div>
             </section>
             <section class="st-card">
                 <h2>Events per month</h2>
-                <p class="hint">How busy each month was.</p>
+                <p class="hint">How busy each month was</p>
                 <div class="st-ev" id="ev"></div>
                 <div class="st-ev-labels" id="evLabels"></div>
             </section>
@@ -69,12 +72,12 @@
         <div class="st-2col">
             <section class="st-card st-rank">
                 <h2>Top people</h2>
-                <p class="hint">Who you spent the most time with.</p>
+                <p class="hint">Who you spent the most time with</p>
                 <div id="people"></div>
             </section>
             <section class="st-card st-rank">
                 <h2>Top places</h2>
-                <p class="hint">Where you were most often.</p>
+                <p class="hint">Where you were most often</p>
                 <div id="places"></div>
             </section>
         </div>

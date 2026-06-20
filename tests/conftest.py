@@ -2,7 +2,7 @@ import pytest
 from werkzeug.security import generate_password_hash
 
 from app import create_app
-from models import Mood, User, db
+from models import User, db
 
 
 @pytest.fixture
@@ -17,7 +17,6 @@ def app(tmp_path):
     })
     with app.app_context():
         db.create_all()
-        db.session.add(Mood(color="rgb(46, 204, 113)", name="emerald"))
         db.session.commit()
         yield app
 

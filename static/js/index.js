@@ -89,6 +89,7 @@ function setupGlobalEventListeners() {
     document.querySelectorAll('.color-option').forEach(option => {
         option.addEventListener('click', async () => {
             if (moodPickerSelectedDay) {
+                const moodKey = option.dataset.mood;
                 const color = window.getComputedStyle(option).backgroundColor;
 
                 try {
@@ -101,7 +102,7 @@ function setupGlobalEventListeners() {
                             year: viewState.year,
                             month: viewState.month,
                             day: moodPickerSelectedDay.dataset.day,
-                            color: color
+                            mood: moodKey
                         })
                     });
 
@@ -217,7 +218,7 @@ function setupMonthGridListeners() {
                             year: viewState.year,
                             month: viewState.month,
                             day: day.dataset.day,
-                            color: null
+                            mood: null
                         })
                     });
                     

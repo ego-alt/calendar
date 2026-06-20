@@ -422,13 +422,12 @@ h2 {
 .color-option:hover {
     transform: scale(1.1);
 }
-/* Mood palette — values are persisted per-day in the DB, so editing these
- * shifts only newly-picked moods (existing rows keep their stored colors). */
-.color-option[data-mood="emerald"]   { background: #2ecc7180; }
-.color-option[data-mood="sea"]       { background: #16a58580; }
-.color-option[data-mood="turquoise"] { background: #00959580; }
-.color-option[data-mood="royal"]     { background: #3674b580; }
-.color-option[data-mood="purple"]    { background: #5b5bb580; }
+/* Mood palette — colors sourced from moods.py. */
+.color-option[data-mood="great"] { background: #2ecc7180; }
+.color-option[data-mood="good"]  { background: #16a58580; }
+.color-option[data-mood="okay"]  { background: #00959580; }
+.color-option[data-mood="low"]   { background: #3674b580; }
+.color-option[data-mood="rough"] { background: #5b5bb580; }
 .month-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);

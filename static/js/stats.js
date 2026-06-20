@@ -47,13 +47,6 @@
         .map((m) => `<span class="item"><span class="sw" style="background:${esc(m.color)}"></span>${esc(m.name)}</span>`)
         .join("") + `<span class="item"><span class="sw" style="background:var(--color-bg-inset)"></span>No log</span>`;
 
-    // distribution
-    const maxCount = Math.max(1, ...data.distribution.map((d) => d.count));
-    $("dist").innerHTML = data.distribution.length
-        ? data.distribution.map((d) =>
-            `<div class="row"><span>${esc(d.name)}</span><span class="bar"><span class="fill" style="width:${d.count / maxCount * 100}%;background:${esc(d.color)}"></span></span><span class="val">${d.count} · ${d.pct}%</span></div>`).join("")
-        : `<div class="st-empty">No moods logged yet.</div>`;
-
     // stacked columns
     function stack(el, columns) {
         el.innerHTML = "";
@@ -70,15 +63,93 @@
             el.appendChild(col);
         });
     }
-    stack($("weekday"), data.weekday);
-    stack($("monthMix"), data.month_mix.map((m) => m.segments));
-    $("monthMixLabels").innerHTML = data.month_mix.map((m) => `<span>${esc(m.label)}</span>`).join("");
+    const mixViews = {
+        month:   { columns: data.month_mix.map((m) => m.segments), labels: data.month_mix.map((m) => m.label), cols: 12 },
+        weekday: { columns: data.weekday, labels: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"], cols: 7 },
+    };
+    function renderMix(view) {
+        const { columns, labels, cols } = mixViews[view];
+        const stackEl = $("mixStack"), labelsEl = $("mixLabels");
+        stackEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        labelsEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        stack(stackEl, columns);
+        labelsEl.innerHTML = labels.map((l) => `<span>${esc(l)}</span>`).join("");
+    }
+    renderMix("month");
+    document.querySelectorAll(".st-tab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".st-tab").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderMix(btn.dataset.view);
+        });
+    });
 
     // events per month
     const evMax = Math.max(1, ...data.events_per_month.map((e) => e.count));
     $("ev").innerHTML = data.events_per_month
         .map((e) => `<div class="col" style="height:${e.count / evMax * 100}%" title="${e.count} events"></div>`).join("");
     $("evLabels").innerHTML = data.events_per_month.map((e) => `<span>${esc(e.label[0])}</span>`).join("");
+
+    // mood trend
+    (function () {
+        const el = $("trend");
+        const allTrend = data.trend || [];
+        const labels = data.score_labels || [];
+
+        function renderTrend(trend) {
+            const valid = trend.filter(d => d.v !== null);
+            if (valid.length < 7) {
+                el.innerHTML = `<div class="st-empty">Not enough data for this range yet.</div>`;
+                return;
+            }
+            const W = 900, H = 160;
+            const pad = { top: 10, right: 10, bottom: 22, left: 38 };
+            const w = W - pad.left - pad.right;
+            const h = H - pad.top - pad.bottom;
+            const n = trend.length;
+            const xAt = i => pad.left + (i / Math.max(n - 1, 1)) * w;
+            const yAt = v => pad.top + h - ((v - 1) / 4) * h;
+
+            const segs = [];
+            let seg = [];
+            trend.forEach((d, i) => {
+                if (d.v == null) { if (seg.length > 1) segs.push(seg); seg = []; }
+                else seg.push([xAt(i), yAt(d.v)]);
+            });
+            if (seg.length > 1) segs.push(seg);
+            const pathD = segs.map(pts =>
+                pts.map((p, j) => `${j === 0 ? "M" : "L"} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ")
+            ).join(" ");
+
+            const grids = labels.map(s => {
+                const y = yAt(s.score).toFixed(1);
+                return `<line x1="${pad.left}" y1="${y}" x2="${pad.left + w}" y2="${y}" class="st-tgrid"/>
+                        <text x="${pad.left - 5}" y="${(+y + 4).toFixed(1)}" class="st-tlabel">${esc(s.name)}</text>`;
+            }).join("");
+
+            let lastMo = -1;
+            const xTicks = trend.map((d, i) => {
+                const mo = new Date(d.d + "T00:00:00").getMonth();
+                if (mo === lastMo) return "";
+                lastMo = mo;
+                return `<text x="${xAt(i).toFixed(1)}" y="${H - 4}" class="st-tlabel">${MONTHS[mo]}</text>`;
+            }).join("");
+
+            el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
+                ${grids}<path d="${pathD}" class="st-tline"/>${xTicks}
+            </svg>`;
+        }
+
+        renderTrend(allTrend);
+
+        document.querySelectorAll("[data-days]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll("[data-days]").forEach((b) => b.classList.remove("active"));
+                btn.classList.add("active");
+                renderTrend(allTrend.slice(-Number(btn.dataset.days)));
+            });
+        });
+    })();
 
     // ranked lists
     function rank(el, rows) {

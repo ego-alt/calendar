@@ -3,9 +3,9 @@ from collections import defaultdict
 from datetime import date, datetime, time, timedelta
 
 from sqlalchemy import func
-from sqlalchemy.orm import joinedload
 
-from models import DailyLog, Event, Mood
+from models import DailyLog, Event
+from moods import MOOD_BY_KEY, MOODS
 
 
 def parse_event_datetime(date_str, time_str=None, is_end: bool = False):
@@ -45,17 +45,19 @@ def get_month_calendar(year, month):
 
 
 def get_daily_logs(start_date, end_date, user_id: int):
-    # joinedload: outerjoin alone does not populate `log.mood` (avoids N+1 lazy loads).
     daily_info = (
-        DailyLog.query.options(joinedload(DailyLog.mood))
-        .filter(
+        DailyLog.query.filter(
             DailyLog.user_id == user_id,
             DailyLog.date >= start_date,
             DailyLog.date < end_date,
         )
         .all()
     )
-    mood_logs = {log.date.day: log.mood.color for log in daily_info if log.mood}
+    mood_logs = {
+        log.date.day: MOOD_BY_KEY[log.mood_key].color
+        for log in daily_info
+        if log.mood_key
+    }
     marked_days = [log.date.day for log in daily_info if log.has_marker]
     return mood_logs, marked_days
 
@@ -155,15 +157,18 @@ def get_week_data(year, month, day, user_id: int | None):
     ]
 
     logs = (
-        DailyLog.query.options(joinedload(DailyLog.mood))
-        .filter(
+        DailyLog.query.filter(
             DailyLog.user_id == user_id,
             DailyLog.date >= week_start,
             DailyLog.date < week_end,
         )
         .all()
     )
-    mood_colors = {log.date.isoformat(): log.mood.color for log in logs if log.mood}
+    mood_colors = {
+        log.date.isoformat(): MOOD_BY_KEY[log.mood_key].color
+        for log in logs
+        if log.mood_key
+    }
     markers = [log.date.isoformat() for log in logs if log.has_marker]
 
     base["events"] = events_data
@@ -190,8 +195,7 @@ def get_year_data(year: int, user_id: int | None) -> list[dict]:
     year_end = date(year + 1, 1, 1)
 
     daily_info = (
-        DailyLog.query.options(joinedload(DailyLog.mood))
-        .filter(
+        DailyLog.query.filter(
             DailyLog.user_id == user_id,
             DailyLog.date >= year_start,
             DailyLog.date < year_end,
@@ -203,8 +207,8 @@ def get_year_data(year: int, user_id: int | None) -> list[dict]:
     for log in daily_info:
         m = log.date.month
         d = log.date.day
-        if log.mood:
-            mood_by_month[m][d] = log.mood.color
+        if log.mood_key:
+            mood_by_month[m][d] = MOOD_BY_KEY[log.mood_key].color
         if log.has_marker:
             markers_by_month[m].append(d)
 
@@ -264,6 +268,35 @@ def _tally_freetext(counter: dict, display: dict, raw: str):
         counter[display[key]] = counter.get(display[key], 0) + 1
 
 
+def compute_trend(user_id: int, start: date, end: date) -> list[dict]:
+    """Rolling 28-day average mood score for every day in [start, end]."""
+    WINDOW = 28
+    MIN_LOGGED = 4
+    grid_start = start - timedelta(days=WINDOW - 1)
+    logs = DailyLog.query.filter(
+        DailyLog.user_id == user_id,
+        DailyLog.date >= grid_start,
+        DailyLog.date <= end,
+        DailyLog.mood_key.isnot(None),
+    ).all()
+    mood_by_date = {log.date: MOOD_BY_KEY[log.mood_key] for log in logs}
+    trend = []
+    d = start
+    while d <= end:
+        w_start = d - timedelta(days=WINDOW - 1)
+        scores = [
+            mood_by_date[w_start + timedelta(days=i)].score
+            for i in range(WINDOW)
+            if (w_start + timedelta(days=i)) in mood_by_date
+        ]
+        trend.append({
+            "d": d.isoformat(),
+            "v": round(sum(scores) / len(scores), 2) if len(scores) >= MIN_LOGGED else None,
+        })
+        d += timedelta(days=1)
+    return trend
+
+
 def get_stats_data(user_id: int) -> dict:
     """Aggregate a user's last-12-months mood + event activity for the stats page.
 
@@ -276,18 +309,17 @@ def get_stats_data(user_id: int) -> dict:
     start = end - timedelta(days=364)
     grid_start = start - timedelta(days=start.weekday())  # back to Monday for the grid
 
-    moods = Mood.query.all()  # palette order (also legend order)
-
     logs = (
-        DailyLog.query.options(joinedload(DailyLog.mood))
-        .filter(
+        DailyLog.query.filter(
             DailyLog.user_id == user_id,
             DailyLog.date >= grid_start,
             DailyLog.date <= end,
         )
         .all()
     )
-    mood_by_date = {log.date: log.mood for log in logs if log.mood}
+    mood_by_date = {
+        log.date: MOOD_BY_KEY[log.mood_key] for log in logs if log.mood_key
+    }
 
     # Heatmap cells: every day grid_start..end, coloured if logged.
     days = []
@@ -310,7 +342,7 @@ def get_stats_data(user_id: int) -> dict:
             by_name[m.name] += 1
         return [
             {"color": m.color, "share": round(by_name[m.name] / n * 100, 1)}
-            for m in moods
+            for m in MOODS
             if by_name.get(m.name)
         ]
 
@@ -322,11 +354,11 @@ def get_stats_data(user_id: int) -> dict:
         (
             {
                 "name": m.name,
-                "color": m.color,
+                "color": m.color[:7],  # solid hex — no alpha on chart bars/legend
                 "count": counts[m.name],
                 "pct": round(counts[m.name] / len(window) * 100) if window else 0,
             }
-            for m in moods
+            for m in MOODS
             if counts.get(m.name)
         ),
         key=lambda x: -x["count"],
@@ -384,6 +416,8 @@ def get_stats_data(user_id: int) -> dict:
         for i, (y, m) in enumerate(slots)
     ]
 
+    trend = compute_trend(user_id, start, end)
+
     return {
         "range_start": start.isoformat(),
         "range_end": end.isoformat(),
@@ -401,4 +435,9 @@ def get_stats_data(user_id: int) -> dict:
         "events_per_month": events_per_month,
         "people": _rank(people),
         "places": _rank(places),
+        "trend": trend,
+        "score_labels": [
+            {"score": m.score, "name": m.name}
+            for m in sorted(MOODS, key=lambda x: -x.score)
+        ],
     }

@@ -27,28 +27,19 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 
-class Mood(db.Model):
-    __tablename__ = "moods"
-
-    id = db.Column(db.Integer, primary_key=True)
-    color = db.Column(db.String, nullable=False)  # Store as hex color
-    name = db.Column(db.String, nullable=False)
-
-
 class DailyLog(db.Model):
     __tablename__ = "daily_logs"
 
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.Date, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    mood_id = db.Column(db.Integer, db.ForeignKey("moods.id"), nullable=True)
+    mood_key = db.Column(db.String, nullable=True)
     has_marker = db.Column(db.Boolean, nullable=False, default=False)
 
     # Make date unique per user
     __table_args__ = (db.UniqueConstraint("user_id", "date", name="unique_user_date"),)
 
     user = db.relationship("User", back_populates="daily_logs")
-    mood = db.relationship("Mood", uselist=False)
     attachments = db.relationship(
         "Attachment",
         back_populates="daily_log",
