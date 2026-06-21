@@ -346,28 +346,23 @@ def get_stats_data(user_id: int) -> dict:
             if by_name.get(m.name)
         ]
 
-    # Distribution + top mood (palette order, then sorted by count).
+    # Distribution stays in palette order (Great -> Rough); top mood is the
+    # most common, picked separately rather than by reordering the legend.
     counts = defaultdict(int)
     for m in window.values():
         counts[m.name] += 1
-    distribution = sorted(
-        (
-            {
-                "name": m.name,
-                "color": m.color[:7],  # solid hex — no alpha on chart bars/legend
-                "count": counts[m.name],
-                "pct": round(counts[m.name] / len(window) * 100) if window else 0,
-            }
-            for m in MOODS
-            if counts.get(m.name)
-        ),
-        key=lambda x: -x["count"],
-    )
-    top_mood = (
-        {"name": distribution[0]["name"], "color": distribution[0]["color"]}
-        if distribution
-        else None
-    )
+    distribution = [
+        {
+            "name": m.name,
+            "color": m.color[:7],  # solid hex — no alpha on chart bars/legend
+            "count": counts[m.name],
+            "pct": round(counts[m.name] / len(window) * 100) if window else 0,
+        }
+        for m in MOODS
+        if counts.get(m.name)
+    ]
+    top = max(distribution, key=lambda x: x["count"]) if distribution else None
+    top_mood = {"name": top["name"], "color": top["color"]} if top else None
 
     # Streaks (consecutive logged days).
     current = 0
