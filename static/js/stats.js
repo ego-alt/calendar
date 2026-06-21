@@ -70,8 +70,12 @@
     function renderMix(view) {
         const { columns, labels, cols } = mixViews[view];
         const stackEl = $("mixStack"), labelsEl = $("mixLabels");
-        stackEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-        labelsEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        // minmax(0, 1fr), not 1fr: the default `auto` minimum keeps a column
+        // from shrinking below its label's min-width, so 12 month columns push
+        // the card wider than the viewport (horizontal scroll). 0 lets them
+        // share the fixed card width so the card stays uniform across views.
+        stackEl.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+        labelsEl.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
         stack(stackEl, columns);
         labelsEl.innerHTML = labels.map((l) => `<span>${esc(l)}</span>`).join("");
     }

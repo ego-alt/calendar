@@ -48,9 +48,9 @@ body.stats-page {
 .st-stack-labels { display: grid; gap: var(--space-2); margin-top: var(--space-2); font-size: 0.7rem; color: var(--color-text-muted); text-align: center; }
 
 /* events per month */
-.st-ev { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--space-2); align-items: end; height: 150px; }
+.st-ev { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-2); align-items: end; height: 150px; }
 .st-ev .col { background: var(--color-accent); border-radius: var(--radius-sm) var(--radius-sm) 0 0; opacity: 0.85; min-height: 2px; }
-.st-ev-labels { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--space-2); margin-top: var(--space-2); font-size: 0.66rem; color: var(--color-text-muted); text-align: center; }
+.st-ev-labels { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-2); margin-top: var(--space-2); font-size: 0.66rem; color: var(--color-text-muted); text-align: center; }
 
 /* ranked lists */
 .st-rank .row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border-soft); font-size: var(--text-sm); }
