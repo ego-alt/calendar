@@ -79,6 +79,7 @@ body.stats-page {
 /* mood trend */
 .st-tgrid { stroke: var(--color-border-soft); stroke-width: 1; }
 .st-tline { stroke: var(--color-accent); stroke-width: 2; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.st-tdot { fill: var(--color-accent); }
 .st-tlabel { font-size: 10px; fill: var(--color-text-muted); font-family: var(--font-sans); }
 
 @media (max-width: 640px) {

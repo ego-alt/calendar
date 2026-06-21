@@ -107,14 +107,18 @@
         stack(stackEl, columns, (i) => mixTip(labels[i], columns[i]));
         labelsEl.innerHTML = labels.map((l) => `<span>${esc(l)}</span>`).join("");
     }
-    renderMix("month");
-    document.querySelectorAll(".st-tab").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            document.querySelectorAll(".st-tab").forEach((b) => b.classList.remove("active"));
+    // Wire one toggle group: active-class swap is scoped to this container's
+    // buttons (so the trend and mix toggles don't clear each other's state).
+    function wireToggle(container, onSelect) {
+        const btns = container.querySelectorAll(".st-tab");
+        btns.forEach((btn) => btn.addEventListener("click", () => {
+            btns.forEach((b) => b.classList.remove("active"));
             btn.classList.add("active");
-            renderMix(btn.dataset.view);
-        });
-    });
+            onSelect(btn.dataset);
+        }));
+    }
+    renderMix("month");
+    wireToggle($("mixToggle"), (ds) => renderMix(ds.view));
 
     // days with events per month
     const evMax = Math.max(1, ...data.events_per_month.map((e) => e.count));
@@ -129,13 +133,27 @@
     // mood trend
     (function () {
         const el = $("trend");
-        const allTrend = data.trend || [];
+        const allTrend = data.trend || [];   // raw daily score; null where unlogged
         const labels = data.score_labels || [];
+        let win = 7;
+
+        // Trailing rolling average over logged days in the window; win<=1 is the
+        // raw "Actual" series. Gaps (unlogged days) are skipped in the mean.
+        function rolling(series, w) {
+            if (w <= 1) return series;
+            const need = Math.ceil(w / 4);
+            return series.map((_, i) => {
+                let sum = 0, cnt = 0;
+                for (let k = Math.max(0, i - w + 1); k <= i; k++) {
+                    if (series[k].v != null) { sum += series[k].v; cnt++; }
+                }
+                return { d: series[i].d, v: cnt >= need ? +(sum / cnt).toFixed(2) : null };
+            });
+        }
 
         function renderTrend(trend) {
-            const valid = trend.filter(d => d.v !== null);
-            if (valid.length < 7) {
-                el.innerHTML = `<div class="st-empty">Not enough data for this range yet.</div>`;
+            if (trend.filter(d => d.v != null).length < 7) {
+                el.innerHTML = `<div class="st-empty">Not enough data yet.</div>`;
                 return;
             }
             const W = 900, H = 160;
@@ -146,16 +164,21 @@
             const xAt = i => pad.left + (i / Math.max(n - 1, 1)) * w;
             const yAt = v => pad.top + h - ((v - 1) / 4) * h;
 
+            // Runs of consecutive logged days; gaps break the line.
             const segs = [];
             let seg = [];
             trend.forEach((d, i) => {
-                if (d.v == null) { if (seg.length > 1) segs.push(seg); seg = []; }
+                if (d.v == null) { if (seg.length) segs.push(seg); seg = []; }
                 else seg.push([xAt(i), yAt(d.v)]);
             });
-            if (seg.length > 1) segs.push(seg);
-            const pathD = segs.map(pts =>
+            if (seg.length) segs.push(seg);
+            const pathD = segs.filter(s => s.length > 1).map(pts =>
                 pts.map((p, j) => `${j === 0 ? "M" : "L"} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ")
             ).join(" ");
+            // Lone logged days (gap on both sides) would be invisible as a line.
+            const dots = segs.filter(s => s.length === 1).map(s =>
+                `<circle cx="${s[0][0].toFixed(1)}" cy="${s[0][1].toFixed(1)}" r="1.8" class="st-tdot"/>`
+            ).join("");
 
             const grids = labels.map(s => {
                 const y = yAt(s.score).toFixed(1);
@@ -172,19 +195,13 @@
             }).join("");
 
             el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
-                ${grids}<path d="${pathD}" class="st-tline"/>${xTicks}
+                ${grids}<path d="${pathD}" class="st-tline"/>${dots}${xTicks}
             </svg>`;
         }
 
-        renderTrend(allTrend);
-
-        document.querySelectorAll("[data-days]").forEach((btn) => {
-            btn.addEventListener("click", () => {
-                document.querySelectorAll("[data-days]").forEach((b) => b.classList.remove("active"));
-                btn.classList.add("active");
-                renderTrend(allTrend.slice(-Number(btn.dataset.days)));
-            });
-        });
+        function draw() { renderTrend(rolling(allTrend, win)); }
+        draw();
+        wireToggle($("trendWin"), (ds) => { win = Number(ds.win); draw(); });
     })();
 
     // ranked lists

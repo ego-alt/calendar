@@ -269,30 +269,23 @@ def _tally_freetext(counter: dict, display: dict, raw: str):
 
 
 def compute_trend(user_id: int, start: date, end: date) -> list[dict]:
-    """Rolling 28-day average mood score for every day in [start, end]."""
-    WINDOW = 28
-    MIN_LOGGED = 4
-    grid_start = start - timedelta(days=WINDOW - 1)
+    """Raw daily mood score for every day in [start, end] (None where unlogged).
+
+    Rolling-window smoothing (7/28-day) is applied client-side so the toggle is
+    instant; serving the raw series keeps day-to-day variation visible, which is
+    what reveals weekly/monthly cycles that a rolling average would erase.
+    """
     logs = DailyLog.query.filter(
         DailyLog.user_id == user_id,
-        DailyLog.date >= grid_start,
+        DailyLog.date >= start,
         DailyLog.date <= end,
         DailyLog.mood_key.isnot(None),
     ).all()
-    mood_by_date = {log.date: MOOD_BY_KEY[log.mood_key] for log in logs}
+    score_by_date = {log.date: MOOD_BY_KEY[log.mood_key].score for log in logs}
     trend = []
     d = start
     while d <= end:
-        w_start = d - timedelta(days=WINDOW - 1)
-        scores = [
-            mood_by_date[w_start + timedelta(days=i)].score
-            for i in range(WINDOW)
-            if (w_start + timedelta(days=i)) in mood_by_date
-        ]
-        trend.append({
-            "d": d.isoformat(),
-            "v": round(sum(scores) / len(scores), 2) if len(scores) >= MIN_LOGGED else None,
-        })
+        trend.append({"d": d.isoformat(), "v": score_by_date.get(d)})
         d += timedelta(days=1)
     return trend
 

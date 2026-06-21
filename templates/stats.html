@@ -37,14 +37,14 @@
 
         <section class="st-card">
             <div class="st-mix-header">
-                <h2>28-day Rolling Average of Mood</h2>
-                <div class="st-toggle" role="tablist">
-                    <button class="st-tab" data-days="90"  role="tab">3M</button>
-                    <button class="st-tab" data-days="180" role="tab">6M</button>
-                    <button class="st-tab active" data-days="365" role="tab">1Y</button>
+                <h2>Mood over time</h2>
+                <div class="st-toggle" id="trendWin" role="tablist">
+                    <button class="st-tab" data-win="1"  role="tab">Actual</button>
+                    <button class="st-tab active" data-win="7"  role="tab">7d</button>
+                    <button class="st-tab" data-win="28" role="tab">28d</button>
                 </div>
             </div>
-            <p class="hint">Smoothed mood score over time</p>
+            <p class="hint">Daily mood score — pick a rolling-window length to smooth it</p>
             <div id="trend"></div>
         </section>
 
@@ -52,7 +52,7 @@
             <section class="st-card">
                 <div class="st-mix-header">
                     <h2>Mood mix</h2>
-                    <div class="st-toggle" role="tablist">
+                    <div class="st-toggle" id="mixToggle" role="tablist">
                         <button class="st-tab active" data-view="month" role="tab">Month</button>
                         <button class="st-tab" data-view="weekday" role="tab">Weekday</button>
                     </div>
