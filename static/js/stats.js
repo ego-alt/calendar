@@ -7,6 +7,28 @@
 
     $("range").textContent = fmt(data.range_start) + " – " + fmt(data.range_end);
 
+    // Shared hover tooltip: one floating element, follows the cursor.
+    const tip = document.createElement("div");
+    tip.className = "st-tip";
+    tip.hidden = true;
+    document.body.appendChild(tip);
+    function moveTip(e) {
+        const pad = 14, r = tip.getBoundingClientRect();
+        let x = e.clientX + pad, y = e.clientY + pad;
+        if (x + r.width > innerWidth) x = e.clientX - r.width - pad;
+        if (y + r.height > innerHeight) y = e.clientY - r.height - pad;
+        tip.style.left = x + "px";
+        tip.style.top = y + "px";
+    }
+    function attachTip(el, htmlFn) {
+        el.addEventListener("mouseenter", (e) => { tip.innerHTML = htmlFn(); tip.hidden = false; moveTip(e); });
+        el.addEventListener("mousemove", moveTip);
+        el.addEventListener("mouseleave", () => { tip.hidden = true; });
+    }
+    // One mood breakdown row: swatch · name · "count · share%".
+    const tipRow = (s) =>
+        `<div class="row"><span class="sw" style="background:${esc(s.color)}"></span>${esc(s.name)}<span class="v">${s.count} (${s.share}%)</span></div>`;
+
     // tiles
     const t = data.tiles, tm = t.top_mood;
     const tiles = [
@@ -47,10 +69,10 @@
         .map((m) => `<span class="item"><span class="sw" style="background:${esc(m.color)}"></span>${esc(m.name)}</span>`)
         .join("") + `<span class="item"><span class="sw" style="background:var(--color-bg-inset)"></span>No log</span>`;
 
-    // stacked columns
-    function stack(el, columns) {
+    // stacked columns; tipFor(i) -> tooltip HTML for column i (optional)
+    function stack(el, columns, tipFor) {
         el.innerHTML = "";
-        columns.forEach((segs) => {
+        columns.forEach((segs, i) => {
             const col = document.createElement("div");
             col.className = "col";
             (segs || []).forEach((s) => {
@@ -60,8 +82,14 @@
                 d.style.background = s.color;
                 col.appendChild(d);
             });
+            if (tipFor) attachTip(col, () => tipFor(i));
             el.appendChild(col);
         });
+    }
+    function mixTip(label, segs) {
+        if (!segs || !segs.length) return `<div class="h">${esc(label)}</div><div class="row">No logs</div>`;
+        const total = segs.reduce((a, s) => a + s.count, 0);
+        return `<div class="h">${esc(label)} — ${total} days logged</div>${segs.map(tipRow).join("")}`;
     }
     const mixViews = {
         month:   { columns: data.month_mix.map((m) => m.segments), labels: data.month_mix.map((m) => m.label), cols: 12 },
@@ -76,7 +104,7 @@
         // share the fixed card width so the card stays uniform across views.
         stackEl.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
         labelsEl.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
-        stack(stackEl, columns);
+        stack(stackEl, columns, (i) => mixTip(labels[i], columns[i]));
         labelsEl.innerHTML = labels.map((l) => `<span>${esc(l)}</span>`).join("");
     }
     renderMix("month");
@@ -88,10 +116,14 @@
         });
     });
 
-    // events per month
+    // days with events per month
     const evMax = Math.max(1, ...data.events_per_month.map((e) => e.count));
     $("ev").innerHTML = data.events_per_month
-        .map((e) => `<div class="col" style="height:${e.count / evMax * 100}%" title="${e.count} events"></div>`).join("");
+        .map((e) => `<div class="col" style="height:${e.count / evMax * 100}%"></div>`).join("");
+    $("ev").querySelectorAll(".col").forEach((bar, i) => {
+        const e = data.events_per_month[i];
+        attachTip(bar, () => `<div class="h">${esc(e.label)}</div><div class="row">${e.count} days with events</div>`);
+    });
     $("evLabels").innerHTML = data.events_per_month.map((e) => `<span>${esc(e.label[0])}</span>`).join("");
 
     // mood trend

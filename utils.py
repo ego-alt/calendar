@@ -333,7 +333,7 @@ def get_stats_data(user_id: int) -> dict:
     window = {dt: m for dt, m in mood_by_date.items() if dt >= start}
     logged_dates = set(window)
 
-    def _mix(sample):  # [{color, share}] in palette order
+    def _mix(sample):  # [{color, name, count, share}] in palette order
         n = len(sample)
         if not n:
             return []
@@ -341,7 +341,12 @@ def get_stats_data(user_id: int) -> dict:
         for m in sample:
             by_name[m.name] += 1
         return [
-            {"color": m.color, "share": round(by_name[m.name] / n * 100, 1)}
+            {
+                "color": m.color,
+                "name": m.name,
+                "count": by_name[m.name],
+                "share": round(by_name[m.name] / n * 100, 1),
+            }
             for m in MOODS
             if by_name.get(m.name)
         ]
@@ -396,18 +401,20 @@ def get_stats_data(user_id: int) -> dict:
             Event.start_time >= datetime.combine(start, time.min),
         ).all()
     )
-    ev_counts = [0] * len(slots)
+    # Count days with at least one event per month, not raw event totals — a
+    # busy single day shouldn't read the same as events spread across the month.
+    ev_days = [set() for _ in slots]
     people, people_disp, places, places_disp = {}, {}, {}, {}
     for e in events:
         idx = slot_index.get((e.start_time.year, e.start_time.month))
         if idx is not None:
-            ev_counts[idx] += 1
+            ev_days[idx].add(e.start_time.date())
         if e.with_who:
             _tally_freetext(people, people_disp, e.with_who)
         if e.where:
             _tally_freetext(places, places_disp, e.where)
     events_per_month = [
-        {"label": date(y, m, 1).strftime("%b"), "count": ev_counts[i]}
+        {"label": date(y, m, 1).strftime("%b"), "count": len(ev_days[i])}
         for i, (y, m) in enumerate(slots)
     ]
 
