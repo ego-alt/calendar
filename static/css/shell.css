@@ -51,7 +51,9 @@
     font: inherit;
     font-size: var(--text-base);
     color: var(--color-text-muted);
-    padding: 10px 18px;
+    /* Same box height as 10px symmetric, but weighted to the bottom so the label
+       rides at the bar's vertical centre — level with the icons/dropdown. */
+    padding: 5.5px 18px 14.5px;
     min-width: 6.5rem; /* uniform tab width so "Stats" matches "Calendar" */
     text-align: center;
     cursor: pointer;
@@ -91,9 +93,8 @@
     position: absolute;
     right: 0;
     top: calc(100% + 6px);
-    min-width: 11rem;
     display: flex;
-    flex-direction: column;
+    gap: 2px;
     padding: var(--space-1);
     background: var(--color-bg-elevated);
     border: 1px solid var(--color-border-soft);
@@ -107,25 +108,17 @@
 .shell-menu-item {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-2) var(--space-3);
+    justify-content: center;
+    padding: var(--space-2);
     background: none;
     border: none;
     border-radius: var(--radius-sm);
-    font: inherit;
-    font-size: var(--text-sm);
+    font-size: var(--text-lg);
     color: var(--color-text-primary);
-    text-align: left;
-    white-space: nowrap;
     cursor: pointer;
 }
 .shell-menu-item:hover {
     background: var(--color-bg-inset);
-}
-.shell-menu-item i {
-    width: 1em;
-    text-align: center;
-    color: var(--color-text-muted);
 }
 
 /* Month/Week as a compact dropdown — a styled native select (custom chevron,
