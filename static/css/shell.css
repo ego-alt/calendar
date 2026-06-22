@@ -38,7 +38,7 @@
     font: inherit;
     font-size: var(--text-base);
     color: var(--color-text-muted);
-    padding: 8px 18px;
+    padding: 10px 18px;
     min-width: 6.5rem; /* uniform tab width so "Stats" matches "Calendar" */
     text-align: center;
     cursor: pointer;
@@ -154,5 +154,21 @@ body.view-stats #calendarView {
     }
     .shell-select {
         padding: 6px 26px 6px 10px;
+    }
+    /* The month grid doesn't fill a phone screen — centre it vertically in the
+       space below the bar. The wrapper fills that space and centres its own
+       contents; `safe` keeps a tall week view from clipping off the top. */
+    .content-wrapper {
+        margin-top: 0;
+        margin-bottom: 0;
+        min-height: calc(100dvh - 46px - env(safe-area-inset-top));
+        justify-content: safe center;
+    }
+    /* #calendarContainer has margin:auto (its own vertical centring); with the
+       wrapper now taller it would absorb all the slack and strand the title at
+       the top. Zero it so title + grid centre together. */
+    #calendarContainer {
+        margin-top: 0;
+        margin-bottom: 0;
     }
 }
