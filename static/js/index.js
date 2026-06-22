@@ -77,43 +77,46 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('viewSelect').addEventListener('change', (e) => {
         toggleWeekView(e.target.value === 'week');
     });
-    setupShellMenu();
+    setupModeBar();
 });
 
-/** Mobile overflow menu: the ⋮ button collapses Month/Week, Year and Diary
- *  behind one menu so the fixed-width tabs still fit a phone. */
-function setupShellMenu() {
-    const btn = document.getElementById('shellMenuBtn');
-    const panel = document.getElementById('shellMenuPanel');
-    if (!btn || !panel) return;
-
-    const close = () => {
-        panel.hidden = true;
-        btn.setAttribute('aria-expanded', 'false');
-    };
-
-    btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const willOpen = panel.hidden;
-        panel.hidden = !willOpen;
-        btn.setAttribute('aria-expanded', String(willOpen));
+/** Bottom mode bar (mobile): Month / Week / Year / Diary as four peer modes. */
+function setupModeBar() {
+    const bar = document.getElementById('modeBar');
+    if (!bar) return;
+    bar.querySelectorAll('.mode-item').forEach((b) => {
+        b.addEventListener('click', () => setCalendarMode(b.dataset.mode));
     });
+    updateBottomBar();
+}
 
-    panel.querySelectorAll('.shell-menu-item').forEach((item) => {
-        item.addEventListener('click', () => {
-            const act = item.dataset.act;
-            if (act === 'view') toggleWeekView();
-            else if (act === 'year') toggleYearView();
-            else if (act === 'diary') toggleDiaryView();
-            close();
-        });
-    });
+/** Switch the calendar's content mode (month/week grid or year/diary view). */
+function setCalendarMode(mode) {
+    if (mode === 'year') {
+        toggleYearView(true);
+    } else if (mode === 'diary') {
+        toggleDiaryView(true);
+    } else {
+        toggleYearView(false);
+        toggleDiaryView(false);
+        toggleWeekView(mode === 'week');
+    }
+    updateBottomBar();
+}
 
-    // Tap outside the menu closes it.
-    document.addEventListener('click', (e) => {
-        if (!panel.hidden && !e.target.closest('.shell-menu')) close();
+/** Reflect the active mode in the bottom bar (year/diary panel, else month/week). */
+function updateBottomBar() {
+    const bar = document.getElementById('modeBar');
+    if (!bar) return;
+    let mode;
+    if (document.getElementById('yearView').classList.contains('active')) mode = 'year';
+    else if (document.getElementById('diaryView').classList.contains('active')) mode = 'diary';
+    else mode = viewState.mode;
+    bar.querySelectorAll('.mode-item').forEach((b) => {
+        b.classList.toggle('active', b.dataset.mode === mode);
     });
 }
+window.updateBottomBar = updateBottomBar;
 
 /** Document-level and static-DOM listeners — call once. */
 function setupGlobalEventListeners() {
@@ -495,7 +498,6 @@ async function updateCalendarView() {
 
 function toggleWeekView(show) {
     const select = document.getElementById('viewSelect');
-    const menuLabel = document.getElementById('menuViewLabel');
     const monthGrid = document.getElementById('viewMonth');
     const weekGrid = document.getElementById('viewWeek');
 
@@ -515,7 +517,6 @@ function toggleWeekView(show) {
         monthGrid.style.display = 'none';
         weekGrid.style.display = '';
         if (select) select.value = 'week';
-        if (menuLabel) menuLabel.textContent = 'Month view';
         renderWeek();
     } else {
         viewState.mode = 'month';
@@ -524,9 +525,9 @@ function toggleWeekView(show) {
         monthGrid.style.display = '';
         weekGrid.style.display = 'none';
         if (select) select.value = 'month';
-        if (menuLabel) menuLabel.textContent = 'Week view';
         updateCalendarView();
     }
+    updateBottomBar();
 }
 
 async function renderWeek() {
@@ -1421,6 +1422,7 @@ function toggleSidebar(sidebarType, show) {
     } else {
         primarySidebar.classList.remove('active');
     }
+    updateBottomBar();
 }
 
 function toggleDiaryView(show) {

@@ -46,23 +46,6 @@
             <button class="diary-button btn btn-ghost shell-cal-only" id="diaryViewBtn" title="Diary">
                 <i class="fas fa-book"></i>
             </button>
-            <div class="shell-menu shell-cal-only">
-                <button class="shell-menu-btn btn btn-ghost" id="shellMenuBtn" type="button"
-                        aria-haspopup="true" aria-expanded="false" aria-label="More">
-                    <i class="fas fa-ellipsis-vertical"></i>
-                </button>
-                <div class="shell-menu-panel" id="shellMenuPanel" role="menu" hidden>
-                    <button class="shell-menu-item" type="button" role="menuitem" data-act="view" title="Week / Month view" aria-label="Toggle week view">
-                        <i class="fas fa-calendar-week"></i>
-                    </button>
-                    <button class="shell-menu-item" type="button" role="menuitem" data-act="year" title="Year overview" aria-label="Year overview">
-                        <i class="fas fa-calendar-alt"></i>
-                    </button>
-                    <button class="shell-menu-item" type="button" role="menuitem" data-act="diary" title="Month overview" aria-label="Month overview">
-                        <i class="fas fa-book"></i>
-                    </button>
-                </div>
-            </div>
             {% if current_user.is_authenticated %}
                 <button class="login-button btn btn-ghost" onclick="handleLogout()" title="Log out">
                     <i class="fas fa-door-closed"></i>
@@ -253,6 +236,13 @@
             </div>
         </div>
     </main>
+
+    <nav class="mode-bar shell-cal-only" id="modeBar" aria-label="Calendar mode">
+        <button class="mode-item" type="button" data-mode="month"><i class="fas fa-calendar-days"></i><span>Month</span></button>
+        <button class="mode-item" type="button" data-mode="week"><i class="fas fa-calendar-week"></i><span>Week</span></button>
+        <button class="mode-item" type="button" data-mode="year"><i class="fas fa-calendar"></i><span>Year</span></button>
+        <button class="mode-item" type="button" data-mode="diary"><i class="fas fa-book"></i><span>Diary</span></button>
+    </nav>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/app_root.js') }}"></script>

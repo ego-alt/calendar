@@ -27,6 +27,7 @@
         ["yearView", "diaryView", "sidebar"].forEach((id) => {
             document.getElementById(id)?.classList.remove("active");
         });
+        window.updateBottomBar?.();
         document.body.classList.toggle("view-stats", stats);
         document.body.classList.toggle("view-calendar", !stats);
         tabs.forEach((t) => t.classList.toggle("active", t.dataset.view === view));

@@ -4,6 +4,7 @@
    index.css so its overrides win. */
 :root {
     --shell-bar-h: calc(46px + env(safe-area-inset-top));
+    --mode-bar-h: calc(54px + env(safe-area-inset-bottom));
 }
 .shell-bar {
     position: fixed;
@@ -82,43 +83,10 @@
     color: var(--color-text-primary);
 }
 
-/* Overflow menu — hidden on desktop (the controls sit inline there); on mobile
-   it collapses the calendar controls (Month/Week, Year, Diary) behind one
-   button so the fixed-width tabs still fit. */
-.shell-menu {
-    position: relative;
+/* Bottom mode bar — mobile only (the four calendar modes live in the top bar's
+   inline controls on desktop). Shown via the @media block below. */
+.mode-bar {
     display: none;
-}
-.shell-menu-panel {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 6px);
-    display: flex;
-    gap: 2px;
-    padding: var(--space-1);
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-md);
-    box-shadow: 0 6px 20px var(--color-shadow);
-    z-index: 1004; /* above the bar (1003) */
-}
-.shell-menu-panel[hidden] {
-    display: none;
-}
-.shell-menu-item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-2);
-    background: none;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-size: var(--text-lg);
-    color: var(--color-text-primary);
-    cursor: pointer;
-}
-.shell-menu-item:hover {
-    background: var(--color-bg-inset);
 }
 
 /* Month/Week as a compact dropdown — a styled native select (custom chevron,
@@ -203,14 +171,42 @@ body.view-stats #calendarView {
         font-size: var(--text-base);
         padding: 5px;
     }
-    /* Calendar controls collapse into the overflow menu; logout stays direct. */
-    .shell-menu {
-        display: block;
-    }
+    /* The inline calendar controls move to the bottom mode bar on phones. */
     #viewSelect,
     #yearViewBtn,
     #diaryViewBtn {
         display: none;
+    }
+    .mode-bar {
+        display: flex;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: var(--mode-bar-h);
+        padding-bottom: env(safe-area-inset-bottom);
+        background: var(--color-bg-elevated);
+        border-top: 1px solid var(--color-border-soft);
+        z-index: 1005;
+    }
+    .mode-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--color-text-muted);
+        font-size: 0.66rem;
+    }
+    .mode-item i {
+        font-size: var(--text-lg);
+    }
+    .mode-item.active {
+        color: var(--color-accent);
     }
     /* The month grid doesn't fill a phone screen — centre it vertically in the
        space below the bar. The wrapper fills that space and centres its own
@@ -218,7 +214,7 @@ body.view-stats #calendarView {
     .content-wrapper {
         margin-top: 0;
         margin-bottom: 0;
-        min-height: calc(100dvh - var(--shell-bar-h));
+        min-height: calc(100dvh - var(--shell-bar-h) - var(--mode-bar-h));
         justify-content: safe center;
     }
     /* #calendarContainer has margin:auto (its own vertical centring); with the
@@ -236,7 +232,7 @@ body.view-stats #calendarView {
         top: var(--shell-bar-h);
         left: 0;
         right: 0;
-        bottom: 0;
+        bottom: var(--mode-bar-h);
         width: auto;
         height: auto;
         background: var(--color-bg-base);
