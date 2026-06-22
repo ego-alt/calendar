@@ -2,6 +2,9 @@
    and global actions (right), with the calendar's own controls (week toggle,
    year, diary) tucked in and hidden on non-calendar views. Loaded after
    index.css so its overrides win. */
+:root {
+    --shell-bar-h: calc(46px + env(safe-area-inset-top));
+}
 .shell-bar {
     position: fixed;
     top: 0;
@@ -10,12 +13,22 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    height: calc(46px + env(safe-area-inset-top));
+    height: var(--shell-bar-h);
     padding: env(safe-area-inset-top) max(var(--space-4), env(safe-area-inset-right)) 0
         max(var(--space-4), env(safe-area-inset-left));
     background: var(--color-bg-elevated);
     border-bottom: 1px solid var(--color-border-soft);
-    z-index: 1000;
+    /* Above the sliding drawers (z 1002) so their close buttons stay tappable —
+       the old app-header used z 1003 for the same reason. */
+    z-index: 1003;
+}
+/* Year/Diary drawers slide in *below* the bar (rather than under the solid bar,
+   which hid their headers and — when below the bar in z-order — buried the
+   toggle button so the drawer couldn't be closed). */
+.diary-sidebar,
+.year-sidebar {
+    top: var(--shell-bar-h);
+    height: calc(100dvh - var(--shell-bar-h));
 }
 
 /* Calendar | Stats — proper folder tabs. They drop to the bottom edge of the
@@ -67,6 +80,54 @@
     color: var(--color-text-primary);
 }
 
+/* Overflow menu — hidden on desktop (the controls sit inline there); on mobile
+   it collapses the calendar controls (Month/Week, Year, Diary) behind one
+   button so the fixed-width tabs still fit. */
+.shell-menu {
+    position: relative;
+    display: none;
+}
+.shell-menu-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    min-width: 11rem;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-1);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    box-shadow: 0 6px 20px var(--color-shadow);
+    z-index: 1004; /* above the bar (1003) */
+}
+.shell-menu-panel[hidden] {
+    display: none;
+}
+.shell-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    font: inherit;
+    font-size: var(--text-sm);
+    color: var(--color-text-primary);
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.shell-menu-item:hover {
+    background: var(--color-bg-inset);
+}
+.shell-menu-item i {
+    width: 1em;
+    text-align: center;
+    color: var(--color-text-muted);
+}
+
 /* Month/Week as a compact dropdown — a styled native select (custom chevron,
    native menu) that stays small on mobile and reads as "proper". */
 .shell-select {
@@ -94,7 +155,7 @@
    headings sit at the same height (they were centred vs top-aligned, so the
    title jumped on toggle). */
 body {
-    padding-top: calc(46px + env(safe-area-inset-top));
+    padding-top: var(--shell-bar-h);
     align-items: flex-start;
 }
 /* Was margin:auto (vertical centring); fix the top offset so "June 2026" lines
@@ -161,7 +222,7 @@ body.view-stats #calendarView {
     .content-wrapper {
         margin-top: 0;
         margin-bottom: 0;
-        min-height: calc(100dvh - 46px - env(safe-area-inset-top));
+        min-height: calc(100dvh - var(--shell-bar-h));
         justify-content: safe center;
     }
     /* #calendarContainer has margin:auto (its own vertical centring); with the
