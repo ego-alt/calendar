@@ -77,7 +77,43 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('viewSelect').addEventListener('change', (e) => {
         toggleWeekView(e.target.value === 'week');
     });
+    setupShellMenu();
 });
+
+/** Mobile overflow menu: the ⋮ button collapses Month/Week, Year and Diary
+ *  behind one menu so the fixed-width tabs still fit a phone. */
+function setupShellMenu() {
+    const btn = document.getElementById('shellMenuBtn');
+    const panel = document.getElementById('shellMenuPanel');
+    if (!btn || !panel) return;
+
+    const close = () => {
+        panel.hidden = true;
+        btn.setAttribute('aria-expanded', 'false');
+    };
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = panel.hidden;
+        panel.hidden = !willOpen;
+        btn.setAttribute('aria-expanded', String(willOpen));
+    });
+
+    panel.querySelectorAll('.shell-menu-item').forEach((item) => {
+        item.addEventListener('click', () => {
+            const act = item.dataset.act;
+            if (act === 'view') toggleWeekView();
+            else if (act === 'year') toggleYearView();
+            else if (act === 'diary') toggleDiaryView();
+            close();
+        });
+    });
+
+    // Tap outside the menu closes it.
+    document.addEventListener('click', (e) => {
+        if (!panel.hidden && !e.target.closest('.shell-menu')) close();
+    });
+}
 
 /** Document-level and static-DOM listeners — call once. */
 function setupGlobalEventListeners() {
@@ -131,7 +167,7 @@ function setupGlobalEventListeners() {
         const yearView = document.getElementById('yearView');
 
         const isInteractiveClick = event.target.closest(
-            '#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn, #viewSelect, .week-grid'
+            '#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn, #viewSelect, .shell-menu, .week-grid'
         );
 
         if (!isInteractiveClick) {
@@ -459,6 +495,7 @@ async function updateCalendarView() {
 
 function toggleWeekView(show) {
     const select = document.getElementById('viewSelect');
+    const menuLabel = document.getElementById('menuViewLabel');
     const monthGrid = document.getElementById('viewMonth');
     const weekGrid = document.getElementById('viewWeek');
 
@@ -478,6 +515,7 @@ function toggleWeekView(show) {
         monthGrid.style.display = 'none';
         weekGrid.style.display = '';
         if (select) select.value = 'week';
+        if (menuLabel) menuLabel.textContent = 'Month view';
         renderWeek();
     } else {
         viewState.mode = 'month';
@@ -486,6 +524,7 @@ function toggleWeekView(show) {
         monthGrid.style.display = '';
         weekGrid.style.display = 'none';
         if (select) select.value = 'month';
+        if (menuLabel) menuLabel.textContent = 'Week view';
         updateCalendarView();
     }
 }

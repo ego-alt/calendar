@@ -46,6 +46,23 @@
             <button class="diary-button btn btn-ghost shell-cal-only" id="diaryViewBtn" title="Diary">
                 <i class="fas fa-book"></i>
             </button>
+            <div class="shell-menu shell-cal-only">
+                <button class="shell-menu-btn btn btn-ghost" id="shellMenuBtn" type="button"
+                        aria-haspopup="true" aria-expanded="false" aria-label="More">
+                    <i class="fas fa-ellipsis-vertical"></i>
+                </button>
+                <div class="shell-menu-panel" id="shellMenuPanel" role="menu" hidden>
+                    <button class="shell-menu-item" type="button" role="menuitem" data-act="view">
+                        <i class="fas fa-calendar-week"></i><span id="menuViewLabel">Week view</span>
+                    </button>
+                    <button class="shell-menu-item" type="button" role="menuitem" data-act="year">
+                        <i class="fas fa-calendar-alt"></i>Year overview
+                    </button>
+                    <button class="shell-menu-item" type="button" role="menuitem" data-act="diary">
+                        <i class="fas fa-book"></i>Month overview
+                    </button>
+                </div>
+            </div>
             {% if current_user.is_authenticated %}
                 <button class="login-button btn btn-ghost" onclick="handleLogout()" title="Log out">
                     <i class="fas fa-door-closed"></i>

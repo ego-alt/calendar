@@ -213,8 +213,14 @@ body.view-stats #calendarView {
         font-size: var(--text-base);
         padding: 5px;
     }
-    .shell-select {
-        padding: 6px 26px 6px 10px;
+    /* Calendar controls collapse into the overflow menu; logout stays direct. */
+    .shell-menu {
+        display: block;
+    }
+    #viewSelect,
+    #yearViewBtn,
+    #diaryViewBtn {
+        display: none;
     }
     /* The month grid doesn't fill a phone screen — centre it vertically in the
        space below the bar. The wrapper fills that space and centres its own
