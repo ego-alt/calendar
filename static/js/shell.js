@@ -48,4 +48,7 @@
 
     // Initial view comes from the server (active_view); the URL already matches.
     setView(window.INITIAL_VIEW || "calendar", { push: false });
+
+    // Warm the Stats view in the background so opening it is instant.
+    (window.requestIdleCallback || ((f) => setTimeout(f, 1200)))(() => loadStats());
 })();

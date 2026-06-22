@@ -533,6 +533,7 @@ function toggleWeekView(show) {
 async function renderWeek() {
     if (isLoading) return;
     isLoading = true;
+    document.getElementById('viewWeek').innerHTML = '<div class="loading-indicator">Loading…</div>';
     try {
         const a = viewState.weekAnchor;
         const response = await fetch(appUrl(`/get_week?year=${a.year}&month=${a.month}&day=${a.day}`));
