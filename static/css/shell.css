@@ -231,4 +231,28 @@ body.view-stats #calendarView {
         margin-top: 0;
         margin-bottom: 0;
     }
+    /* Year/Diary become full-page in-page views (filling the area below the bar
+       on the page background), not side drawers — so they read like the
+       month/week swap rather than something sliding over the screen. */
+    .year-sidebar,
+    .diary-sidebar {
+        top: var(--shell-bar-h);
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: auto;
+        height: auto;
+        background: var(--color-bg-base);
+        box-shadow: none;
+        border-radius: 0;
+        transform: none;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.18s ease, visibility 0.18s ease;
+    }
+    .year-sidebar.active,
+    .diary-sidebar.active {
+        opacity: 1;
+        visibility: visible;
+    }
 }

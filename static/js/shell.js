@@ -22,6 +22,11 @@
 
     function setView(view, { push = true } = {}) {
         const stats = view === "stats";
+        // Switching the top-level view closes any open calendar sub-view
+        // (year / diary / day) so we don't land on Stats with one still open.
+        ["yearView", "diaryView", "sidebar"].forEach((id) => {
+            document.getElementById(id)?.classList.remove("active");
+        });
         document.body.classList.toggle("view-stats", stats);
         document.body.classList.toggle("view-calendar", !stats);
         tabs.forEach((t) => t.classList.toggle("active", t.dataset.view === view));
