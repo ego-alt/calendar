@@ -44,6 +44,14 @@ def create_app(config=None):
     def healthz():
         return "", 200
 
+    @app.context_processor
+    def inject_template_globals():
+        # `proxy_mode` lets the shell render a mode-aware logout (dashboard
+        # session vs local) — see templates/index.html.
+        from proxy_auth import is_proxy_mode
+
+        return {"proxy_mode": is_proxy_mode()}
+
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"

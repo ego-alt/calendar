@@ -10,8 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/structural.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/stats.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shell.css') }}">
 </head>
-<body>
+<body class="view-{{ active_view|default('calendar') }}">
     <div id="loginOverlay" class="login-overlay" style="display: none;">
         <div class="login-content">
             <h2>Login</h2>
@@ -27,34 +29,35 @@
             </form>
         </div>
     </div>
-    <button class="view-toggle" id="viewToggleBtn" type="button"
-            role="switch" aria-checked="false" aria-label="Toggle week view" data-active="month">
-        <span class="view-toggle-thumb" aria-hidden="true"></span>
-        <span class="view-toggle-label" data-mode="month">Month</span>
-        <span class="view-toggle-label" data-mode="week">Week</span>
-    </button>
-    <header class="app-header">
-        <div class="header-buttons">
-            <button class="year-button btn btn-ghost" id="yearViewBtn">
+    <header class="shell-bar">
+        <nav class="shell-switch" role="tablist" aria-label="View">
+            <button class="shell-tab" data-view="calendar" role="tab" type="button">Calendar</button>
+            <button class="shell-tab" data-view="stats" role="tab" type="button">Stats</button>
+        </nav>
+        <div class="shell-spacer"></div>
+        <div class="shell-actions">
+            <select class="shell-select shell-cal-only" id="viewSelect" aria-label="Calendar view">
+                <option value="month">Month</option>
+                <option value="week">Week</option>
+            </select>
+            <button class="year-button btn btn-ghost shell-cal-only" id="yearViewBtn" title="Year">
                 <i class="fas fa-calendar-alt"></i>
             </button>
-            <button class="diary-button btn btn-ghost" id="diaryViewBtn">
+            <button class="diary-button btn btn-ghost shell-cal-only" id="diaryViewBtn" title="Diary">
                 <i class="fas fa-book"></i>
             </button>
             {% if current_user.is_authenticated %}
-                <a class="stats-button btn btn-ghost" href="{{ url_for('stats.stats') }}" title="Stats">
-                    <i class="fas fa-chart-column"></i>
-                </a>
-                <button class="login-button btn btn-ghost" onclick="handleLogout()">
+                <button class="login-button btn btn-ghost" onclick="handleLogout()" title="Log out">
                     <i class="fas fa-door-closed"></i>
                 </button>
             {% else %}
-                <button class="login-button btn btn-ghost" onclick="showLoginDialog()">
+                <button class="login-button btn btn-ghost" onclick="showLoginDialog()" title="Log in">
                     <i class="fas fa-door-open"></i>
                 </button>
             {% endif %}
         </div>
     </header>
+    <main id="calendarView">
     <div class="content-wrapper">
         <h1>{{ date_label }}</h1>
         <div class="calendar" id="calendarContainer">
@@ -88,6 +91,7 @@
             <div class="week-grid" id="viewWeek" style="display: none;"></div>
         </div>
     </div>
+    </main>
 
     <div class="color-picker" id="colorPicker">
         <div class="color-option" data-mood="great" title="Great"></div>
@@ -156,9 +160,92 @@
         </div>
         <div class="year-content" id="yearContent"></div>
     </div>
+    <main id="statsView">
+        <div class="st-wrap">
+            <header class="st-header">
+                <h1>Your year in moods</h1>
+                <div class="st-range" id="range"></div>
+            </header>
+
+            <section class="st-tiles" id="tiles"></section>
+
+            <section class="st-card">
+                <h2>Mood calendar</h2>
+                <p class="hint">Every logged day, coloured by mood</p>
+                <div class="st-hm-scroll">
+                    <div class="st-hm-months" id="hmMonths"></div>
+                    <div class="st-hm-body">
+                        <div class="st-hm-dows"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span>Sun</span></div>
+                        <div class="st-hm-grid" id="hmGrid"></div>
+                    </div>
+                </div>
+                <div class="st-legend" id="legend"></div>
+            </section>
+
+            <section class="st-card">
+                <div class="st-mix-header">
+                    <h2>Mood over time</h2>
+                    <div class="st-toggle" id="trendWin" role="tablist">
+                        <button class="st-tab" data-win="1"  role="tab">Actual</button>
+                        <button class="st-tab active" data-win="7"  role="tab">7d</button>
+                        <button class="st-tab" data-win="28" role="tab">28d</button>
+                    </div>
+                </div>
+                <p class="hint">Daily mood score</p>
+                <div id="trend"></div>
+            </section>
+
+            <div class="st-2col">
+                <section class="st-card">
+                    <div class="st-mix-header">
+                        <h2>Mood mix</h2>
+                        <div class="st-toggle" id="mixToggle" role="tablist">
+                            <button class="st-tab active" data-view="month" role="tab">Month</button>
+                            <button class="st-tab" data-view="weekday" role="tab">Weekday</button>
+                        </div>
+                    </div>
+                    <p class="hint">How your mood composition shifted</p>
+                    <div class="st-stack" id="mixStack"></div>
+                    <div class="st-stack-labels" id="mixLabels"></div>
+                </section>
+                <section class="st-card">
+                    <div class="st-mix-header">
+                        <h2>Days with events</h2>
+                    </div>
+                    <p class="hint">Days each month with at least one event</p>
+                    <div class="st-ev" id="ev"></div>
+                    <div class="st-ev-labels" id="evLabels"></div>
+                </section>
+            </div>
+
+            <div class="st-2col">
+                <section class="st-card st-rank">
+                    <div class="st-mix-header">
+                        <h2>Top people</h2>
+                    </div>
+                    <p class="hint">Who you spent the most time with</p>
+                    <div id="people"></div>
+                </section>
+                <section class="st-card st-rank">
+                    <div class="st-mix-header">
+                        <h2>Top places</h2>
+                    </div>
+                    <p class="hint">Where you were most often</p>
+                    <div id="places"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/app_root.js') }}"></script>
     <script>window.APP_ROOT = "{{ request.script_root }}";</script>
+    <script>
+        window.INITIAL_VIEW = "{{ active_view|default('calendar') }}";
+        window.PROXY_MODE = {{ 'true' if proxy_mode else 'false' }};
+    </script>
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/stats.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/shell.js') }}"></script>
 </body>
 </html>

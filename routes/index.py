@@ -9,24 +9,28 @@ from ._helpers import current_user_id
 index_blueprint = Blueprint("index_routes", __name__)
 
 
-@index_blueprint.route("/")
-def index():
+def build_index_context() -> dict:
+    """Template context for the calendar shell — shared by `/` and the `/stats`
+    deep-link, since both render the same single-page app shell."""
     today = datetime.now()
     calendar_data, mood_colors, days_with_events, days_with_marker = get_month_data(
         today.year, today.month, current_user_id()
     )
+    return {
+        "calendar_data": calendar_data,
+        "date_label": today.strftime("%B %Y"),
+        "current_year": today.year,
+        "current_month": today.month,
+        "current_day": today.day,
+        "mood_colors": mood_colors,
+        "days_with_events": days_with_events,
+        "days_with_marker": days_with_marker,
+    }
 
-    return render_template(
-        "index.html",
-        calendar_data=calendar_data,
-        date_label=today.strftime("%B %Y"),
-        current_year=today.year,
-        current_month=today.month,
-        current_day=today.day,
-        mood_colors=mood_colors,
-        days_with_events=days_with_events,
-        days_with_marker=days_with_marker,
-    )
+
+@index_blueprint.route("/")
+def index():
+    return render_template("index.html", **build_index_context(), active_view="calendar")
 
 
 @index_blueprint.route("/get_month", methods=["GET"])

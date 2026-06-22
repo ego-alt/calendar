@@ -1,5 +1,6 @@
-(function () {
-    const data = JSON.parse(document.getElementById("stats-data").textContent);
+// Renders the Stats view from a get_stats_data() payload. Called by the shell
+// the first time the Stats tab is opened (data fetched from /stats/data).
+function renderStats(data) {
     const $ = (id) => document.getElementById(id);
     const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -213,4 +214,6 @@
     }
     rank($("people"), data.people);
     rank($("places"), data.places);
-})();
+}
+
+window.renderStats = renderStats;

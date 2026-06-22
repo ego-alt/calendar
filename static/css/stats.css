@@ -1,18 +1,9 @@
 /* Stats page. Tokens come from structural.css (skeleton) + index.css (colours).
    Everything here is `st-` prefixed / scoped so it can't collide with the
-   calendar's own component CSS in index.css. */
-body.stats-page {
-    display: block;
-    background: var(--color-bg-base);
-    color: var(--color-text-primary);
-    font-family: var(--font-sans);
-    margin: 0;
-    padding: var(--space-5);
-    min-height: 100vh;
-}
+   calendar's own component CSS in index.css. The view lives inside the calendar
+   shell now (#statsView); layout/padding come from shell.css. */
 .st-wrap { max-width: 1040px; margin: 0 auto; }
 .st-header { margin-bottom: var(--space-5); }
-.st-back { margin-bottom: var(--space-3); }
 .st-header h1 { font-size: var(--text-xl); font-weight: 550; letter-spacing: -0.01em; margin: var(--space-2) 0 0; }
 .st-range { color: var(--color-text-muted); font-size: var(--text-sm); }
 

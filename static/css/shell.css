@@ -1,0 +1,158 @@
+/* Persistent top app-shell bar. Holds the Calendar/Stats view switcher (left)
+   and global actions (right), with the calendar's own controls (week toggle,
+   year, diary) tucked in and hidden on non-calendar views. Loaded after
+   index.css so its overrides win. */
+.shell-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    height: calc(46px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) max(var(--space-4), env(safe-area-inset-right)) 0
+        max(var(--space-4), env(safe-area-inset-left));
+    background: var(--color-bg-elevated);
+    border-bottom: 1px solid var(--color-border-soft);
+    z-index: 1000;
+}
+
+/* Calendar | Stats — proper folder tabs. They drop to the bottom edge of the
+   bar; the active tab takes the page background and pulls down 1px to break
+   through the bar's bottom border, so it reads as one surface joined to the body
+   below. Scales: a third view is just another tab. */
+.shell-switch {
+    align-self: stretch;
+    display: inline-flex;
+    align-items: flex-end;
+    gap: var(--space-1);
+}
+.shell-tab {
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-top-left-radius: var(--radius-md);
+    border-top-right-radius: var(--radius-md);
+    margin-bottom: -1px; /* overlap the bar's bottom border so active merges in */
+    font: inherit;
+    font-size: var(--text-base);
+    color: var(--color-text-muted);
+    padding: 8px 18px;
+    min-width: 6.5rem; /* uniform tab width so "Stats" matches "Calendar" */
+    text-align: center;
+    cursor: pointer;
+    transition: color var(--dur-fast), background var(--dur-fast);
+}
+.shell-tab.active {
+    background: var(--color-bg-base);
+    border-color: var(--color-border-soft);
+    color: var(--color-text-primary);
+    font-weight: 550;
+}
+.shell-tab:hover:not(.active) {
+    color: var(--color-text-secondary);
+}
+
+.shell-spacer {
+    flex: 1;
+}
+.shell-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+.shell-actions .btn-ghost {
+    font-size: var(--text-lg);
+    color: var(--color-text-primary);
+}
+
+/* Month/Week as a compact dropdown — a styled native select (custom chevron,
+   native menu) that stays small on mobile and reads as "proper". */
+.shell-select {
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
+    font-size: var(--text-sm);
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-inset);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 6px 30px 6px 12px;
+    min-width: 6rem; /* steady, standard dropdown width across Month/Week */
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23a0a0a0' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+.shell-select:focus-visible {
+    outline: 2px solid var(--color-accent-hover);
+    outline-offset: 1px;
+}
+
+/* Clear the fixed bar, and top-align the view content so the Calendar and Stats
+   headings sit at the same height (they were centred vs top-aligned, so the
+   title jumped on toggle). */
+body {
+    padding-top: calc(46px + env(safe-area-inset-top));
+    align-items: flex-start;
+}
+/* Was margin:auto (vertical centring); fix the top offset so "June 2026" lines
+   up with "Your year in moods" (#statsView shares the same top padding). */
+.content-wrapper {
+    margin-top: var(--space-8);
+    margin-bottom: var(--space-8);
+}
+/* The stats h1 carries an extra top margin (space-2) the calendar h1 doesn't —
+   zero it so the two headings land at the exact same height across the toggle. */
+#statsView .st-header h1 {
+    margin-top: 0;
+}
+
+/* Calendar-only chrome disappears on the Stats view. */
+body.view-stats .shell-cal-only {
+    display: none;
+}
+
+/* View visibility — one is shown at a time beneath the shared bar. */
+#statsView {
+    display: none;
+    width: 100%;
+    /* Extra top padding drops the "Your year in moods" heading clear of the
+       fixed bar (was cramped right beneath it). */
+    padding: var(--space-8) var(--space-4) var(--space-8);
+}
+body.view-stats #statsView {
+    display: block;
+}
+/* `contents` makes the wrapper transparent to layout, so the calendar stays the
+   body's flex child and keeps its original width + centering (a real box here
+   would shrink-to-fit). Hidden outright on the stats view. */
+#calendarView {
+    display: contents;
+}
+body.view-stats #calendarView {
+    display: none;
+}
+
+/* Phones: tighten the bar so the pill + dropdown + icons fit a narrow screen. */
+@media (max-width: 480px) {
+    .shell-bar {
+        gap: var(--space-2);
+        padding-left: max(var(--space-3), env(safe-area-inset-left));
+        padding-right: max(var(--space-3), env(safe-area-inset-right));
+    }
+    .shell-tab {
+        padding: 5px 12px;
+    }
+    .shell-actions {
+        gap: 2px;
+    }
+    .shell-actions .btn-ghost {
+        font-size: var(--text-base);
+        padding: 5px;
+    }
+    .shell-select {
+        padding: 6px 26px 6px 10px;
+    }
+}

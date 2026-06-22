@@ -74,8 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('yearViewBtn').addEventListener('click', () => {
         toggleYearView();
     });
-    document.getElementById('viewToggleBtn').addEventListener('click', () => {
-        toggleWeekView();
+    document.getElementById('viewSelect').addEventListener('change', (e) => {
+        toggleWeekView(e.target.value === 'week');
     });
 });
 
@@ -131,7 +131,7 @@ function setupGlobalEventListeners() {
         const yearView = document.getElementById('yearView');
 
         const isInteractiveClick = event.target.closest(
-            '#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn, .view-toggle, .week-grid'
+            '#sidebar, #colorPicker, .day, .eye-icon, .subevent-form-container, .event-actions, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn, #viewSelect, .week-grid'
         );
 
         if (!isInteractiveClick) {
@@ -458,7 +458,7 @@ async function updateCalendarView() {
 }
 
 function toggleWeekView(show) {
-    const toggle = document.getElementById('viewToggleBtn');
+    const select = document.getElementById('viewSelect');
     const monthGrid = document.getElementById('viewMonth');
     const weekGrid = document.getElementById('viewWeek');
 
@@ -477,8 +477,7 @@ function toggleWeekView(show) {
         viewState.mode = 'week';
         monthGrid.style.display = 'none';
         weekGrid.style.display = '';
-        toggle.dataset.active = 'week';
-        toggle.setAttribute('aria-checked', 'true');
+        if (select) select.value = 'week';
         renderWeek();
     } else {
         viewState.mode = 'month';
@@ -486,8 +485,7 @@ function toggleWeekView(show) {
         viewState.month = viewState.weekAnchor.month;
         monthGrid.style.display = '';
         weekGrid.style.display = 'none';
-        toggle.dataset.active = 'month';
-        toggle.setAttribute('aria-checked', 'false');
+        if (select) select.value = 'month';
         updateCalendarView();
     }
 }
@@ -1248,6 +1246,13 @@ async function handleLogin(event) {
 
 async function handleLogout() {
     try {
+        if (window.PROXY_MODE) {
+            // Behind the dashboard proxy there's no local session — log out of
+            // the shared dashboard session, which deauths every app at once.
+            await fetch('/logout', { method: 'POST', credentials: 'same-origin' });
+            window.location.href = '/login';
+            return;
+        }
         const response = await fetch(appUrl('/auth/logout'));
         if (response.ok) {
             location.reload();
