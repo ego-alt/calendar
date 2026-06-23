@@ -250,24 +250,6 @@ def _trailing_months(today: date, n: int = 12):
     return slots
 
 
-def _rank(counter: dict, limit: int = 6) -> list[dict]:
-    return [
-        {"name": k, "count": v}
-        for k, v in sorted(counter.items(), key=lambda kv: -kv[1])[:limit]
-    ]
-
-
-def _tally_freetext(counter: dict, display: dict, raw: str):
-    """Group free-text people/places case-insensitively, keeping first-seen spelling.
-    `with_who` may be a comma-separated list; `where` is treated as one value."""
-    for part in (p.strip() for p in raw.split(",")):
-        if not part:
-            continue
-        key = part.lower()
-        display.setdefault(key, part)
-        counter[display[key]] = counter.get(display[key], 0) + 1
-
-
 def compute_trend(user_id: int, start: date, end: date) -> list[dict]:
     """Raw daily mood score for every day in [start, end] (None where unlogged).
 
@@ -397,15 +379,10 @@ def get_stats_data(user_id: int) -> dict:
     # Count days with at least one event per month, not raw event totals — a
     # busy single day shouldn't read the same as events spread across the month.
     ev_days = [set() for _ in slots]
-    people, people_disp, places, places_disp = {}, {}, {}, {}
     for e in events:
         idx = slot_index.get((e.start_time.year, e.start_time.month))
         if idx is not None:
             ev_days[idx].add(e.start_time.date())
-        if e.with_who:
-            _tally_freetext(people, people_disp, e.with_who)
-        if e.where:
-            _tally_freetext(places, places_disp, e.where)
     events_per_month = [
         {"label": date(y, m, 1).strftime("%b"), "count": len(ev_days[i])}
         for i, (y, m) in enumerate(slots)
@@ -428,8 +405,6 @@ def get_stats_data(user_id: int) -> dict:
         "weekday": weekday,
         "month_mix": month_mix,
         "events_per_month": events_per_month,
-        "people": _rank(people),
-        "places": _rank(places),
         "trend": trend,
         "score_labels": [
             {"score": m.score, "name": m.name}

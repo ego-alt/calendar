@@ -103,13 +103,5 @@ def search_events():
     if not explicit_mood and routed.mood:
         labels.append(f"mood: {routed.mood}")
 
-    results = []
-    for event, score in matches:
-        data = retrieve_event_data(event)
-        data["score"] = round(float(score), 4) if score is not None else None
-        results.append(data)
-    return jsonify({
-        "status": "success",
-        "results": results,
-        "parsed": {"labels": labels, "residual_q": routed.residual_q},
-    })
+    results = [retrieve_event_data(event) for event, _ in matches]
+    return jsonify({"status": "success", "results": results, "parsed": {"labels": labels}})
