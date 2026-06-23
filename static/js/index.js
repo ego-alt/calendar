@@ -1415,15 +1415,18 @@ function toggleSidebar(sidebarType, show) {
         } else {
             loadYearView(viewState.year);
         }
-        
-        // Show the sidebar
+
+        // Show the sidebar. The `active` class lands next frame (so the slide-in
+        // transition plays), so sync the bottom bar there too — otherwise it reads
+        // the not-yet-active panel and the Year/Diary icon never highlights.
         requestAnimationFrame(() => {
             primarySidebar.classList.add('active');
+            updateBottomBar();
         });
     } else {
         primarySidebar.classList.remove('active');
+        updateBottomBar();
     }
-    updateBottomBar();
 }
 
 function toggleDiaryView(show) {
