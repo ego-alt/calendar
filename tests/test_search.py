@@ -122,6 +122,15 @@ def test_explicit_dates_override_nl_query(authed_client):
     assert res["parsed"]["labels"] == []  # router date not applied → no chip
 
 
+def test_search_fts_stemming(authed_client):
+    _make_event(authed_client, "Run")
+    _make_event(authed_client, "Dentist", day=12)
+
+    # "running" stems to "run" and matches the "Run" entry via FTS.
+    results = authed_client.get("/search/data?q=running").get_json()["results"]
+    assert [r["name"] for r in results] == ["Run"]
+
+
 def test_search_routes_who_from_text(authed_client):
     _make_event(authed_client, "Coffee", with_who="Mom")
     _make_event(authed_client, "Coffee", day=12, with_who="Sarah")

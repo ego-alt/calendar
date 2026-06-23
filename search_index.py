@@ -95,9 +95,17 @@ def _source_hash(document):
 
 
 def ensure_fts_table():
-    """Create the FTS5 table if absent (the test DB is built via create_all)."""
+    """Create the FTS5 table if absent (the test DB is built via create_all).
+
+    `porter` stemming means a query token and the indexed text match on their
+    common stem (runs/running → run, meetings → meeting). Existing DBs get the
+    tokenizer via migration; this keeps fresh/test DBs consistent.
+    """
     db.session.execute(
-        db.text("CREATE VIRTUAL TABLE IF NOT EXISTS event_fts USING fts5(event_id UNINDEXED, text)")
+        db.text(
+            "CREATE VIRTUAL TABLE IF NOT EXISTS event_fts "
+            "USING fts5(event_id UNINDEXED, text, tokenize = 'porter unicode61')"
+        )
     )
 
 
