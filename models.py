@@ -88,6 +88,28 @@ class Event(db.Model):
     )
 
 
+class EventEmbedding(db.Model):
+    """Vector + staleness markers for an event's searchable document.
+
+    Holds only the embedding; all filterable metadata (date, mood, who, where)
+    is read live from `events`/`daily_logs` at query time so filters never go
+    stale. The companion lexical index is the `event_fts` FTS5 virtual table,
+    created in the migration (and idempotently in search_index for tests).
+    """
+
+    __tablename__ = "event_embedding"
+
+    event_id = db.Column(
+        db.Integer,
+        db.ForeignKey("events.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    embedding = db.Column(db.LargeBinary, nullable=False)  # float32, L2-normalized
+    model = db.Column(db.String, nullable=False)  # producing model id
+    source_hash = db.Column(db.String, nullable=False)  # skip re-embedding unchanged text
+    updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+
+
 class SubEvent(db.Model):
     __tablename__ = "subevents"
 

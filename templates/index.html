@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/stats.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/shell.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/search.css') }}">
 </head>
 <body class="view-{{ active_view|default('calendar') }}">
     <div id="loginOverlay" class="login-overlay" style="display: none;">
@@ -167,6 +168,26 @@
                 <div class="st-range" id="range"></div>
             </header>
 
+            <section class="st-search">
+                <div class="search-controls">
+                    <input class="input" type="search" id="searchInput" placeholder="Search your entries…" autocomplete="off">
+                    <div class="search-filters">
+                        <input class="input" type="date" id="searchFrom" aria-label="From date">
+                        <input class="input" type="date" id="searchTo" aria-label="To date">
+                        <select class="input" id="searchMood" aria-label="Mood">
+                            <option value="">Any mood</option>
+                            {% for m in moods %}<option value="{{ m.key }}">{{ m.name }}</option>{% endfor %}
+                        </select>
+                        <input class="input" type="text" id="searchWho" placeholder="Who" autocomplete="off">
+                        <input class="input" type="text" id="searchWhere" placeholder="Where" autocomplete="off">
+                    </div>
+                </div>
+                <div class="search-interpreted" id="searchInterpreted" style="display:none"></div>
+                <div class="search-results" id="searchResults">
+                    <div class="search-hint">Search across every diary entry by meaning, words, or filters.</div>
+                </div>
+            </section>
+
             <section class="st-tiles" id="tiles"></section>
 
             <section class="st-card">
@@ -236,6 +257,7 @@
         window.PROXY_MODE = {{ 'true' if proxy_mode else 'false' }};
     </script>
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/search.js') }}"></script>
     <script src="{{ url_for('static', filename='js/stats.js') }}"></script>
     <script src="{{ url_for('static', filename='js/shell.js') }}"></script>
 </body>

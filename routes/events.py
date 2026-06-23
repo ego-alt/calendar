@@ -6,6 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 
 from models import Event, SubEvent, db
+from search_index import index_event_safe, remove_event_safe
 from utils import parse_event_datetime
 
 from ._helpers import json_login_required
@@ -87,7 +88,7 @@ def create_event(event_class, data: dict, parent: Event | None = None, **kwargs)
     event = event_class(**event_attrs)
     db.session.add(event)
     db.session.commit()
-    return True
+    return event
 
 
 def delete_event(event: Event | SubEvent):
@@ -121,7 +122,8 @@ def events():
 
         return jsonify({"status": "success", "events": events_data})
 
-    create_event(Event, request.json, user_id=current_user.id)
+    event = create_event(Event, request.json, user_id=current_user.id)
+    index_event_safe(event)
     return jsonify({"status": "success", "message": "Event created successfully"})
 
 
@@ -134,10 +136,12 @@ def manage_event(event_id):
         return jsonify({"status": "error", "message": "Event not found"}), 404
 
     if request.method == "DELETE":
+        remove_event_safe(event.id)
         delete_event(event)
         return jsonify({"status": "success", "message": "Event deleted"})
 
     edit_event_data(event, request.json)
+    index_event_safe(event)
     return jsonify({"status": "success", "message": "Event updated"})
 
 
@@ -153,6 +157,7 @@ def subevents(event_id):
             "status": "error",
             "message": "Subevent must occur within the parent event's timeframe",
         }), 400
+    index_event_safe(parent_event)  # reindex parent with the new subevent folded in
     return jsonify({"status": "success", "message": "Subevent created successfully"})
 
 
@@ -169,7 +174,11 @@ def manage_subevent(subevent_id):
         return jsonify({"status": "error", "message": "Subevent not found"}), 404
 
     if request.method == "DELETE":
+        parent_id = subevent.event_id
         delete_event(subevent)
+        parent_event = db.session.get(Event, parent_id)
+        if parent_event is not None:
+            index_event_safe(parent_event)
         return jsonify({"status": "success", "message": "Subevent deleted"})
 
     if request.method == "GET":
@@ -181,6 +190,7 @@ def manage_subevent(subevent_id):
             "status": "error",
             "message": "Subevent must occur within the parent event's timeframe",
         }), 400
+    index_event_safe(parent_event)  # reindex parent with the edited subevent text
     return jsonify({"status": "success", "message": "Subevent updated"})
 
 

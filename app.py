@@ -15,6 +15,7 @@ from routes import (
     event_blueprint,
     index_blueprint,
     mood_blueprint,
+    search_blueprint,
     stats_blueprint,
 )
 
@@ -47,10 +48,12 @@ def create_app(config=None):
     @app.context_processor
     def inject_template_globals():
         # `proxy_mode` lets the shell render a mode-aware logout (dashboard
-        # session vs local) — see templates/index.html.
+        # session vs local) — see templates/index.html. `moods` populates the
+        # search drawer's mood filter from the single source in moods.py.
+        from moods import MOODS
         from proxy_auth import is_proxy_mode
 
-        return {"proxy_mode": is_proxy_mode()}
+        return {"proxy_mode": is_proxy_mode(), "moods": MOODS}
 
     login_manager = LoginManager()
     login_manager.init_app(app)
@@ -71,7 +74,16 @@ def create_app(config=None):
     app.register_blueprint(event_blueprint)
     app.register_blueprint(index_blueprint)
     app.register_blueprint(mood_blueprint)
+    app.register_blueprint(search_blueprint)
     app.register_blueprint(stats_blueprint)
+
+    @app.cli.command("reindex")
+    def reindex_command():
+        """Rebuild the search index (embeddings + FTS) for all events."""
+        from search_index import reindex_all
+
+        count = reindex_all()
+        print(f"Reindexed {count} events.")
 
     db.init_app(app)
     Migrate(app, db)

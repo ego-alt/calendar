@@ -19,6 +19,11 @@ COPY . /app/
 # Install the local project after source is copied
 RUN uv sync --frozen --no-dev
 
+# Bake the embedding model into the image so runtime search needs no network
+# egress (the home stack may be locked down). search_index reads the same env var.
+ENV FASTEMBED_CACHE_PATH=/app/.fastembed_cache
+RUN uv run python -c "import os; from fastembed import TextEmbedding; TextEmbedding(model_name='BAAI/bge-small-en-v1.5', cache_dir=os.environ['FASTEMBED_CACHE_PATH'])"
+
 # Set production environment variables
 ENV FLASK_ENV=production
 ENV FLASK_APP=app:create_app

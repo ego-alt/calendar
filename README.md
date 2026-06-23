@@ -80,6 +80,29 @@ cd ../dashboard && uv run python scripts/sync_household_users.py
 The DB lives at `instance/events.db` (bind-mounted in compose). The container
 runs `flask db upgrade` on start, so migrations apply automatically.
 
+## Search
+
+Hybrid semantic + keyword search over diary entries (events and their
+subevents), entirely on-device — no external services or API keys. Retrieval
+combines local embeddings (`fastembed` / ONNX), SQLite FTS5 lexical matching,
+and metadata filters (date range, mood, who, where), fused with Reciprocal Rank
+Fusion. Search lives at the top of the **Stats** view; clicking a result jumps to
+that day on the calendar.
+
+Entries are indexed automatically on create/edit/delete. Build (or rebuild) the
+index for existing data:
+
+```bash
+uv run flask --app app:create_app reindex
+```
+
+Tunables (optional env vars):
+
+- `SEARCH_DENSE_MIN_SCORE` — cosine floor for semantic matches (default `0.6`).
+  Lower for more recall, raise to cut weak matches.
+- `FASTEMBED_CACHE_PATH` — where the embedding model is cached. The Docker image
+  bakes it in at build time so the container needs no network at runtime.
+
 ## Schema changes
 
 After editing `models.py`:

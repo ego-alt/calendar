@@ -1,0 +1,55 @@
+/* Inline diary search — a section at the top of the Stats view (#statsView).
+   Loaded after stats.css. */
+
+.st-search {
+    margin-bottom: var(--space-5);
+}
+
+.search-controls {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+.search-controls .input {
+    width: 100%;
+    box-sizing: border-box;
+}
+/* Date / mood / who / where flow in a row that wraps on narrow screens. */
+.search-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-2);
+}
+
+/* Read-only note of what the query router interpreted (date/mood lanes). */
+.search-interpreted {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    background: var(--color-bg-inset);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+/* Results are capped so a long list doesn't bury the charts below. */
+.search-results {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    max-height: 55vh;
+    overflow-y: auto;
+}
+/* Result cards reuse the .diary-event look (index.css); this adds the date header. */
+.search-result-date {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-1);
+}
+.search-hint {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    text-align: center;
+    padding: var(--space-5) var(--space-3);
+}
