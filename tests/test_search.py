@@ -122,6 +122,15 @@ def test_explicit_dates_override_nl_query(authed_client):
     assert res["parsed"]["labels"] == []  # router date not applied → no chip
 
 
+def test_search_routes_who_from_text(authed_client):
+    _make_event(authed_client, "Coffee", with_who="Mom")
+    _make_event(authed_client, "Coffee", day=12, with_who="Sarah")
+
+    res = authed_client.get("/search/data?q=coffee with Mom").get_json()
+    assert [r["with_who"] for r in res["results"]] == ["Mom"]
+    assert "with: Mom" in res["parsed"]["labels"]
+
+
 def test_search_reflects_edits_and_deletes(authed_client):
     _make_event(authed_client, "Standup", notes="status update")
     event_id = authed_client.get("/events?year=2026&month=5&day=11").get_json()["events"][0]["id"]

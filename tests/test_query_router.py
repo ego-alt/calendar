@@ -105,3 +105,98 @@ def test_bare_month_is_not_a_date():
     r = _r("June")
     assert r.date_from is None
     assert r.residual_q == "June"
+
+
+# --- #2: expanded date forms --------------------------------------------
+
+
+def test_month_and_year():
+    r = _r("May 2026")
+    assert (r.date_from, r.date_to) == (datetime(2026, 5, 1), datetime(2026, 6, 1))
+    assert r.date_label == "May 2026"
+
+
+def test_cued_month_infers_year():
+    assert _r("in May").date_from == datetime(2026, 5, 1)        # past month → this year
+    assert _r("during July").date_from == datetime(2025, 7, 1)   # future month → last year
+
+
+def test_last_weekend():
+    # Week of Tue 23 Jun → Mon 22; last weekend = Sat 20 .. Sun 21.
+    r = _r("last weekend")
+    assert (r.date_from, r.date_to) == (datetime(2026, 6, 20), datetime(2026, 6, 22))
+
+
+def test_n_months_ago():
+    r = _r("2 months ago")  # June − 2 = April 2026
+    assert (r.date_from, r.date_to) == (datetime(2026, 4, 1), datetime(2026, 5, 1))
+
+
+def test_a_week_ago():
+    r = _r("a week ago")  # previous Mon–Sun
+    assert (r.date_from, r.date_to) == (datetime(2026, 6, 15), datetime(2026, 6, 22))
+
+
+def test_open_ended_before():
+    r = _r("before June")
+    assert r.date_from is None
+    assert r.date_to == datetime(2026, 6, 1)
+
+
+def test_open_ended_after():
+    r = _r("after April")  # strictly after April → from 1 May
+    assert r.date_from == datetime(2026, 5, 1)
+    assert r.date_to is None
+
+
+def test_between_range_fixes_partial_parse():
+    r = _r("dinner between 1 May and 10 May")
+    assert (r.date_from, r.date_to) == (datetime(2026, 5, 1), datetime(2026, 5, 11))
+    assert r.residual_q == "dinner"
+
+
+def test_a_to_b_range():
+    r = _r("1 May to 10 May")
+    assert (r.date_from, r.date_to) == (datetime(2026, 5, 1), datetime(2026, 5, 11))
+
+
+# --- #3: who / where against known values --------------------------------
+
+PEOPLE = ["Mom", "Sarah", "Alex"]
+PLACES = ["The park", "Office", "Mom's place"]
+
+
+def _rw(q):
+    return route_query(q, today=TODAY, people=PEOPLE, places=PLACES)
+
+
+def test_who_with_cue():
+    r = _rw("coffee with Mom")
+    assert r.who == "Mom"
+    assert r.residual_q == "coffee"
+
+
+def test_who_bare_name():
+    r = _rw("dinner Sarah")
+    assert r.who == "Sarah"
+    assert r.residual_q == "dinner"
+
+
+def test_where_requires_cue():
+    r = _rw("lunch at the park")
+    assert r.where == "The park"
+    assert r.residual_q == "lunch"
+
+
+def test_bare_place_not_matched_without_cue():
+    r = _rw("park bench")  # no at/in cue → "park" stays content
+    assert r.where is None
+    assert r.residual_q == "park bench"
+
+
+def test_who_where_and_date_combined():
+    r = _rw("dinner with Sarah last month")
+    assert r.who == "Sarah"
+    assert (r.date_from, r.date_to) == (datetime(2026, 5, 1), datetime(2026, 6, 1))
+    assert r.residual_q == "dinner"
+    assert r.labels == ["last month", "with: Sarah"]
