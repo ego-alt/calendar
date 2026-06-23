@@ -43,14 +43,6 @@
 .st-ev .col { background: var(--color-accent); border-radius: var(--radius-sm) var(--radius-sm) 0 0; opacity: 0.85; min-height: 2px; }
 .st-ev-labels { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-2); margin-top: var(--space-2); font-size: 0.66rem; color: var(--color-text-muted); text-align: center; }
 
-/* ranked lists */
-.st-rank .row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border-soft); font-size: var(--text-sm); }
-.st-rank .row:last-child { border-bottom: 0; }
-.st-rank .meter { height: 8px; background: var(--color-bg-inset); border-radius: var(--radius-sm); margin-top: 4px; overflow: hidden; }
-.st-rank .meter > div { height: 100%; background: var(--color-accent); border-radius: var(--radius-sm); }
-.st-rank .count { color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
-.st-empty { color: var(--color-text-muted); font-size: var(--text-sm); }
-
 /* mood mix toggle */
 .st-mix-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-1); }
 .st-mix-header h2 { margin: 0; }
@@ -76,4 +68,9 @@
 @media (max-width: 640px) {
     .st-tiles { grid-template-columns: repeat(2, 1fr); }
     .st-2col { grid-template-columns: 1fr; }
+    /* Shrink the type to sit in line with the calendar page on phones, where its
+       h1 drops to --text-lg and the desktop sizes here read oversized. */
+    .st-header h1 { font-size: var(--text-lg); }
+    .st-tile .n { font-size: 1.4rem; }
+    .st-card h2 { font-size: var(--text-base); }
 }

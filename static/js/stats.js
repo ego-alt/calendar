@@ -205,15 +205,6 @@ function renderStats(data) {
         wireToggle($("trendWin"), (ds) => { win = Number(ds.win); draw(); });
     })();
 
-    // ranked lists
-    function rank(el, rows) {
-        if (!rows.length) { el.innerHTML = `<div class="st-empty">Nothing recorded yet.</div>`; return; }
-        const max = rows[0].count;
-        el.innerHTML = rows.map((r) =>
-            `<div class="row"><div><div>${esc(r.name)}</div><div class="meter"><div style="width:${r.count / max * 100}%"></div></div></div><div class="count">${r.count}</div></div>`).join("");
-    }
-    rank($("people"), data.people);
-    rank($("places"), data.places);
 }
 
 window.renderStats = renderStats;

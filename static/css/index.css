@@ -27,6 +27,12 @@
    a base surface (terminal flavor) — its one deliberate primitive override. */
 .input { background: var(--color-bg-base); font-family: var(--font-mono); }
 
+/* Always reserve the scrollbar gutter so the fixed top bar's right edge (and the
+   logout button) doesn't shift when toggling between the short Calendar view (no
+   scroll) and the long Stats view (scrolls). No-op on overlay-scrollbar mobile. */
+html {
+    scrollbar-gutter: stable;
+}
 body {
     background-color: var(--color-bg-base);
     color: var(--color-text-primary);
