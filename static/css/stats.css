@@ -21,9 +21,9 @@
 /* heatmap */
 .st-hm-scroll { overflow-x: auto; padding-bottom: var(--space-2); }
 .st-hm-months { display: grid; grid-auto-flow: column; gap: 3px; margin-left: 26px; margin-bottom: 4px; }
-.st-hm-months span { font-size: 0.7rem; color: var(--color-text-muted); }
+.st-hm-months span { font-size: var(--text-xs); color: var(--color-text-muted); }
 .st-hm-body { display: flex; gap: 6px; }
-.st-hm-dows { display: grid; grid-template-rows: repeat(7, 13px); gap: 3px; font-size: 0.62rem; color: var(--color-text-muted); }
+.st-hm-dows { display: grid; grid-template-rows: repeat(7, 13px); gap: 3px; font-size: var(--text-xs); color: var(--color-text-muted); }
 .st-hm-dows span { line-height: 13px; }
 .st-hm-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 13px); gap: 3px; }
 .st-cell { width: 13px; height: 13px; border-radius: 3px; background: var(--color-bg-inset); }
@@ -36,12 +36,12 @@
 .st-stack { display: grid; gap: var(--space-2); align-items: end; height: 150px; }
 .st-stack .col { display: flex; flex-direction: column-reverse; height: 100%; border-radius: var(--radius-sm); overflow: hidden; background: var(--color-bg-inset); }
 .st-stack .seg { width: 100%; }
-.st-stack-labels { display: grid; gap: var(--space-2); margin-top: var(--space-2); font-size: 0.7rem; color: var(--color-text-muted); text-align: center; }
+.st-stack-labels { display: grid; gap: var(--space-2); margin-top: var(--space-2); font-size: var(--text-xs); color: var(--color-text-muted); text-align: center; }
 
 /* events per month */
 .st-ev { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-2); align-items: end; height: 150px; }
 .st-ev .col { background: var(--color-accent); border-radius: var(--radius-sm) var(--radius-sm) 0 0; opacity: 0.85; min-height: 2px; }
-.st-ev-labels { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-2); margin-top: var(--space-2); font-size: 0.66rem; color: var(--color-text-muted); text-align: center; }
+.st-ev-labels { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-2); margin-top: var(--space-2); font-size: var(--text-xs); color: var(--color-text-muted); text-align: center; }
 
 /* mood mix toggle */
 .st-mix-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-1); }
@@ -64,6 +64,9 @@
 .st-tline { stroke: var(--color-accent); stroke-width: 2; fill: none; stroke-linejoin: round; stroke-linecap: round; }
 .st-tdot { fill: var(--color-accent); }
 .st-tlabel { font-size: 10px; fill: var(--color-text-muted); font-family: var(--font-sans); }
+/* Empty state for charts with too little data (e.g. the trend's "Not enough
+   data yet."), matching the muted caption styling used elsewhere. */
+.st-empty { color: var(--color-text-muted); font-size: var(--text-sm); }
 
 @media (max-width: 640px) {
     .st-tiles { grid-template-columns: repeat(2, 1fr); }
@@ -71,6 +74,8 @@
     /* Shrink the type to sit in line with the calendar page on phones, where its
        h1 drops to --text-lg and the desktop sizes here read oversized. */
     .st-header h1 { font-size: var(--text-lg); }
-    .st-tile .n { font-size: 1.4rem; }
+    /* Keep the hero stat below the page title (text-lg = 20px) so the header
+       stays the largest element; the bold weight keeps the number prominent. */
+    .st-tile .n { font-size: 1.15rem; }
     .st-card h2 { font-size: var(--text-base); }
 }
