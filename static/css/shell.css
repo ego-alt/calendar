@@ -145,6 +145,10 @@ body.view-search .shell-cal-only {
     width: 100%;
     /* Extra top padding drops the heading clear of the fixed bar. */
     padding: var(--space-8) var(--space-4) var(--space-8);
+    /* The 12-column chart grids round to a px or two over the viewport on phones,
+       producing a tiny horizontal pan. Clip it here; the heatmap keeps its own
+       internal overflow-x:auto scroller, which this does not affect. */
+    overflow-x: hidden;
 }
 body.view-stats #statsView,
 body.view-search #searchView {
@@ -175,15 +179,21 @@ body.view-search #calendarView {
         font-size: var(--text-base);
         padding: 5px;
     }
-    /* Three tabs (Calendar/Stats/Search) + actions on a narrow screen: let tabs
-       shrink to their label instead of the fixed desktop width. */
+    /* Three tabs (Calendar/Stats/Search) on a narrow screen: the switch fills the
+       bar and each tab takes an equal share, so widths are uniform regardless of
+       label length (the fixed desktop min-width is too wide for three tabs here). */
     .shell-switch {
+        flex: 1;
         gap: 0;
     }
+    .shell-spacer {
+        display: none;
+    }
     .shell-tab {
+        flex: 1;
         min-width: 0;
-        padding-left: 12px;
-        padding-right: 12px;
+        padding-left: 8px;
+        padding-right: 8px;
         font-size: var(--text-sm);
     }
     /* The inline calendar controls move to the bottom mode bar on phones. */
