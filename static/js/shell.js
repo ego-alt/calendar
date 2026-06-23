@@ -20,20 +20,22 @@
         }
     }
 
+    const PATHS = { calendar: "/", stats: "/stats", search: "/search" };
+
     function setView(view, { push = true } = {}) {
-        const stats = view === "stats";
         // Switching the top-level view closes any open calendar sub-view
-        // (year / diary / day) so we don't land on Stats with one still open.
+        // (year / diary / day) so we don't land on another view with one still open.
         ["yearView", "diaryView", "sidebar"].forEach((id) => {
             document.getElementById(id)?.classList.remove("active");
         });
         window.updateBottomBar?.();
-        document.body.classList.toggle("view-stats", stats);
-        document.body.classList.toggle("view-calendar", !stats);
+        document.body.classList.toggle("view-calendar", view === "calendar");
+        document.body.classList.toggle("view-stats", view === "stats");
+        document.body.classList.toggle("view-search", view === "search");
         tabs.forEach((t) => t.classList.toggle("active", t.dataset.view === view));
-        if (stats) loadStats();
+        if (view === "stats") loadStats();
         if (push) {
-            history.pushState({ view }, "", appUrl(stats ? "/stats" : "/"));
+            history.pushState({ view }, "", appUrl(PATHS[view] || "/"));
         }
     }
 
@@ -42,7 +44,10 @@
     // Browser back/forward closes or reopens the Stats view.
     window.addEventListener("popstate", (e) => {
         const path = location.pathname.replace(/\/+$/, "");
-        const view = (e.state && e.state.view) || (path.endsWith("/stats") ? "stats" : "calendar");
+        let view = "calendar";
+        if (e.state && e.state.view) view = e.state.view;
+        else if (path.endsWith("/stats")) view = "stats";
+        else if (path.endsWith("/search")) view = "search";
         setView(view, { push: false });
     });
 

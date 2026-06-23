@@ -1,15 +1,12 @@
-/* Inline diary search — a section at the top of the Stats view (#statsView).
-   Loaded after stats.css. */
-
-.st-search {
-    margin-bottom: var(--space-5);
-}
+/* Diary search — its own top-level view (#searchView). The page shell (centering,
+   top padding, the .st-header heading) is shared with Stats; this styles the query
+   controls and the result list. Loaded after stats.css. */
 
 .search-controls {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
-    margin-bottom: var(--space-3);
+    margin-bottom: var(--space-4);
 }
 .search-controls .input {
     width: 100%;
@@ -30,16 +27,13 @@
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-sm);
     padding: var(--space-2) var(--space-3);
-    margin-bottom: var(--space-3);
+    margin-bottom: var(--space-4);
 }
 
-/* Results are capped so a long list doesn't bury the charts below. */
 .search-results {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
-    max-height: 55vh;
-    overflow-y: auto;
 }
 /* Result cards reuse the .diary-event look (index.css); this adds the date header. */
 .search-result-date {
@@ -51,5 +45,5 @@
     color: var(--color-text-muted);
     font-size: var(--text-sm);
     text-align: center;
-    padding: var(--space-5) var(--space-3);
+    padding: var(--space-8) var(--space-3);
 }

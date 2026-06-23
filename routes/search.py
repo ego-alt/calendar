@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from query_router import route_query
@@ -21,7 +21,18 @@ def _parse_date(value):
         return None
 
 
-@search_blueprint.route("", methods=["GET"])
+@search_blueprint.route("")
+def search_page():
+    # Deep-link / refresh entry: render the calendar shell with the Search view
+    # pre-selected (the shell swaps views client-side from there — no reload).
+    if not current_user.is_authenticated:
+        return redirect(url_for("index_routes.index"))
+    from .index import build_index_context
+
+    return render_template("index.html", **build_index_context(), active_view="search")
+
+
+@search_blueprint.route("/data", methods=["GET"])
 @json_login_required
 def search_events():
     # Route the typed query first: pull a date range / mood out of it, leaving the

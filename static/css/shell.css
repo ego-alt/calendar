@@ -127,33 +127,37 @@ body {
 }
 /* The stats h1 carries an extra top margin (space-2) the calendar h1 doesn't —
    zero it so the two headings land at the exact same height across the toggle. */
-#statsView .st-header h1 {
+#statsView .st-header h1,
+#searchView .st-header h1 {
     margin-top: 0;
 }
 
-/* Calendar-only chrome disappears on the Stats view. */
-body.view-stats .shell-cal-only {
+/* Calendar-only chrome disappears on the Stats and Search views. */
+body.view-stats .shell-cal-only,
+body.view-search .shell-cal-only {
     display: none;
 }
 
 /* View visibility — one is shown at a time beneath the shared bar. */
-#statsView {
+#statsView,
+#searchView {
     display: none;
     width: 100%;
-    /* Extra top padding drops the "Your year in moods" heading clear of the
-       fixed bar (was cramped right beneath it). */
+    /* Extra top padding drops the heading clear of the fixed bar. */
     padding: var(--space-8) var(--space-4) var(--space-8);
 }
-body.view-stats #statsView {
+body.view-stats #statsView,
+body.view-search #searchView {
     display: block;
 }
 /* `contents` makes the wrapper transparent to layout, so the calendar stays the
    body's flex child and keeps its original width + centering (a real box here
-   would shrink-to-fit). Hidden outright on the stats view. */
+   would shrink-to-fit). Hidden outright on the stats / search views. */
 #calendarView {
     display: contents;
 }
-body.view-stats #calendarView {
+body.view-stats #calendarView,
+body.view-search #calendarView {
     display: none;
 }
 
@@ -170,6 +174,17 @@ body.view-stats #calendarView {
     .shell-actions .btn-ghost {
         font-size: var(--text-base);
         padding: 5px;
+    }
+    /* Three tabs (Calendar/Stats/Search) + actions on a narrow screen: let tabs
+       shrink to their label instead of the fixed desktop width. */
+    .shell-switch {
+        gap: 0;
+    }
+    .shell-tab {
+        min-width: 0;
+        padding-left: 12px;
+        padding-right: 12px;
+        font-size: var(--text-sm);
     }
     /* The inline calendar controls move to the bottom mode bar on phones. */
     #viewSelect,

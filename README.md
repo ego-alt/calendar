@@ -86,8 +86,8 @@ Hybrid semantic + keyword search over diary entries (events and their
 subevents), entirely on-device — no external services or API keys. Retrieval
 combines local embeddings (`fastembed` / ONNX), SQLite FTS5 lexical matching,
 and metadata filters (date range, mood, who, where), fused with Reciprocal Rank
-Fusion. Search lives at the top of the **Stats** view; clicking a result jumps to
-that day on the calendar.
+Fusion. Search is its own top-level view (the **Search** tab, at `/search`);
+clicking a result jumps to that day on the calendar.
 
 Entries are indexed automatically on create/edit/delete. Build (or rebuild) the
 index for existing data:

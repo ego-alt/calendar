@@ -34,6 +34,7 @@
         <nav class="shell-switch" role="tablist" aria-label="View">
             <button class="shell-tab" data-view="calendar" role="tab" type="button">Calendar</button>
             <button class="shell-tab" data-view="stats" role="tab" type="button">Stats</button>
+            <button class="shell-tab" data-view="search" role="tab" type="button">Search</button>
         </nav>
         <div class="shell-spacer"></div>
         <div class="shell-actions">
@@ -168,26 +169,6 @@
                 <div class="st-range" id="range"></div>
             </header>
 
-            <section class="st-search">
-                <div class="search-controls">
-                    <input class="input" type="search" id="searchInput" placeholder="Search your entries…" autocomplete="off">
-                    <div class="search-filters">
-                        <input class="input" type="date" id="searchFrom" aria-label="From date">
-                        <input class="input" type="date" id="searchTo" aria-label="To date">
-                        <select class="input" id="searchMood" aria-label="Mood">
-                            <option value="">Any mood</option>
-                            {% for m in moods %}<option value="{{ m.key }}">{{ m.name }}</option>{% endfor %}
-                        </select>
-                        <input class="input" type="text" id="searchWho" placeholder="Who" autocomplete="off">
-                        <input class="input" type="text" id="searchWhere" placeholder="Where" autocomplete="off">
-                    </div>
-                </div>
-                <div class="search-interpreted" id="searchInterpreted" style="display:none"></div>
-                <div class="search-results" id="searchResults">
-                    <div class="search-hint">Search across every diary entry by meaning, words, or filters.</div>
-                </div>
-            </section>
-
             <section class="st-tiles" id="tiles"></section>
 
             <section class="st-card">
@@ -239,6 +220,31 @@
                 </section>
             </div>
 
+        </div>
+    </main>
+
+    <main id="searchView">
+        <div class="st-wrap">
+            <header class="st-header">
+                <h1>Search</h1>
+            </header>
+            <div class="search-controls">
+                <input class="input" type="search" id="searchInput" placeholder="Search your entries…" autocomplete="off">
+                <div class="search-filters">
+                    <input class="input" type="date" id="searchFrom" aria-label="From date">
+                    <input class="input" type="date" id="searchTo" aria-label="To date">
+                    <select class="input" id="searchMood" aria-label="Mood">
+                        <option value="">Any mood</option>
+                        {% for m in moods %}<option value="{{ m.key }}">{{ m.name }}</option>{% endfor %}
+                    </select>
+                    <input class="input" type="text" id="searchWho" placeholder="Who" autocomplete="off">
+                    <input class="input" type="text" id="searchWhere" placeholder="Where" autocomplete="off">
+                </div>
+            </div>
+            <div class="search-interpreted" id="searchInterpreted" style="display:none"></div>
+            <div class="search-results" id="searchResults">
+                <div class="search-hint">Search across every diary entry by meaning, words, or filters.</div>
+            </div>
         </div>
     </main>
 

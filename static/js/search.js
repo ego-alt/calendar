@@ -1,7 +1,7 @@
-/* Inline diary search — lives at the top of the Stats view. Hybrid search runs
+/* Diary search — its own top-level view (#searchView). Hybrid search runs
  * server-side (search_index.py) with query routing (query_router.py); this fetches
- * GET /search, renders ranked results, and on click switches to the Calendar view
- * at that entry's day and opens the day sidebar.
+ * GET /search/data, renders ranked results, and on click switches to the Calendar
+ * view at that entry's day and opens the day sidebar.
  *
  * Loaded after index.js, so it shares its globals: viewState, updateCalendarView,
  * showSidebar, appUrl. */
@@ -62,7 +62,7 @@
         const stamp = ++lastRequest;
         resultsEl.innerHTML = '<div class="loading-indicator">Searching…</div>';
         try {
-            const response = await fetch(appUrl(`/search?${params.toString()}`));
+            const response = await fetch(appUrl(`/search/data?${params.toString()}`));
             const data = await response.json();
             if (stamp !== lastRequest) return; // a newer query superseded this one
             if (data.status === 'success') {
