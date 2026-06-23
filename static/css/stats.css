@@ -4,8 +4,8 @@
    shell now (#statsView); layout/padding come from shell.css. */
 .st-wrap { max-width: 1040px; margin: 0 auto; }
 .st-header { margin-bottom: var(--space-5); }
-.st-header h1 { font-size: var(--text-xl); font-weight: 550; letter-spacing: -0.01em; margin: var(--space-2) 0 0; }
-.st-range { color: var(--color-text-muted); font-size: var(--text-sm); }
+.st-header h1 { font-size: var(--text-xl); font-weight: 550; letter-spacing: -0.01em; margin: var(--space-2) 0 0; text-align: left; }
+.st-range { color: var(--color-text-muted); font-size: var(--text-sm); margin-top: var(--space-1); }
 
 .st-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin-bottom: var(--space-4); }
 .st-tile { background: var(--color-bg-elevated); border: 1px solid var(--color-border-soft); border-radius: var(--radius-md); padding: var(--space-4); }
