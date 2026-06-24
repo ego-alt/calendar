@@ -19,7 +19,7 @@ import threading
 
 import numpy as np
 from flask import current_app
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import selectinload
 
 from models import DailyLog, Event, EventEmbedding, db
@@ -180,7 +180,7 @@ def reindex_all():
 # --- querying -------------------------------------------------------------
 
 
-def _candidate_events(user_id, *, date_from, date_to, mood, who, where):
+def _candidate_events(user_id, *, date_from, date_to, mood, who, who_op, where):
     """Metadata-filtered, user-scoped events, newest first."""
     query = Event.query.filter(Event.user_id == user_id)  # excludes NULL user_id
     if date_from is not None:
@@ -188,7 +188,10 @@ def _candidate_events(user_id, *, date_from, date_to, mood, who, where):
     if date_to is not None:
         query = query.filter(Event.start_time < date_to)
     if who:
-        query = query.filter(Event.with_who.ilike(f"%{who}%"))
+        # `who` is one or more names; with_who is a comma-separated string, so each
+        # name is a substring match. "and" → all present, "or" → any present.
+        clauses = [Event.with_who.ilike(f"%{name}%") for name in who]
+        query = query.filter(or_(*clauses) if who_op == "or" else and_(*clauses))
     if where:
         query = query.filter(Event.where.ilike(f"%{where}%"))
     if mood:
@@ -253,18 +256,21 @@ def _rrf(*ranked_lists):
 
 
 def search(user_id, q=None, *, date_from=None, date_to=None, mood=None,
-           who=None, where=None, limit=20):
+           who=None, who_op="and", where=None, limit=20):
     """Hybrid search. Returns [(Event, score|None)] best first.
 
-    With no query text, returns the metadata-filtered candidates by recency
-    (score None). With query text, fuses dense + sparse rankings over the
-    candidate set via RRF.
+    `who` is a name or list of names; `who_op` ("and"/"or") sets how multiple
+    combine. With no query text, returns the metadata-filtered candidates by
+    recency (score None). With query text, fuses dense + sparse rankings via RRF.
     """
     ensure_fts_table()
     q = (q or "").strip()
+    if isinstance(who, str):
+        who = [who]
 
     candidates = _candidate_events(
-        user_id, date_from=date_from, date_to=date_to, mood=mood, who=who, where=where
+        user_id, date_from=date_from, date_to=date_to, mood=mood,
+        who=who, who_op=who_op, where=where,
     )
     if not candidates:
         return []

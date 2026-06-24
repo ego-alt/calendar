@@ -162,7 +162,7 @@ def test_a_to_b_range():
 
 # --- #3: who / where against known values --------------------------------
 
-PEOPLE = ["Mom", "Sarah", "Alex"]
+PEOPLE = ["Mom", "Dad", "Sarah", "Alex"]
 PLACES = ["The park", "Office", "Mom's place"]
 
 
@@ -172,14 +172,35 @@ def _rw(q):
 
 def test_who_with_cue():
     r = _rw("coffee with Mom")
-    assert r.who == "Mom"
+    assert r.who == ["Mom"]
     assert r.residual_q == "coffee"
 
 
 def test_who_bare_name():
     r = _rw("dinner Sarah")
-    assert r.who == "Sarah"
+    assert r.who == ["Sarah"]
     assert r.residual_q == "dinner"
+
+
+def test_who_multiple_and():
+    r = _rw("dinner with Mom and Dad")
+    assert r.who == ["Mom", "Dad"]
+    assert r.who_op == "and"
+    assert r.residual_q == "dinner"
+    assert r.labels == ["with: Mom, Dad"]
+
+
+def test_who_multiple_or():
+    r = _rw("Mom or Dad")
+    assert r.who == ["Mom", "Dad"]
+    assert r.who_op == "or"
+    assert r.labels == ["with: Mom or Dad"]
+
+
+def test_who_comma_separated():
+    r = _rw("with Mom, Dad")
+    assert r.who == ["Mom", "Dad"]
+    assert r.who_op == "and"
 
 
 def test_where_requires_cue():
@@ -196,7 +217,7 @@ def test_bare_place_not_matched_without_cue():
 
 def test_who_where_and_date_combined():
     r = _rw("dinner with Sarah last month")
-    assert r.who == "Sarah"
+    assert r.who == ["Sarah"]
     assert (r.date_from, r.date_to) == (datetime(2026, 5, 1), datetime(2026, 6, 1))
     assert r.residual_q == "dinner"
     assert r.labels == ["last month", "with: Sarah"]

@@ -140,6 +140,21 @@ def test_search_routes_who_from_text(authed_client):
     assert "with: Mom" in res["parsed"]["labels"]
 
 
+def test_search_who_conjunction(authed_client):
+    _make_event(authed_client, "Lunch", with_who="Mom, Dad")  # joint
+    _make_event(authed_client, "Coffee", day=12, with_who="Mom")
+    _make_event(authed_client, "Walk", day=13, with_who="Dad")
+
+    # "and" → only the entry where with_who contains both
+    res_and = authed_client.get("/search/data?q=with Mom and Dad").get_json()
+    assert [r["name"] for r in res_and["results"]] == ["Lunch"]
+    assert "with: Mom, Dad" in res_and["parsed"]["labels"]
+
+    # "or" → any of them
+    res_or = authed_client.get("/search/data?q=Mom or Dad").get_json()
+    assert sorted(r["name"] for r in res_or["results"]) == ["Coffee", "Lunch", "Walk"]
+
+
 def test_search_reflects_edits_and_deletes(authed_client):
     _make_event(authed_client, "Standup", notes="status update")
     event_id = authed_client.get("/events?year=2026&month=5&day=11").get_json()["events"][0]["id"]

@@ -33,6 +33,18 @@ def _distinct(column, user_id):
     return [r[0] for r in rows]
 
 
+def _known_people(user_id):
+    """Individual names the user has logged (with_who is comma-separated, so a
+    joint entry like "Mom, Dad" yields each name for who-routing)."""
+    names = set()
+    for raw in _distinct(Event.with_who, user_id):
+        for part in raw.split(","):
+            part = part.strip()
+            if part:
+                names.add(part)
+    return sorted(names)
+
+
 @search_blueprint.route("")
 def search_page():
     # Deep-link / refresh entry: render the calendar shell with the Search view
@@ -54,7 +66,7 @@ def search_events():
     routed = route_query(
         request.args.get("q", ""),
         today=date.today(),
-        people=_distinct(Event.with_who, uid),
+        people=_known_people(uid),
         places=_distinct(Event.where, uid),
     )
 
@@ -72,7 +84,10 @@ def search_events():
     else:
         date_from, date_to, date_label = routed.date_from, routed.date_to, routed.date_label
     mood = explicit_mood or routed.mood
-    who = explicit_who or routed.who
+    if explicit_who:
+        who, who_op = [explicit_who], "and"
+    else:
+        who, who_op = routed.who, routed.who_op
     where = explicit_where or routed.where
 
     try:
@@ -87,6 +102,7 @@ def search_events():
         date_to=date_to,
         mood=mood,
         who=who,
+        who_op=who_op,
         where=where,
         limit=limit,
     )
@@ -97,7 +113,8 @@ def search_events():
     if date_label:
         labels.append(date_label)
     if not explicit_who and routed.who:
-        labels.append(f"with: {routed.who}")
+        sep = " or " if routed.who_op == "or" else ", "
+        labels.append("with: " + sep.join(routed.who))
     if not explicit_where and routed.where:
         labels.append(f"at: {routed.where}")
     if not explicit_mood and routed.mood:

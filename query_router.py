@@ -49,7 +49,8 @@ class RoutedQuery:
     date_to: datetime | None = None  # exclusive
     date_label: str | None = None
     mood: str | None = None
-    who: str | None = None
+    who: list[str] = field(default_factory=list)
+    who_op: str = "and"  # how multiple people combine: "and" (both) / "or" (either)
     where: str | None = None
     labels: list[str] = field(default_factory=list)
 
@@ -336,7 +337,8 @@ def _extract_date(text, today):
 
 
 def _extract_who_where(text, people, places):
-    who = where = who_label = where_label = None
+    who, who_op, who_label = [], "and", None
+    where = where_label = None
 
     # Places require a cue (at/in/@) — bare "home"/"office" collide with content.
     # Longest first so multi-word places win; "The park" matches "at the park".
@@ -348,17 +350,24 @@ def _extract_who_where(text, people, places):
             text = _strip(text, m)
             break
 
-    # People: "with <name>" or a bare known name (names are distinctive).
-    for person in sorted(people, key=len, reverse=True):
-        m = re.search(rf"\bwith\s+{re.escape(person)}\b", text, re.I) or re.search(
-            rf"\b{re.escape(person)}\b", text, re.I
-        )
+    # People: "with <name>" or a bare known name, one or more joined by and / or /
+    # comma. The conjunction is respected downstream — "Mom and Dad" → both present
+    # (their comma-separated with_who contains each), "Mom or Dad" → either.
+    if people:
+        names = "(" + "|".join(re.escape(p) for p in sorted(people, key=len, reverse=True)) + ")"
+        m = re.search(rf"\b(?:with\s+)?{names}(?:\s*(?:,|&|and|or)\s*{names})*\b", text, re.I)
         if m:
-            who, who_label = person, f"with: {person}"
+            phrase = m.group(0)
+            lookup = {p.lower(): p for p in people}
+            for tok in re.findall(names, phrase, re.I):
+                canon = lookup.get(tok.lower())
+                if canon and canon not in who:
+                    who.append(canon)
+            who_op = "or" if re.search(r"\bor\b", phrase, re.I) else "and"
+            who_label = "with: " + (" or " if who_op == "or" else ", ").join(who)
             text = _strip(text, m)
-            break
 
-    return who, where, who_label, where_label, text
+    return who, who_op, where, who_label, where_label, text
 
 
 # --- mood -----------------------------------------------------------------
@@ -397,7 +406,7 @@ def route_query(q, *, today=None, people=(), places=()):
     text = q or ""
 
     date_from, date_to, date_label, text = _extract_date(text, today)
-    who, where, who_label, where_label, text = _extract_who_where(text, people, places)
+    who, who_op, where, who_label, where_label, text = _extract_who_where(text, people, places)
     mood, mood_label, text = _extract_mood(text)
 
     residual = _cleanup(text)
@@ -413,6 +422,7 @@ def route_query(q, *, today=None, people=(), places=()):
         date_label=date_label,
         mood=mood,
         who=who,
+        who_op=who_op,
         where=where,
         labels=labels,
     )
