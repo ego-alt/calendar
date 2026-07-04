@@ -63,6 +63,7 @@
 .st-tgrid { stroke: var(--color-border-soft); stroke-width: 1; }
 .st-tline { stroke: var(--color-accent); stroke-width: 2; fill: none; stroke-linejoin: round; stroke-linecap: round; }
 .st-tdot { fill: var(--color-accent); }
+.st-tmark { fill: var(--color-danger); stroke: var(--color-bg-elevated); stroke-width: 1; }
 .st-tlabel { font-size: 10px; fill: var(--color-text-muted); font-family: var(--font-sans); }
 /* Empty state for charts with too little data (e.g. the trend's "Not enough
    data yet."), matching the muted caption styling used elsewhere. */

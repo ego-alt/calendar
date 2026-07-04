@@ -148,7 +148,7 @@ function renderStats(data) {
                 for (let k = Math.max(0, i - w + 1); k <= i; k++) {
                     if (series[k].v != null) { sum += series[k].v; cnt++; }
                 }
-                return { d: series[i].d, v: cnt >= need ? +(sum / cnt).toFixed(2) : null };
+                return { d: series[i].d, v: cnt >= need ? +(sum / cnt).toFixed(2) : null, m: series[i].m };
             });
         }
 
@@ -181,6 +181,14 @@ function renderStats(data) {
                 `<circle cx="${s[0][0].toFixed(1)}" cy="${s[0][1].toFixed(1)}" r="1.8" class="st-tdot"/>`
             ).join("");
 
+            // Marked days (double-tapped on the calendar): red dot on the line,
+            // or at the baseline when the day has no value in this view.
+            const marks = trend.map((d, i) => {
+                if (!d.m) return "";
+                const y = d.v != null ? yAt(d.v) : pad.top + h;
+                return `<circle cx="${xAt(i).toFixed(1)}" cy="${y.toFixed(1)}" r="3" class="st-tmark"><title>${fmt(d.d)} · marked</title></circle>`;
+            }).join("");
+
             const grids = labels.map(s => {
                 const y = yAt(s.score).toFixed(1);
                 return `<line x1="${pad.left}" y1="${y}" x2="${pad.left + w}" y2="${y}" class="st-tgrid"/>
@@ -196,7 +204,7 @@ function renderStats(data) {
             }).join("");
 
             el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
-                ${grids}<path d="${pathD}" class="st-tline"/>${dots}${xTicks}
+                ${grids}<path d="${pathD}" class="st-tline"/>${dots}${marks}${xTicks}
             </svg>`;
         }
 

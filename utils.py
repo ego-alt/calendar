@@ -261,13 +261,18 @@ def compute_trend(user_id: int, start: date, end: date) -> list[dict]:
         DailyLog.user_id == user_id,
         DailyLog.date >= start,
         DailyLog.date <= end,
-        DailyLog.mood_key.isnot(None),
     ).all()
-    score_by_date = {log.date: MOOD_BY_KEY[log.mood_key].score for log in logs}
+    score_by_date = {
+        log.date: MOOD_BY_KEY[log.mood_key].score for log in logs if log.mood_key
+    }
+    marked = {log.date for log in logs if log.has_marker}
     trend = []
     d = start
     while d <= end:
-        trend.append({"d": d.isoformat(), "v": score_by_date.get(d)})
+        point = {"d": d.isoformat(), "v": score_by_date.get(d)}
+        if d in marked:
+            point["m"] = True
+        trend.append(point)
         d += timedelta(days=1)
     return trend
 
