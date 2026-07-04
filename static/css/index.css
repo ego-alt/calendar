@@ -712,8 +712,10 @@ h2 {
         transition: bottom 0.3s ease;
         overflow-y: auto;
     }
+    /* Dock above the mode bar (z 1005) so the sheet's bottom buttons aren't
+     * buried under it. */
     .sidebar.active {
-        bottom: 0;
+        bottom: var(--mode-bar-h);
     }
     /* Visible bar is 40x4, but padding (drawn transparent via background-clip)
      * gives it a comfortable tap target for dismissing. */

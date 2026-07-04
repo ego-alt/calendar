@@ -983,6 +983,9 @@ function toggleEventForm(show) {
         const formattedDate = `${String(currentOpenDay).padStart(2, '0')}-${String(viewState.month).padStart(2, '0')}-${viewState.year}`;
         document.getElementById('startDate').value = formattedDate;
         document.getElementById('endDate').value = formattedDate;
+        // The form is the sidebar's last child — scroll it into view.
+        const sidebar = document.getElementById('sidebar');
+        sidebar.scrollTo({ top: sidebar.scrollHeight, behavior: 'smooth' });
     }
 }
 
