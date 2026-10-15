@@ -123,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupModeBar();
     window.monthData = window.INITIAL_MONTH;
     renderStatusLine();
-    document.getElementById('todayBtn').addEventListener('click', goToToday);
     document.getElementById('firstRunBtn')?.addEventListener('click', async () => {
         await goToToday();
         showSidebar(CURRENT_DAY);
@@ -177,28 +176,6 @@ function updateBottomBar() {
         b.classList.toggle('active', b.dataset.mode === mode);
         b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
     });
-    updateTodayButton(mode);
-}
-
-/** The Today button shows whenever the view doesn't contain today. */
-function updateTodayButton(mode) {
-    const btn = document.getElementById('todayBtn');
-    if (!btn) return;
-    let showingToday;
-    if (mode === 'year') {
-        showingToday = viewState.year === CURRENT_YEAR;
-    } else if (mode === 'week') {
-        const a = viewState.weekAnchor;
-        const anchor = new Date(a.year, a.month - 1, a.day);
-        const monday = new Date(anchor); monday.setDate(anchor.getDate() - ((anchor.getDay() + 6) % 7));
-        const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
-        showingToday = TODAY >= monday && TODAY <= new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate(), 23, 59);
-    } else {
-        showingToday = viewState.year === CURRENT_YEAR && viewState.month === CURRENT_MONTH;
-    }
-    btn.hidden = showingToday;
-    // Year and Diary have their own title bars; keep the button reachable there too.
-    document.querySelectorAll('.view-today').forEach((b) => { b.hidden = showingToday; });
 }
 
 /** Jump every view back to today. */

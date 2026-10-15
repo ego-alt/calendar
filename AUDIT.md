@@ -126,7 +126,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **What:** Today's cell has no special style (week view does highlight it). After browsing months, nothing takes you back to today.
 - **Where:** `index.html` / `index.js` month grid (no `today` class)
 - **Fix:** Ring today's cell the way week view does. Add a **Today** button and a `t` shortcut.
-- **Status:** Done. Today's cell is ringed in Month and Year. A **Today** button appears beside the title whenever the view doesn't contain today (month, week or year) and brings every view back; `t` does the same.
+- **Status:** Done, revised. Today is marked in Month (a steady caret and a bold day number) and ringed in Year, and `t` brings every view back to today. A **Today** button was tried beside the month title and then removed: it sat awkwardly there.
 
 **2.2 Signed out, it just looks empty** [confirmed]
 - **What:** In standalone mode, a signed-out visitor sees an empty month and an empty day panel, with no prompt to sign in (only the door icon in the corner). `/`, `/get_month`, `/get_week` and `/get_year` don't require a login.

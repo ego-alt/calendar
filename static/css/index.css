@@ -1229,8 +1229,6 @@ h2 {
     justify-content: center;
     gap: var(--space-3);
 }
-.today-btn { padding: 2px var(--space-3); font-size: var(--text-sm); }
-.today-btn[hidden] { display: none; }
 /* Today is the cursor: a steady terminal block caret in the corner (no
    blinking: it was distracting), and its number in full strength. */
 .day.today { border-color: var(--color-text-secondary); }
