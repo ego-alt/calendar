@@ -14,7 +14,7 @@ tickets that go with it, and the trends over time.
   **moments** inside an entry, and attach **photos and PDFs**.
 - **The look** — a mood mosaic in a terminal logbook: each day a tile tinted
   by its mood, its corner folding further the more you wrote, a small notch
-  when it holds a photo or ticket, today marked by a blinking caret; dates,
+  when it holds a photo or ticket, today marked by a caret; dates,
   times and counts in monospace, entries as log lines with a time gutter, and
   a status line under the month on desktop.
 - **Never lose writing** — half-written entries are kept as drafts per day and

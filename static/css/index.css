@@ -1231,8 +1231,8 @@ h2 {
 }
 .today-btn { padding: 2px var(--space-3); font-size: var(--text-sm); }
 .today-btn[hidden] { display: none; }
-/* Today is the cursor: a terminal block caret in the corner, blinking slowly
-   (steady for reduced motion), and its number in full strength. */
+/* Today is the cursor: a steady terminal block caret in the corner (no
+   blinking: it was distracting), and its number in full strength. */
 .day.today { border-color: var(--color-text-secondary); }
 .day.today::after { font-weight: 700; color: var(--color-text-primary); opacity: 1; }
 .day.today::before {
@@ -1244,10 +1244,7 @@ h2 {
     height: 13px;
     background: var(--color-text-primary);
     border-radius: 1px;
-    animation: caret-blink 1.1s steps(1, end) infinite;
 }
-@keyframes caret-blink { 50% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .day.today::before { animation: none; } }
 
 /* ---- Diary ---- */
 .diary-day-head {
@@ -1616,4 +1613,12 @@ body.signed-out .login-button { display: none; }
         z-index: 1001;
     }
     body.view-calendar .status-line::before { content: "› "; color: var(--color-accent); }
+}
+
+/* a multi-day entry's dates, on their own line above its title */
+.entry-span {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    margin-bottom: 2px;
 }

@@ -950,6 +950,7 @@ async function loadMonthEvents() {
             return `
                 <div class="diary-event" data-day="${day}" role="button" tabindex="0">
                     <div class="diary-event-time log-gutter" title="${escapeHtml(entryTimeLabel(event, iso))}">${gutterTime(event, iso)}</div>
+                    ${spanLine(event)}
                     <div class="diary-event-name">${escapeHtml(event.name)}</div>
                     ${detail('fa-user', event.with_who)}
                     ${detail('fa-map-marker-alt', event.where)}

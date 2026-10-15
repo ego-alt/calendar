@@ -128,13 +128,26 @@ function gutterTime(entry, onIso) {
     const end = entry.end_time ? parseLocalDateTime(entry.end_time) : null;
     const hm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     if (end && isoFromDate(start) !== isoFromDate(end)) {
-        const span = start.getMonth() === end.getMonth()
-            ? `${start.getDate()}–${end.getDate()} ${MONTH_ABBR[end.getMonth()]}`
-            : `${start.getDate()} ${MONTH_ABBR[start.getMonth()]}–${end.getDate()} ${MONTH_ABBR[end.getMonth()]}`;
-        return `<span class="gutter-span">${span}</span>`;
+        // Where this day sits in the span: "day 2 / of 3" (the dates go above the title).
+        const dayStart = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const [y, m, d] = onIso.split('-').map(Number);
+        const n = Math.round((new Date(y, m - 1, d) - dayStart(start)) / 864e5) + 1;
+        const total = Math.round((dayStart(end) - dayStart(start)) / 864e5) + 1;
+        return `<span>day ${n}</span><span class="gutter-end">of ${total}</span>`;
     }
     if (isAllDayEvent(entry)) return '<span class="gutter-span">all day</span>';
     return `<span>${hm(start)}</span>${end ? `<span class="gutter-end">${hm(end)}</span>` : ''}`;
+}
+
+/** For a multi-day entry, its dates on one line ("Sat 3 – Mon 5 Oct"); else ''. */
+function spanLine(entry) {
+    const start = parseLocalDateTime(entry.start_time);
+    const end = entry.end_time ? parseLocalDateTime(entry.end_time) : null;
+    if (!end || isoFromDate(start) === isoFromDate(end)) return '';
+    const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+    const from = `${WEEKDAY_ABBR[start.getDay()]} ${start.getDate()}${sameMonth ? '' : ' ' + MONTH_ABBR[start.getMonth()]}`;
+    const to = formatDate(end, { year: false });
+    return `<div class="entry-span">${escapeHtml(from)} – ${escapeHtml(to)}</div>`;
 }
 
 // ---------- drafts ----------
@@ -343,6 +356,7 @@ function renderEntryCard(event) {
             </div>
             <button type="button" class="more-btn" data-act="more" aria-label="More actions for this entry"><i class="fas fa-ellipsis-h"></i></button>
             <div class="event-time log-gutter" title="${escapeHtml(entryTimeLabel(event, dayState.iso))}">${gutterTime(event, dayState.iso)}</div>
+            ${spanLine(event)}
             <div class="event-name">${escapeHtml(event.name)}</div>
             <div class="event-details">
                 ${renderDetail('fa-user', event.with_who)}
