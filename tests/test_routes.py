@@ -238,3 +238,16 @@ def test_oversized_upload_says_so(authed_client, app):
     r = authed_client.post("/attachments", data=form, content_type="multipart/form-data")
     assert r.status_code == 413
     assert r.json["message"].startswith("That file is over")
+
+
+def test_day_carries_mood_and_marker_and_undo_info(authed_client):
+    day = {"year": 2026, "month": 10, "day": 7}
+    r = authed_client.post("/mood/update", json={**day, "mood": "good"})
+    assert r.json["previous"] is None
+    r = authed_client.post("/mood/update", json={**day, "mood": "low"})
+    assert r.json["previous"] == "good"          # what Undo restores
+    authed_client.post("/mood/marker/toggle", json=day)
+    got = authed_client.get("/events/?year=2026&month=10&day=7").json
+    assert got["mood"] == "low" and got["has_marker"] is True
+    r = authed_client.post("/mood/update", json={**day, "mood": "meh"})
+    assert r.status_code == 400 and "five" in r.json["message"]

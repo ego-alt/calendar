@@ -1095,3 +1095,105 @@ h2 {
     .toasts { bottom: calc(var(--mode-bar-h, 54px) + var(--space-3)); }
     .entry-form input, .entry-form textarea { font-size: var(--text-base); }   /* no iOS zoom */
 }
+
+/* ---- mood + marker in the day panel ---- */
+.day-mood {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
+}
+.mood-chip {
+    flex: 1 1 0;
+    min-width: 0;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: var(--space-2) 2px;
+    min-height: 44px;
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-inset);
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: var(--text-xs);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.mood-chip:hover { color: var(--color-text-primary); }
+.mood-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: var(--radius-pill);
+    background: var(--mood);
+}
+.mood-chip.active {
+    background: var(--mood);
+    border-color: var(--color-text-primary);
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+.mood-chip.active .mood-dot { box-shadow: 0 0 0 2px var(--color-text-primary); }
+.day-flags {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+.marker-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 36px;
+    padding: var(--space-1) var(--space-3);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+}
+.marker-toggle.active {
+    border-style: solid;
+    border-color: var(--color-danger);
+    color: var(--color-text-primary);
+}
+.marker-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--color-danger);
+}
+.marker-toggle.active .marker-dot { background: var(--color-danger); }
+.link-btn {
+    background: none;
+    border: 0;
+    padding: var(--space-1);
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: var(--text-sm);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+.link-btn:hover { color: var(--color-text-primary); }
+
+/* the quick picker's options are buttons now */
+.color-option { border: 0; padding: 0; font: inherit; }
+.color-option.color-clear {
+    background: var(--color-bg-inset);
+    color: var(--color-text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+/* On touch screens a tap on a day always opens the day (mood is set there);
+ * the hover-only quick-mood eye isn't shown, so it can't catch taps. */
+@media (hover: none) {
+    .eye-icon { display: none; }
+}

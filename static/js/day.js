@@ -132,6 +132,86 @@ function latestDraftFor(iso) {
         .sort((a, b) => b[1].at - a[1].at)[0] || null;
 }
 
+// ---------- mood and marker (shared by the day panel and the grid picker) ----------
+
+const MOODS = window.MOODS || [];
+const moodByKey = (key) => MOODS.find((m) => m.key === key) || null;
+
+/** Repaint one day on the visible calendar after a mood/marker change. */
+function paintDay(year, month, day, { mood, marker } = {}) {
+    if (viewState.mode === 'week') { renderWeek(); return; }
+    if (year !== viewState.year || month !== viewState.month) return;
+    const cell = document.querySelector(`.day.current-month[data-day="${day}"]`);
+    if (!cell) return;
+    if (mood !== undefined) cell.style.backgroundColor = mood ? moodByKey(mood).color : '';
+    if (marker !== undefined) {
+        let dot = cell.querySelector('.marker-indicator');
+        if (marker && !dot) {
+            dot = document.createElement('div');
+            dot.className = 'marker-indicator';
+            cell.appendChild(dot);
+        } else if (!marker && dot) {
+            dot.remove();
+        }
+    }
+}
+
+/** Set (or clear, with null) a day's mood: instant on screen, rolled back with
+ *  a message if the save fails, and undoable from the toast. */
+async function setDayMood(year, month, day, key, { undoable = true } = {}) {
+    const open = dayState && currentOpenDay === day && viewState.year === year && viewState.month === month;
+    const before = open ? dayState.mood : undefined;
+    if (open) { dayState.mood = key; renderMoodRow(); }
+    paintDay(year, month, day, { mood: key });
+    let result;
+    try {
+        result = await api('/mood/update', { method: 'POST', json: { year, month, day, mood: key } });
+    } catch (error) {
+        if (open) { dayState.mood = before; renderMoodRow(); }
+        paintDay(year, month, day, { mood: before ?? null });
+        toast(`Couldn't save the mood. ${error.message}`, { error: true });
+        return;
+    }
+    window.statsStale = true;
+    const previous = result.previous ?? null;
+    if (!undoable || previous === key) return;
+    const label = key ? `Mood: ${moodByKey(key).name}` : 'Mood cleared';
+    toast(label, { action: 'Undo', onAction: () => setDayMood(year, month, day, previous, { undoable: false }) });
+}
+
+async function toggleDayMarker(year, month, day) {
+    let result;
+    try {
+        result = await api('/mood/marker/toggle', { method: 'POST', json: { year, month, day } });
+    } catch (error) {
+        toast(`Couldn't change the marker. ${error.message}`, { error: true });
+        return;
+    }
+    window.statsStale = true;
+    if (dayState && currentOpenDay === day) { dayState.hasMarker = result.has_marker; renderMoodRow(); }
+    paintDay(year, month, day, { marker: result.has_marker });
+    toast(result.has_marker ? 'Day marked' : 'Marker removed');
+}
+
+function renderMoodRow() {
+    const slot = document.getElementById('dayMoodSlot');
+    if (!slot || !dayState) return;
+    const chips = MOODS.map((m) => `
+        <button type="button" class="mood-chip${dayState.mood === m.key ? ' active' : ''}" data-act="mood"
+                data-mood="${m.key}" aria-pressed="${dayState.mood === m.key}" style="--mood: ${m.color}">
+            <span class="mood-dot" aria-hidden="true"></span>${escapeHtml(m.name)}
+        </button>`).join('');
+    slot.innerHTML = `
+        <div class="day-mood" role="group" aria-label="How did the day feel?">${chips}</div>
+        <div class="day-flags">
+            <button type="button" class="marker-toggle${dayState.hasMarker ? ' active' : ''}" data-act="marker"
+                    aria-pressed="${dayState.hasMarker}" title="Shows as a red dot on the calendar and the mood trend">
+                <span class="marker-dot" aria-hidden="true"></span>${dayState.hasMarker ? 'Marked' : 'Mark this day'}
+            </button>
+            ${dayState.mood ? '<button type="button" class="link-btn" data-act="clear-mood">Clear mood</button>' : ''}
+        </div>`;
+}
+
 // ---------- panel state ----------
 
 let dayState = null;     // { day, iso, events, attachments }
@@ -167,7 +247,10 @@ async function showSidebar(day) {
             api(`/attachments?${query}`),
         ]);
         if (currentOpenDay !== day) return;   // another day was opened meanwhile
-        dayState = { day, iso, events: events.events, attachments: attachments.attachments };
+        dayState = {
+            day, iso, events: events.events, attachments: attachments.attachments,
+            mood: events.mood, hasMarker: events.has_marker,
+        };
         renderDay();
         const draft = latestDraftFor(iso);
         if (draft) restoreDraft(draft[0], draft[1].values);
@@ -251,10 +334,12 @@ function renderDay() {
                 <i class="fas fa-paperclip" aria-hidden="true"></i><span class="sr-only">Attach</span>
             </label>
         </div>
+        <div id="dayMoodSlot"></div>
         <button class="add-event-btn btn btn-primary" type="button" data-act="new">Write about this day</button>
         <div id="entryFormSlot"></div>
         <div class="event-list">${cards || '<div class="no-events">Nothing written for this day yet.</div>'}</div>
         ${renderAttachments()}`;
+    renderMoodRow();
 }
 
 // ---------- the entry form ----------
@@ -509,5 +594,8 @@ document.getElementById('sidebarContent').addEventListener('click', (e) => {
             deleteAttachment(Number(target.closest('.attachment-tile').dataset.attachmentId));
             break;
         case 'retry': showSidebar(currentOpenDay); break;
+        case 'mood': setDayMood(viewState.year, viewState.month, currentOpenDay, target.dataset.mood); break;
+        case 'clear-mood': setDayMood(viewState.year, viewState.month, currentOpenDay, null); break;
+        case 'marker': toggleDayMarker(viewState.year, viewState.month, currentOpenDay); break;
     }
 });

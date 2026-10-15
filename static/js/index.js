@@ -126,44 +126,21 @@ function setupGlobalEventListeners() {
     const colorPicker = document.getElementById('colorPicker');
 
     document.querySelectorAll('.color-option').forEach(option => {
-        option.addEventListener('click', async () => {
-            if (moodPickerSelectedDay) {
-                const moodKey = option.dataset.mood;
-                const color = window.getComputedStyle(option).backgroundColor;
-
-                try {
-                    const response = await fetch(appUrl('/mood/update'), {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            year: viewState.year,
-                            month: viewState.month,
-                            day: moodPickerSelectedDay.dataset.day,
-                            mood: moodKey
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.status === 'success') {
-                        moodPickerSelectedDay.style.backgroundColor = color;
-                    } else {
-                        console.error('Failed to update mood:', data.message);
-                    }
-                } catch (error) {
-                    console.error('Error updating mood:', error);
-                }
-
-                colorPicker.style.display = 'none';
-                moodPickerMenuOpen = false;
-                moodPickerSelectedDay = null;
-            }
+        option.addEventListener('click', () => {
+            if (!moodPickerSelectedDay) return;
+            const day = Number(moodPickerSelectedDay.dataset.day);
+            const key = option.dataset.mood === 'clear' ? null : option.dataset.mood;
+            colorPicker.style.display = 'none';
+            moodPickerMenuOpen = false;
+            moodPickerSelectedDay = null;
+            setDayMood(viewState.year, viewState.month, day, key);   // day.js
         });
     });
 
     document.addEventListener('click', (event) => {
+        // A tap inside the panel that re-rendered it (mood chip, Cancel, …) has
+        // a target that's no longer in the page; that's not a tap outside.
+        if (!event.target.isConnected) return;
         const sidebar = document.getElementById('sidebar');
         const colorPickerEl = document.getElementById('colorPicker');
         const diaryView = document.getElementById('diaryView');
@@ -234,96 +211,37 @@ function dismissSidebar() {
 function setupMonthGridListeners() {
     const colorPicker = document.getElementById('colorPicker');
 
-    document.querySelectorAll('.day').forEach(day => {
+    document.querySelectorAll('.day.current-month').forEach(day => {
         const eyeIcon = document.createElement('i');
         eyeIcon.className = 'fas fa-eye eye-icon';
         day.appendChild(eyeIcon);
 
-        eyeIcon.addEventListener('click', async (e) => {
+        eyeIcon.setAttribute('role', 'button');
+        eyeIcon.setAttribute('aria-label', 'Set mood');
+        eyeIcon.title = 'Set mood';
+        eyeIcon.addEventListener('click', (e) => {
             e.stopPropagation();
-            
-            if (moodPickerMenuOpen && moodPickerSelectedDay === day && day.style.backgroundColor) {
-                // Clear the mood
-                try {
-                    const response = await fetch(appUrl('/mood/update'), {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            year: viewState.year,
-                            month: viewState.month,
-                            day: day.dataset.day,
-                            mood: null
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    if (data.status === 'success') {
-                        day.style.backgroundColor = '';
-                        colorPicker.style.display = 'none';
-                        moodPickerMenuOpen = false;
-                        moodPickerSelectedDay = null;
-                    } else {
-                        console.error('Failed to clear mood:', data.message);
-                    }
-                } catch (error) {
-                    console.error('Error clearing mood:', error);
-                }
-            } else {
-                // Show color picker with position based on screen size
-                moodPickerSelectedDay = day;
-                moodPickerMenuOpen = true;
-                colorPicker.style.display = 'flex';
-                
-                // Position color picker based on screen width
-                if (window.innerWidth > 480) {
-                    // Desktop: Position next to clicked day
-                    const rect = day.getBoundingClientRect();
-                    colorPicker.style.left = `${rect.left - 44}px`;
-                    colorPicker.style.top = `${rect.top}px`;
-                } else {
-                    // Mobile: Position at bottom
-                    const calendar = document.getElementById('calendarContainer');
-                    const calendarRect = calendar.getBoundingClientRect();
-                    colorPicker.style.left = '50%';
-                    colorPicker.style.top = `${calendarRect.bottom - 16}px`;
-                }
+            // A quick picker next to the day (desktop). Clearing is a visible
+            // option in the picker, not a second click on the icon.
+            if (moodPickerMenuOpen && moodPickerSelectedDay === day) {
+                colorPicker.style.display = 'none';
+                moodPickerMenuOpen = false;
+                moodPickerSelectedDay = null;
+                return;
             }
+            moodPickerSelectedDay = day;
+            moodPickerMenuOpen = true;
+            colorPicker.style.display = 'flex';
+            const rect = day.getBoundingClientRect();
+            colorPicker.style.left = `${rect.left - 44}px`;
+            colorPicker.style.top = `${rect.top}px`;
         });
     });
 
     document.querySelectorAll('.day.current-month').forEach(day => {
-        day.addEventListener('dblclick', async (e) => {
+        day.addEventListener('dblclick', (e) => {
             e.stopPropagation();
-
-            try {
-                const response = await fetch(appUrl('/mood/marker/toggle'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        year: viewState.year,
-                        month: viewState.month,
-                        day: day.dataset.day,
-                    })
-                });
-
-                const data = await response.json();
-                if (data.status === 'success') {
-                    let indicator = day.querySelector('.marker-indicator');
-                    if (data.has_marker) {
-                        if (!indicator) {
-                            indicator = document.createElement('div');
-                            indicator.className = 'marker-indicator';
-                            day.appendChild(indicator);
-                        }
-                    } else {
-                        if (indicator) indicator.remove();
-                    }
-                }
-            } catch (error) {
-                console.error('Error toggling period:', error);
-            }
+            toggleDayMarker(viewState.year, viewState.month, Number(day.dataset.day));   // day.js
         });
     });
 }

@@ -36,6 +36,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
   - Put a mood row at the top of the day panel: five labelled swatches with the current one selected, one tap to change it.
   - Keep the month-grid shortcut, but make it visible (see 7.1).
   - Show the day's mood in the diary and search results.
+- **Status:** Done (diary and search show it from #8 and #10). The day panel opens with a mood row: five labelled swatches, the current one highlighted, one tap to set, and *Clear mood* when one is set. The change shows on the grid at once, rolls back with a message if the save fails, and the toast offers Undo (the server returns the previous mood). The month-grid eye stays as a desktop hover shortcut, now labelled *Set mood*.
 
 **1.3 The red marker is hidden and never explained** [confirmed]
 - **What:** A double-click on a day toggles a red dot. Nothing in the app says this exists or what it means; the code calls it "period" (`Error toggling period`). It shows on the Stats trend line with no legend entry. On touch it doesn't work at all (7.3).
@@ -44,6 +45,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **Fix:**
   - Add a visible toggle in the day panel with your own label (a setting, default "Marked").
   - Add a legend entry in Stats, e.g. "● Marked day".
+- **Status:** Done (Stats legend in #10). A visible *Mark this day* / *Marked* toggle in the day panel (with a tooltip saying where the dot shows), working on touch; double-click on a day still works on desktop. Both go through one toggle with a toast.
 
 **1.4 The "look back" views are cramped side panels** [confirmed]
 - **What:**
@@ -269,6 +271,7 @@ Time ranges are written with `--`, `-` and `–`.
 - **What:** With the picker open, clicking the eye icon again clears that day's mood. It isn't shown anywhere and can't be undone.
 - **Where:** `index.js` eye-icon handler
 - **Fix:** Add a visible **Clear** swatch in the picker, with Undo.
+- **Status:** Done. Clearing a mood is a visible option (*Clear mood* in the panel, an × in the quick picker), with Undo. The click-the-eye-again gesture is gone.
 
 **4.5 Bad input is accepted, or silently erased** [confirmed]
 - **What:**
@@ -406,6 +409,7 @@ The problems are mostly the hover-era controls inside it.
 - **Fix:**
   - Tapping a day always opens the day sheet, with the mood row at its top (1.2).
   - Optionally, long-press a day for a quick mood picker.
+- **Status:** Done. On touch screens the eye icon isn't shown, so a tap anywhere on a day opens the day; mood is set in the sheet (64×52 px chips). Verified: a centre tap at 375px opens the sheet.
 
 **7.2 Entry and attachment actions are hover-only** [confirmed]
 - **What:** Edit, delete and add-moment are 16 px icons at opacity 0 on touch; the attachment × is 18 px at opacity 0. They're invisible, yet tappable by accident.

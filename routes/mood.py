@@ -17,6 +17,7 @@ def update_mood():
     data = request.json
     date = datetime(int(data["year"]), int(data["month"]), int(data["day"])).date()
     daily_log = DailyLog.query.filter_by(user_id=current_user.id, date=date).first()
+    previous = daily_log.mood_key if daily_log else None
 
     key = data.get("mood")
     if key is None:
@@ -26,7 +27,7 @@ def update_mood():
                 db.session.delete(daily_log)
     else:
         if key not in MOOD_BY_KEY:
-            return jsonify({"status": "error", "message": "unknown mood"}), 400
+            return jsonify({"status": "error", "message": "That mood isn't one of the five."}), 400
         if daily_log:
             daily_log.mood_key = key
         else:
@@ -34,7 +35,7 @@ def update_mood():
             db.session.add(daily_log)
 
     db.session.commit()
-    return jsonify({"status": "success"})
+    return jsonify({"status": "success", "previous": previous})
 
 
 @mood_blueprint.route("/marker/toggle", methods=["POST"])

@@ -100,11 +100,8 @@
     </main>
 
     <div class="color-picker" id="colorPicker">
-        <div class="color-option" data-mood="great" title="Great"></div>
-        <div class="color-option" data-mood="good"  title="Good"></div>
-        <div class="color-option" data-mood="okay"  title="Okay"></div>
-        <div class="color-option" data-mood="low"   title="Low"></div>
-        <div class="color-option" data-mood="rough" title="Rough"></div>
+        {% for m in moods %}<button type="button" class="color-option" data-mood="{{ m.key }}" title="{{ m.name }}" aria-label="{{ m.name }}"></button>{% endfor %}
+        <button type="button" class="color-option color-clear" data-mood="clear" title="Clear mood" aria-label="Clear mood"><i class="fas fa-times"></i></button>
     </div>
 
     <div class="sidebar" id="sidebar">
@@ -235,6 +232,7 @@
     <script>
         window.INITIAL_VIEW = "{{ active_view|default('calendar') }}";
         window.PROXY_MODE = {{ 'true' if proxy_mode else 'false' }};
+        window.MOODS = {{ moods | map(attribute='__dict__') | list | tojson }};
     </script>
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
     <script src="{{ url_for('static', filename='js/day.js') }}"></script>

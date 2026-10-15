@@ -5,7 +5,7 @@ from flask_login import current_user
 from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 
-from models import Event, SubEvent, db
+from models import DailyLog, Event, SubEvent, db
 from search_index import index_event_safe, remove_event_safe
 from utils import parse_event_datetime
 
@@ -155,7 +155,15 @@ def events():
             subevents_data = [retrieve_event_data(subevent) for subevent in subevents]
             events_data.append({**retrieve_event_data(event), "subevents": subevents_data})
 
-        return jsonify({"status": "success", "events": events_data})
+        # The day's mood and marker travel with its entries, so the day panel
+        # can show and change them without a second request.
+        log = DailyLog.query.filter_by(user_id=current_user.id, date=start_date.date()).first()
+        return jsonify({
+            "status": "success",
+            "events": events_data,
+            "mood": log.mood_key if log else None,
+            "has_marker": bool(log and log.has_marker),
+        })
 
     try:
         event = create_event(Event, request.json, user_id=current_user.id)
