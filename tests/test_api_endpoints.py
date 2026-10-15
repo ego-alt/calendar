@@ -74,3 +74,23 @@ def test_endpoints_are_per_user(app, authed_client):
 def test_api_requires_auth(client):
     assert client.get("/events/1").status_code == 401
     assert client.get("/events/range?from=2026-03-01&to=2026-03-02").status_code == 401
+
+
+def test_move_moments_shifts_them_with_the_entry(authed_client):
+    eid = _entry(authed_client)
+    authed_client.post(f"/events/{eid}/subevents", json={
+        "name": "Dessert", "start_date": "2026-03-10", "start_time": "20:30",
+        "end_date": "2026-03-10", "end_time": "20:45",
+    })
+    moved = {
+        "name": "Dinner", "start_date": "2026-03-12", "start_time": "19:00",
+        "end_date": "2026-03-12", "end_time": "21:00",
+    }
+    # Without the flag the moment would be stranded, so the move is refused.
+    assert authed_client.put(f"/events/{eid}", json=moved).status_code == 400
+
+    assert authed_client.put(f"/events/{eid}", json={**moved, "move_moments": True}).status_code == 200
+    event = authed_client.get(f"/events/{eid}").get_json()["event"]
+    assert event["start_time"] == "2026-03-12 19:00"
+    assert event["subevents"][0]["start_time"] == "2026-03-12 20:30"
+    assert event["subevents"][0]["end_time"] == "2026-03-12 20:45"

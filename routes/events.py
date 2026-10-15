@@ -84,6 +84,14 @@ def read_entry(data: dict, parent: Event | None = None):
 def edit_event_data(event: Event | SubEvent, data: dict, parent: Event | None = None):
     """Edit the event or subevent details (raises EntryError on bad input)."""
     name, start_datetime, end_datetime = read_entry(data, parent)
+    if isinstance(event, Event) and data.get("move_moments"):
+        # Moving the whole entry: its moments travel with it by the same amount,
+        # so "move dinner to Saturday" works without unpicking each moment.
+        shift = start_datetime - event.start_time
+        for s in event.subevents:
+            s.start_time += shift
+            if s.end_time:
+                s.end_time += shift
     if isinstance(event, Event):
         outside = [
             s for s in event.subevents
