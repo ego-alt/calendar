@@ -4,6 +4,7 @@
 :root {
     --color-bg-base: #282828;
     --color-bg-elevated: #3c3836;
+    --color-bg-chrome: #1d2021;   /* top and bottom bars: Gruvbox "hard", darker than the page so the grid leads */
     --color-bg-inset: rgba(40, 40, 40, 0.5);
     --color-bg-inset-soft: rgba(40, 40, 40, 0.3);
     --color-bg-overlay: rgba(40, 40, 40, 0.85);

@@ -17,7 +17,7 @@
     height: var(--shell-bar-h);
     padding: env(safe-area-inset-top) max(var(--space-4), env(safe-area-inset-right)) 0
         max(var(--space-4), env(safe-area-inset-left));
-    background: var(--color-bg-elevated);
+    background: var(--color-bg-chrome);
     border-bottom: 1px solid var(--color-border-soft);
     /* Above the sliding drawers (z 1002) so their close buttons stay tappable —
        the old app-header used z 1003 for the same reason. */
@@ -182,7 +182,7 @@ body.view-search #calendarView {
         bottom: 0;
         height: var(--mode-bar-h);
         padding-bottom: env(safe-area-inset-bottom);
-        background: var(--color-bg-elevated);
+        background: var(--color-bg-chrome);
         border-top: 1px solid var(--color-border-soft);
         z-index: 1005;
     }
