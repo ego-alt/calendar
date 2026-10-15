@@ -59,6 +59,10 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
   - Make Diary a full view: mood colour beside each date, attachments inline, ‹ month › navigation.
   - Make Year a full view where every day opens.
   - **Merge** Year with the Stats "Mood calendar" heatmap, which already shows the same thing. Keep one year grid, tappable, with a year picker. Show it under Stats and drop the Year panel.
+- **Status:** Done. Diary and Year are full views at every width (centred on desktop), each with a sticky ‹ › title bar.
+  - **Diary** (*Diary · October 2026*): each day shows its mood swatch and name, its marker, its entries with times, people, places, notes and moments (escaped, left-aligned), and its attachments as thumbnails or file chips. Days with only a mood are listed too. *Nothing written in October.* when empty, and errors offer retry.
+  - **Year** (*2026*): every day is a button that opens the day panel over the view, with marker and entry dots and today ringed. It opens scrolled to the current month, and mood changes repaint the cell in place.
+  - On the merge: Year is the one tappable year grid. The Stats heatmap stays as a summary and becomes tappable too (#10), rather than keeping two separate year grids.
 
 **1.5 Three different ways to switch calendar views** [confirmed]
 - **What:**
@@ -67,6 +71,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **Where:** `index.html` `.shell-actions`, `#modeBar`
 - **Why:** The phone already has the right model; desktop scatters it.
 - **Fix:** Use the same four-way segmented control on desktop in place of the dropdown and two icons.
+- **Status:** Done. Desktop has one **Month · Week · Year · Diary** segmented control, matching the phone's bottom bar; the dropdown and the two icon buttons are gone. Both reflect the active mode.
 
 **1.6 Week view is a scheduling grid** [confirmed]
 - **What:** A 00:00–24:00 time grid. Most diary entries are loosely timed. On a phone the entries shrink to unreadable stubs ("08:…", "10:…").
@@ -110,6 +115,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **What:** Today's cell has no special style (week view does highlight it). After browsing months, nothing takes you back to today.
 - **Where:** `index.html` / `index.js` month grid (no `today` class)
 - **Fix:** Ring today's cell the way week view does. Add a **Today** button and a `t` shortcut.
+- **Status:** Done. Today's cell is ringed in Month and Year. A **Today** button appears beside the title whenever the view doesn't contain today (month, week or year) and brings every view back; `t` does the same.
 
 **2.2 Signed out, it just looks empty** [confirmed]
 - **What:** In standalone mode, a signed-out visitor sees an empty month and an empty day panel, with no prompt to sign in (only the door icon in the corner). `/`, `/get_month`, `/get_week` and `/get_year` don't require a login.
@@ -533,7 +539,7 @@ The problems are mostly the hover-era controls inside it.
 | 5 | **Correctness fixes:** escape user text (2.6); move the desktop panel below the top bar so the attachment + works (2.5); use the local date parser everywhere for iPhone (2.7) | 2.5, 2.6, 2.7 | **Small** | Done |
 | 6 | **Feedback and fresh numbers:** one toast style for saves and failures; refetch Stats after changes; streak counts from yesterday; refresh the grid after edits | 2.3, 4.9, 4.10, 4.6, 8.1 | **Small** | Done |
 | 7 | **Diary language and one entry form:** entries, not events; "Nothing written for this day yet"; one form component; plain error copy; native date and time pickers | 1.1, 3.2, 3.3, 4.5, 6 | **Medium** | Done |
-| 8 | **Look-back views as real views:** full-screen Diary with moods, attachments and month navigation; merge Year into one tappable year grid with a year picker; mark today, add a Today button | 1.4, 1.5, 2.1 | **Large** | To do |
+| 8 | **Look-back views as real views:** full-screen Diary with moods, attachments and month navigation; merge Year into one tappable year grid with a year picker; mark today, add a Today button | 1.4, 1.5, 2.1 | **Large** | Done |
 | 9 | **Receipts and tickets that look like keepsakes:** thumbnails, a lightbox, captions or a link to an entry, HEIC conversion, safe serving, a correct size-limit message | 1.7, 4.7, 4.8 | **Medium** | To do |
 | 10 | **Stats that explain:** a "Mood with…" card for people and places, a year/range picker, a marker legend, phone-sized charts with tap details, and one consistent date format across the app | 1.8, 7.6, 3.1, 3.5 | **Large** | To do |
 

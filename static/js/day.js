@@ -141,6 +141,17 @@ const moodByKey = (key) => MOODS.find((m) => m.key === key) || null;
 
 /** Repaint one day on the visible calendar after a mood/marker change. */
 function paintDay(year, month, day, { mood, marker } = {}) {
+    // Year view: repaint that one cell in place (no reload, no scroll jump).
+    const yearCell = document.querySelector(`#yearView .year-day[data-month="${month}"][data-day="${day}"]`);
+    if (yearCell && viewState.year === year) {
+        if (mood !== undefined) yearCell.style.backgroundColor = mood ? moodByKey(mood).color : '';
+        if (marker !== undefined) {
+            const dot = yearCell.querySelector('.year-marker');
+            if (marker && !dot) yearCell.insertAdjacentHTML('beforeend', '<span class="year-marker" aria-hidden="true"></span>');
+            if (!marker && dot) dot.remove();
+        }
+    }
+    if (document.getElementById('diaryView').classList.contains('active')) loadMonthEvents();
     if (viewState.mode === 'week') { renderWeek(); return; }
     if (year !== viewState.year || month !== viewState.month) return;
     const cell = document.querySelector(`.day.current-month[data-day="${day}"]`);
@@ -267,6 +278,7 @@ async function showSidebar(day) {
 /** Re-fetch the open day and the visible calendar after a change. */
 async function refreshAfterChange() {
     window.statsStale = true;
+    if (document.getElementById('yearView').classList.contains('active')) loadYearView(viewState.year, { keepScroll: true });
     if (currentOpenDay != null) await showSidebar(currentOpenDay);
     await updateCalendarView();
 }

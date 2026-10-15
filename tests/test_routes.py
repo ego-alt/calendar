@@ -320,3 +320,10 @@ def test_streak_counts_from_yesterday_until_today_is_logged(authed_client):
                                              "day": today.day, "mood": "good"})
     tiles = authed_client.get("/stats/data").json["tiles"]
     assert tiles["current_streak"] == 4 and tiles["today_logged"] is True
+
+
+def test_month_attachments_by_day(authed_client):
+    _upload(authed_client, 2026, 5, 11)
+    _upload(authed_client, 2026, 5, 20)
+    got = authed_client.get("/attachments/month?year=2026&month=5").json["attachments"]
+    assert sorted(got) == ["11", "20"] and got["11"][0]["filename"]

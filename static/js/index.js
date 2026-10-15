@@ -69,23 +69,23 @@ document.addEventListener('DOMContentLoaded', () => {
     setupMonthGridListeners();
     setupSwipeNavigation();
     document.addEventListener('keydown', handleKeyPress);
-    document.getElementById('diaryViewBtn').addEventListener('click', () => {
-        toggleDiaryView();
-    });
-    document.getElementById('yearViewBtn').addEventListener('click', () => {
-        toggleYearView();
-    });
-    document.getElementById('viewSelect').addEventListener('change', (e) => {
-        toggleWeekView(e.target.value === 'week');
-    });
     setupModeBar();
+    document.getElementById('todayBtn').addEventListener('click', goToToday);
+    document.querySelector('#diaryView .view-nav').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-nav]');
+        if (b) updateMonth(b.dataset.nav);
+    });
+    document.querySelector('#yearView .view-nav').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-nav]');
+        if (b) updateYear(b.dataset.nav);
+    });
 });
 
 /** Bottom mode bar (mobile): Month / Week / Year / Diary as four peer modes. */
 function setupModeBar() {
     const bar = document.getElementById('modeBar');
     if (!bar) return;
-    bar.querySelectorAll('.mode-item').forEach((b) => {
+    document.querySelectorAll('.mode-item, .mode-seg-btn').forEach((b) => {
         b.addEventListener('click', () => setCalendarMode(b.dataset.mode));
     });
     updateBottomBar();
@@ -113,9 +113,42 @@ function updateBottomBar() {
     if (document.getElementById('yearView').classList.contains('active')) mode = 'year';
     else if (document.getElementById('diaryView').classList.contains('active')) mode = 'diary';
     else mode = viewState.mode;
-    bar.querySelectorAll('.mode-item').forEach((b) => {
+    document.querySelectorAll('.mode-item, .mode-seg-btn').forEach((b) => {
         b.classList.toggle('active', b.dataset.mode === mode);
+        b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
     });
+    updateTodayButton(mode);
+}
+
+/** The Today button shows whenever the view doesn't contain today. */
+function updateTodayButton(mode) {
+    const btn = document.getElementById('todayBtn');
+    if (!btn) return;
+    let showingToday;
+    if (mode === 'year') {
+        showingToday = viewState.year === CURRENT_YEAR;
+    } else if (mode === 'week') {
+        const a = viewState.weekAnchor;
+        const anchor = new Date(a.year, a.month - 1, a.day);
+        const monday = new Date(anchor); monday.setDate(anchor.getDate() - ((anchor.getDay() + 6) % 7));
+        const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+        showingToday = TODAY >= monday && TODAY <= new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate(), 23, 59);
+    } else {
+        showingToday = viewState.year === CURRENT_YEAR && viewState.month === CURRENT_MONTH;
+    }
+    btn.hidden = showingToday;
+    // Year and Diary have their own title bars; keep the button reachable there too.
+    document.querySelectorAll('.view-today').forEach((b) => { b.hidden = showingToday; });
+}
+
+/** Jump every view back to today. */
+async function goToToday() {
+    viewState.year = CURRENT_YEAR;
+    viewState.month = CURRENT_MONTH;
+    viewState.weekAnchor = { year: CURRENT_YEAR, month: CURRENT_MONTH, day: CURRENT_DAY };
+    await updateCalendarView();
+    if (document.getElementById('yearView').classList.contains('active')) loadYearView(CURRENT_YEAR);
+    updateBottomBar();
 }
 window.updateBottomBar = updateBottomBar;
 
@@ -144,25 +177,23 @@ function setupGlobalEventListeners() {
         if (!event.target.isConnected) return;
         const sidebar = document.getElementById('sidebar');
         const colorPickerEl = document.getElementById('colorPicker');
-        const diaryView = document.getElementById('diaryView');
-        const yearView = document.getElementById('yearView');
 
-        const isInteractiveClick = event.target.closest(
-            '#sidebar, #colorPicker, .day, .eye-icon, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn, #viewSelect, .shell-menu, .week-grid, #confirmModal, #toasts, #actionSheet'
-        );
-
-        if (!isInteractiveClick) {
+        const t = event.target;
+        // The quick mood picker closes on any tap elsewhere.
+        if (!t.closest('#colorPicker, .eye-icon')) {
             colorPickerEl.style.display = 'none';
             moodPickerMenuOpen = false;
             moodPickerSelectedDay = null;
-
+        }
+        // The day panel closes on a tap outside it, unless that tap opens a
+        // day (month/week/year cells, diary entries) or is on our own overlays.
+        // Diary and Year are full views now: they close by switching mode.
+        const keepsPanel = t.closest(
+            '#sidebar, #colorPicker, .day, .eye-icon, .week-grid, .year-day, .diary-day-head, .diary-event, #confirmModal, #toasts, #actionSheet'
+        );
+        if (!keepsPanel && sidebar.classList.contains('active')) {
             sidebar.classList.remove('active');
-            if (window.innerWidth <= 480) {
-                sidebar.style.height = '';
-            }
-
-            diaryView.classList.remove('active');
-            yearView.classList.remove('active');
+            if (window.innerWidth <= 480) sidebar.style.height = '';
             // Any half-written entry is kept as a draft (see day.js) and comes
             // back when this day is opened again.
             closeEntryForm();
@@ -272,6 +303,7 @@ function handleKeyPress(event) {
         case 'j': updateYear('next'); break;
         case 'd': toggleDiaryView(); break;
         case 'y': toggleYearView(); break;
+        case 't': goToToday(); break;
     }
 }
 
@@ -346,6 +378,8 @@ async function updateYear(direction) {
         viewState.weekAnchor = { year: a.year + (direction === 'next' ? 1 : -1), month: a.month, day: a.day };
     }
     await updateCalendarView();
+    if (document.getElementById('yearView').classList.contains('active')) loadYearView(viewState.year);
+    updateBottomBar();
 }
 
 async function shiftWeek(direction) {
@@ -377,7 +411,7 @@ async function updateCalendarView() {
         if (token !== viewToken) return;
         
         // Update main header
-        document.querySelector('h1').textContent = data.month_label;
+        document.getElementById('calTitle').textContent = data.month_label;
         const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         
         // Generate the new month HTML (inside #viewMonth so the sibling #viewWeek survives)
@@ -389,7 +423,7 @@ async function updateCalendarView() {
                 <div class="day prev-month" data-day="${day}"></div>
             `).join('')}
             ${data.calendar_data.current_days.map(day => `
-                <div class="day current-month ${(viewState.year < CURRENT_YEAR ||
+                <div class="day current-month ${viewState.year === CURRENT_YEAR && viewState.month === CURRENT_MONTH && day === CURRENT_DAY ? 'today ' : ''}${(viewState.year < CURRENT_YEAR ||
                         (viewState.year === CURRENT_YEAR && viewState.month < CURRENT_MONTH) ||
                         (viewState.year === CURRENT_YEAR && viewState.month === CURRENT_MONTH && day < CURRENT_DAY))
                         ? 'past' : ''}"
@@ -407,6 +441,7 @@ async function updateCalendarView() {
 
         document.getElementById('viewMonth').innerHTML = monthInner;
         setupMonthGridListeners();
+        updateBottomBar();
         
         // Refresh diary view if it's open
         if (document.getElementById('diaryView').classList.contains('active')) {
@@ -470,7 +505,8 @@ async function renderWeek() {
         if (token !== viewToken) return;
         if (data.status !== 'success') throw new Error('week');
 
-        document.querySelector('h1').textContent = data.week_label;
+        document.getElementById('calTitle').textContent = data.week_label;
+        updateBottomBar();
 
         const weekRoot = document.getElementById('viewWeek');
         const isMobile = window.innerWidth <= 480;
@@ -714,198 +750,150 @@ function toggleYearView(show) {
     toggleSidebar('year', show);
 }
 
+/** The Diary: one month to read back, day by day, with each day's mood,
+ *  marker, entries (with their moments) and attachments. Days that only have
+ *  a mood are listed too. */
 async function loadMonthEvents() {
-    const diaryContent = document.getElementById('diaryContent');
-    diaryContent.innerHTML = '<div class="loading-indicator">Loading events...</div>';
-    
+    const content = document.getElementById('diaryContent');
+    const { year, month } = viewState;
+    const monthLong = new Date(year, month - 1, 1).toLocaleDateString('en-GB', { month: 'long' });
+    document.getElementById('diaryTitle').textContent =
+        `Diary · ${new Date(year, month - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`;
+    content.innerHTML = '<div class="loading-indicator">Loading…</div>';
+    let events, monthData, attachments;
     try {
-        const response = await fetch(appUrl(`/events/month?year=${viewState.year}&month=${viewState.month}`));
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            if (data.events.length === 0) {
-                diaryContent.innerHTML = '<div class="no-events">No events this month</div>';
-                return;
-            }
-
-            const eventsByDay = {};
-            data.events.forEach(event => {
-                const startDate = parseLocalDateTime(event.start_time);
-                const endDate = parseLocalDateTime(event.end_time || event.start_time);
-                
-                // Create a copy of start date to iterate through
-                let currentDate = new Date(startDate);
-                
-                // Loop through all days of the event
-                while (currentDate <= endDate) {
-                    // Only include days in the current month view
-                    if (currentDate.getMonth() + 1 === viewState.month && 
-                        currentDate.getFullYear() === viewState.year) {
-                        
-                        const day = currentDate.getDate();
-                        if (!eventsByDay[day]) {
-                            eventsByDay[day] = [];
-                        }
-                        
-                        // Only add the event once per day
-                        if (!eventsByDay[day].some(e => e.id === event.id)) {
-                            eventsByDay[day].push(event);
-                        }
-                    }
-                    currentDate.setDate(currentDate.getDate() + 1);
-                }
-            });
-            
-            // Sort days and create HTML
-            let html = '';
-            Object.keys(eventsByDay)
-                .sort((a, b) => parseInt(a) - parseInt(b))
-                .forEach(day => {
-                    const date = new Date(viewState.year, viewState.month - 1, day);
-                    const dateString = date.toLocaleDateString('en-GB', { 
-                        weekday: 'short', 
-                        day: 'numeric', 
-                        month: 'short' 
-                    });
-                    
-                    html += `<div class="diary-day">
-                        <div class="diary-date">${dateString}</div>
-                        <div class="diary-events">`;
-                    
-                    eventsByDay[day].forEach(event => {
-                        const daySubevents = (event.subevents || []).filter(s => {
-                            const d = parseLocalDateTime(s.start_time);
-                            return d.getDate() === parseInt(day) &&
-                                   d.getMonth() + 1 === viewState.month &&
-                                   d.getFullYear() === viewState.year;
-                        });
-
-                        html += `
-                            <div class="diary-event" onclick="showSidebar(${day})">
-                                <div class="diary-event-time">${formatEventTime(event, parseInt(day))}</div>
-                                <div class="diary-event-name">${escapeHtml(event.name)}</div>
-                                ${event.with_who ? `<div class="diary-event-detail"><i class="fas fa-user"></i> ${escapeHtml(event.with_who)}</div>` : ''}
-                                ${event.where ? `<div class="diary-event-detail"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.where)}</div>` : ''}
-                                ${event.notes ? `<div class="diary-event-detail diary-event-notes"><i class="fas fa-sticky-note"></i> ${escapeHtml(event.notes)}</div>` : ''}
-                                ${daySubevents.map(s => `
-                                    <div class="diary-subevent">
-                                        <div class="diary-subevent-title">${escapeHtml(s.name)}${s.where ? `<span class="diary-subevent-content">&nbsp;&nbsp;(${escapeHtml(s.where)})</span>` : ''}</div>
-                                        ${s.notes ? `<div class="diary-subevent-content">${escapeHtml(s.notes)}</div>` : ''}
-                                    </div>
-                                `).join('')}
-                            </div>
-                        `;
-                    });
-                    
-                    html += `</div></div>`;
-                });
-            
-            diaryContent.innerHTML = html;
-        } else {
-            diaryContent.innerHTML = '<div class="error-message">Failed to load events</div>';
-        }
+        [events, monthData, attachments] = await Promise.all([
+            api(`/events/month?year=${year}&month=${month}`),
+            api(`/get_month?year=${year}&month=${month}`),
+            api(`/attachments/month?year=${year}&month=${month}`),
+        ]);
     } catch (error) {
-        console.error('Error loading month events:', error);
-        diaryContent.innerHTML = '<div class="error-message">Error loading events</div>';
+        if (viewState.year !== year || viewState.month !== month) return;
+        content.innerHTML = `<div class="error-message">Couldn't load ${escapeHtml(monthLong)}. ${escapeHtml(error.message)}<br>
+            <button type="button" class="btn btn-secondary retry-btn" data-act="diary-retry">Try again</button></div>`;
+        return;
     }
+    if (viewState.year !== year || viewState.month !== month) return;   // moved on meanwhile
+
+    const entriesByDay = {};
+    events.events.forEach((event) => {
+        const start = parseLocalDateTime(event.start_time);
+        const end = parseLocalDateTime(event.end_time || event.start_time);
+        for (let d = new Date(start.getFullYear(), start.getMonth(), start.getDate()); d <= end; d.setDate(d.getDate() + 1)) {
+            if (d.getFullYear() === year && d.getMonth() + 1 === month) {
+                (entriesByDay[d.getDate()] ||= []).push(event);
+            }
+        }
+    });
+    const moodColors = monthData.mood_colors || {};
+    const markers = new Set(monthData.days_with_marker || []);
+    const files = attachments.attachments || {};
+    const days = [...new Set([
+        ...Object.keys(entriesByDay), ...Object.keys(moodColors), ...Object.keys(files), ...markers,
+    ].map(Number))].sort((a, b) => a - b);
+
+    if (!days.length) {
+        content.innerHTML = `<div class="no-events">Nothing written in ${escapeHtml(monthLong)}.</div>`;
+        return;
+    }
+    const moodName = (color) => (window.MOODS || []).find((m) => m.color === color)?.name || '';
+    const detail = (icon, text, extra = '') =>
+        text ? `<div class="diary-event-detail ${extra}"><i class="fas ${icon}" aria-hidden="true"></i> ${escapeHtml(text)}</div>` : '';
+
+    content.innerHTML = days.map((day) => {
+        const date = new Date(year, month - 1, day);
+        const iso = isoFromDate(date);
+        const color = moodColors[day];
+        const entries = (entriesByDay[day] || []).map((event) => {
+            const moments = (event.subevents || []).filter((s) => s.start_time.startsWith(iso)).map((s) => `
+                <div class="diary-subevent">
+                    <div class="diary-subevent-title">${escapeHtml(s.name)}${s.where ? `<span class="diary-subevent-content"> · ${escapeHtml(s.where)}</span>` : ''}</div>
+                    ${s.notes ? `<div class="diary-subevent-content">${escapeHtml(s.notes)}</div>` : ''}
+                </div>`).join('');
+            const time = entryTimeLabel(event, iso);
+            return `
+                <div class="diary-event" data-day="${day}" role="button" tabindex="0">
+                    ${time && time !== 'All day' ? `<div class="diary-event-time">${escapeHtml(time)}</div>` : ''}
+                    <div class="diary-event-name">${escapeHtml(event.name)}</div>
+                    ${detail('fa-user', event.with_who)}
+                    ${detail('fa-map-marker-alt', event.where)}
+                    ${detail('fa-sticky-note', event.notes, 'diary-event-notes')}
+                    ${moments}
+                </div>`;
+        }).join('');
+        const fileTiles = (files[day] || []).map((a) => {
+            const url = appUrl(`/attachments/${a.id}`);
+            const name = escapeHtml(a.filename);
+            return a.mime_type && a.mime_type.startsWith('image/')
+                ? `<a class="diary-file diary-file-img" href="${url}" target="_blank" rel="noopener" title="${name}"><img src="${url}" alt="${name}" loading="lazy"></a>`
+                : `<a class="diary-file" href="${url}" target="_blank" rel="noopener" title="${name}"><i class="fas fa-file" aria-hidden="true"></i><span>${name}</span></a>`;
+        }).join('');
+        return `
+            <section class="diary-day">
+                <button type="button" class="diary-day-head" data-day="${day}" title="Open this day">
+                    <span class="diary-date">${escapeHtml(formatDayShort(date))}</span>
+                    ${color ? `<span class="diary-mood" style="--mood: ${color}"><span class="mood-dot" aria-hidden="true"></span>${escapeHtml(moodName(color))}</span>` : ''}
+                    ${markers.has(day) ? '<span class="diary-marker" title="Marked"></span>' : ''}
+                </button>
+                ${entries ? `<div class="diary-events">${entries}</div>` : ''}
+                ${fileTiles ? `<div class="diary-files">${fileTiles}</div>` : ''}
+            </section>`;
+    }).join('');
 }
 
-function formatEventTime(event, displayDay) {
-    if (isAllDayEvent(event)) return '';
+document.getElementById('diaryContent').addEventListener('click', (e) => {
+    if (e.target.closest('a')) return;                  // attachment links open themselves
+    if (e.target.closest('[data-act="diary-retry"]')) { loadMonthEvents(); return; }
+    const dayEl = e.target.closest('[data-day]');
+    if (dayEl) showSidebar(Number(dayEl.dataset.day));
+});
 
-    const eventStart = parseLocalDateTime(event.start_time);
-    const eventEnd = parseLocalDateTime(event.end_time || event.start_time);
-    const isMultiDay = eventStart.toDateString() !== eventEnd.toDateString();
-
-    if (isMultiDay) {
-        const startOfDay = '00:00';
-        const endOfDay = '23:59';
-
-        const isStartDay = eventStart.getDate() === displayDay
-            && eventStart.getMonth() === viewState.month - 1
-            && eventStart.getFullYear() === viewState.year;
-        if (isStartDay) {
-            if (eventStart.getHours() === 0 && eventStart.getMinutes() === 0) {
-                return `${startOfDay} - ${endOfDay}`;
-            }
-            return `${formatTimeOfDay(eventStart)} - ${endOfDay}`;
-        }
-
-        const isEndDay = eventEnd.getDate() === displayDay
-            && eventEnd.getMonth() === viewState.month - 1
-            && eventEnd.getFullYear() === viewState.year;
-        if (isEndDay) {
-            if (eventEnd.getHours() === 23 && eventEnd.getMinutes() === 59) {
-                return `${startOfDay} - ${endOfDay}`;
-            }
-            return `${startOfDay} - ${formatTimeOfDay(eventEnd)}`;
-        }
-
-        return '';
-    }
-
-    const startTime = formatTimeOfDay(eventStart);
-    const endTime = event.end_time ? formatTimeOfDay(eventEnd) : '';
-    return endTime ? `${startTime} - ${endTime}` : startTime;
-}
-
-// Add these year view functions
-async function loadYearView(year) {
+/** Year: twelve tappable month grids with moods, markers and entry dots. */
+async function loadYearView(year, { keepScroll = false } = {}) {
     const yearContent = document.getElementById('yearContent');
-    yearContent.innerHTML = '<div class="loading-indicator">Loading year data...</div>';
-    
+    document.getElementById('yearTitle').textContent = String(year);
+    if (!keepScroll) yearContent.innerHTML = '<div class="loading-indicator">Loading…</div>';
+    let data;
     try {
-        const response = await fetch(appUrl(`/get_year?year=${year}`));
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            let html = '';
-            
-            // Create each month grid
-            data.months.forEach(month => {
-                const monthName = new Date(year, month.month - 1, 1).toLocaleDateString('en-GB', { month: 'long' });
-                
-                html += `
-                <div class="year-month">
-                    <div class="year-month-title">${monthName}</div>
-                    <div class="year-month-grid">
-                `;
-                
-                // Weekday headers
-                ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(day => {
-                    html += `<div class="year-weekday">${day}</div>`;
-                });
-                
-                // Previous month days
-                month.calendar_data.prev_days.forEach(day => {
-                    html += `<div class="year-day year-prev-month" data-day="${day}"></div>`;
-                });
-                
-                // Current month days with mood colors
-                month.calendar_data.current_days.forEach(day => {
-                    const hasColor = month.mood_colors[day];
-                    html += `
-                        <div class="year-day year-current-month" 
-                            data-day="${day}"
-                            ${hasColor ? `style="background-color: ${month.mood_colors[day]}"` : ''}>
-                        </div>
-                    `;
-                });
-                
-                // Next month days
-                month.calendar_data.next_days.forEach(day => {
-                    html += `<div class="year-day year-next-month" data-day="${day}"></div>`;
-                });
-                
-                html += `</div></div>`;
-            });
-            
-            yearContent.innerHTML = html;
-        } else {
-            yearContent.innerHTML = '<div class="error-message">Failed to load year data</div>';
-        }
+        data = await api(`/get_year?year=${year}`);
     } catch (error) {
-        console.error('Error loading year data:', error);
-        yearContent.innerHTML = '<div class="error-message">Error loading year data</div>';
+        yearContent.innerHTML = `<div class="error-message">Couldn't load ${year}. ${escapeHtml(error.message)}<br>
+            <button type="button" class="btn btn-secondary retry-btn" data-act="year-retry">Try again</button></div>`;
+        return;
+    }
+    if (year !== viewState.year) return;
+    const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d) => `<div class="year-weekday">${d}</div>`).join('');
+    yearContent.innerHTML = data.months.map((m) => {
+        const name = new Date(year, m.month - 1, 1).toLocaleDateString('en-GB', { month: 'long' });
+        const blanks = m.calendar_data.prev_days.map(() => '<div class="year-day year-prev-month"></div>').join('');
+        const days = m.calendar_data.current_days.map((day) => {
+            const color = m.mood_colors[day];
+            const isToday = year === CURRENT_YEAR && m.month === CURRENT_MONTH && day === CURRENT_DAY;
+            return `<button type="button" class="year-day year-current-month${isToday ? ' today' : ''}"
+                        data-month="${m.month}" data-day="${day}" aria-label="${escapeHtml(formatDayShort(new Date(year, m.month - 1, day)))}"
+                        ${color ? `style="background-color: ${color}"` : ''}>
+                        ${m.days_with_events.includes(day) ? '<span class="year-dot" aria-hidden="true"></span>' : ''}
+                        ${m.days_with_marker.includes(day) ? '<span class="year-marker" aria-hidden="true"></span>' : ''}
+                    </button>`;
+        }).join('');
+        return `
+            <section class="year-month" id="year-month-${m.month}">
+                <div class="year-month-title">${escapeHtml(name)}</div>
+                <div class="year-month-grid">${weekdays}${blanks}${days}</div>
+            </section>`;
+    }).join('');
+    if (year === CURRENT_YEAR && !keepScroll) {
+        document.getElementById(`year-month-${CURRENT_MONTH}`)?.scrollIntoView({ block: 'start' });
     }
 }
+
+document.getElementById('yearContent').addEventListener('click', (e) => {
+    if (e.target.closest('[data-act="year-retry"]')) { loadYearView(viewState.year); return; }
+    const cell = e.target.closest('.year-day[data-day]');
+    if (!cell) return;
+    // Open that day over the year view; the month view underneath follows.
+    viewState.month = Number(cell.dataset.month);
+    viewState.weekAnchor = { year: viewState.year, month: viewState.month, day: Number(cell.dataset.day) };
+    updateCalendarView();
+    showSidebar(Number(cell.dataset.day));
+});

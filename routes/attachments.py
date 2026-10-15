@@ -55,6 +55,27 @@ def list_attachments():
     })
 
 
+@attachment_blueprint.route("/month", methods=["GET"])
+@json_login_required
+def month_attachments():
+    """A month's attachments by day of month, for the Diary."""
+    year = int(request.args.get("year"))
+    month = int(request.args.get("month"))
+    start = datetime(year, month, 1).date()
+    end = (datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)).date()
+    logs = (
+        DailyLog.query.options(joinedload(DailyLog.attachments))
+        .filter(DailyLog.user_id == current_user.id, DailyLog.date >= start, DailyLog.date < end)
+        .all()
+    )
+    by_day = {
+        log.date.day: [_attachment_payload(a) for a in log.attachments]
+        for log in logs
+        if log.attachments
+    }
+    return jsonify({"status": "success", "attachments": by_day})
+
+
 @attachment_blueprint.route("", methods=["POST"])
 @json_login_required
 def upload_attachment():

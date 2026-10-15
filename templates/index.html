@@ -38,16 +38,12 @@
         </nav>
         <div class="shell-spacer"></div>
         <div class="shell-actions">
-            <select class="shell-select shell-cal-only" id="viewSelect" aria-label="Calendar view">
-                <option value="month">Month</option>
-                <option value="week">Week</option>
-            </select>
-            <button class="year-button btn btn-ghost shell-cal-only" id="yearViewBtn" title="Year">
-                <i class="fas fa-calendar-alt"></i>
-            </button>
-            <button class="diary-button btn btn-ghost shell-cal-only" id="diaryViewBtn" title="Diary">
-                <i class="fas fa-book"></i>
-            </button>
+            <nav class="mode-seg shell-cal-only" aria-label="Calendar view">
+                <button type="button" class="mode-seg-btn" data-mode="month" title="Month (m)">Month</button>
+                <button type="button" class="mode-seg-btn" data-mode="week" title="Week (w)">Week</button>
+                <button type="button" class="mode-seg-btn" data-mode="year" title="Year (y)">Year</button>
+                <button type="button" class="mode-seg-btn" data-mode="diary" title="Diary (d)">Diary</button>
+            </nav>
             {# Behind the dashboard proxy, login/logout is the dashboard's job
                (SSO) — only show local login/logout in standalone mode. #}
             {% if not proxy_mode %}
@@ -65,7 +61,10 @@
     </header>
     <main id="calendarView">
     <div class="content-wrapper">
-        <h1>{{ date_label }}</h1>
+        <div class="cal-title-row">
+            <h1 id="calTitle">{{ date_label }}</h1>
+            <button type="button" class="btn btn-secondary today-btn" id="todayBtn" title="Back to today (t)" hidden>Today</button>
+        </div>
         <div class="calendar" id="calendarContainer">
             <div class="month-grid" id="viewMonth">
                 {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
@@ -77,7 +76,7 @@
                 {% endfor %}
                 
                 {% for day in calendar_data.current_days %}
-                    <div class="day current-month {% if day < current_day%}past{% endif %}" 
+                    <div class="day current-month {% if day < current_day%}past{% endif %}{% if day == current_day %} today{% endif %}" 
                          data-day="{{ day }}"
                          onclick="showSidebar({{ day }})"
                          {% if day in mood_colors %}style="background-color: {{ mood_colors[day] }}"{% endif %}>
@@ -109,14 +108,18 @@
         <div id="sidebarContent"></div>
     </div>
     <div class="diary-sidebar" id="diaryView">
-        <div class="diary-header">
-            <h2>Month Overview</h2>
+        <div class="diary-header view-nav">
+            <button type="button" class="btn btn-ghost view-nav-btn" data-nav="prev" aria-label="Previous month"><i class="fas fa-chevron-left"></i></button>
+            <h2 id="diaryTitle">Diary</h2>
+            <button type="button" class="btn btn-ghost view-nav-btn" data-nav="next" aria-label="Next month"><i class="fas fa-chevron-right"></i></button>
         </div>
         <div class="diary-content" id="diaryContent"></div>
     </div>
     <div class="year-sidebar" id="yearView">
-        <div class="year-header">
-            <h2>Year Overview</h2>
+        <div class="year-header view-nav">
+            <button type="button" class="btn btn-ghost view-nav-btn" data-nav="prev" aria-label="Previous year"><i class="fas fa-chevron-left"></i></button>
+            <h2 id="yearTitle">Year</h2>
+            <button type="button" class="btn btn-ghost view-nav-btn" data-nav="next" aria-label="Next year"><i class="fas fa-chevron-right"></i></button>
         </div>
         <div class="year-content" id="yearContent"></div>
     </div>

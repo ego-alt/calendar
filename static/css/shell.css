@@ -197,11 +197,6 @@ body.view-search #calendarView {
         font-size: var(--text-sm);
     }
     /* The inline calendar controls move to the bottom mode bar on phones. */
-    #viewSelect,
-    #yearViewBtn,
-    #diaryViewBtn {
-        display: none;
-    }
     .mode-bar {
         display: flex;
         position: fixed;
@@ -274,3 +269,79 @@ body.view-search #calendarView {
         visibility: visible;
     }
 }
+
+/* ---- Month · Week · Year · Diary: one segmented control on desktop ---- */
+.mode-seg {
+    display: inline-flex;
+    background: var(--color-bg-inset);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    padding: 2px;
+    gap: 2px;
+}
+.mode-seg-btn {
+    background: none;
+    border: 0;
+    border-radius: calc(var(--radius-md) - 2px);
+    padding: 4px 12px;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+}
+.mode-seg-btn:hover { color: var(--color-text-primary); }
+.mode-seg-btn.active { background: var(--color-bg-elevated); color: var(--color-text-primary); font-weight: 600; }
+@media (max-width: 480px) { .mode-seg { display: none; } }   /* phones use the bottom mode bar */
+
+/* ---- Year and Diary are full views at every width (not side drawers) ---- */
+.year-sidebar,
+.diary-sidebar {
+    top: var(--shell-bar-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    height: auto;
+    background: var(--color-bg-base);
+    background-image: none;
+    box-shadow: none;
+    border-radius: 0;
+    transform: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+.year-sidebar.active,
+.diary-sidebar.active { opacity: 1; visibility: visible; }
+.diary-header, .diary-content, .year-header, .year-content {
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.year-content { max-width: 1000px; }
+@media (max-width: 480px) {
+    .year-sidebar, .diary-sidebar { bottom: var(--mode-bar-h); }
+}
+/* the day panel opens over them */
+.sidebar { z-index: 1004; }
+
+/* title rows with ‹ › */
+.view-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+.view-nav h2 { margin: 0; min-width: 12ch; text-align: center; font-size: var(--text-lg); }
+.view-nav-btn { min-width: 40px; min-height: 40px; }
+/* keep ‹ 2026 › / ‹ Diary · October › in view while scrolling */
+.year-sidebar .view-nav, .diary-sidebar .view-nav {
+    position: sticky;
+    top: calc(-1 * var(--space-5));   /* the view's own padding */
+    z-index: 2;
+    background: var(--color-bg-base);
+    padding: var(--space-2) 0;
+    margin-top: calc(-1 * var(--space-2));
+}
+.year-month { scroll-margin-top: 72px; }   /* land below the sticky ‹ 2026 › */
