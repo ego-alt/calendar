@@ -78,6 +78,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **Where:** `index.js` `renderWeek`
 - **Why:** For looking back, a week is better read as seven days than as hours.
 - **Fix:** Show week as seven day cards (date, mood colour, entry titles), and put the time grid behind a toggle on desktop. On phones, use only the card list.
+- **Status:** Done for phones (7.7). On desktop the time grid stays, since it reads well at that width and shows when things happened; entries there now use en-dash times. A day-card option on desktop is left for later.
 
 **1.7 Receipts and tickets are stored but not really shown** [confirmed]
 - **What:**
@@ -492,6 +493,7 @@ The problems are mostly the hover-era controls inside it.
 **7.7 Week view on a phone** [confirmed]
 - **What:** Entries are cut to "08:…", "10:…" with names hidden.
 - **Fix:** Use the seven day cards (1.6).
+- **Status:** Done. On phones Week is seven day cards (*Mon 12 Oct · Okay ●*, a mood-coloured edge, the marker, and each entry with its time, or *Nothing written*). Today is outlined, and tapping a card opens the day.
 
 **7.8 Search filters on a phone** [confirmed]
 - **What:** Five filter fields wrap into a block above the results, and the two date pickers don't say which is From and which is To.

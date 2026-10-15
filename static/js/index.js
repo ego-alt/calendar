@@ -557,6 +557,13 @@ async function renderWeek() {
         const weekRoot = document.getElementById('viewWeek');
         const isMobile = window.innerWidth <= 480;
         const STEP = isMobile ? 2 : 1;  // hours per time-axis block/label
+        const todayIsoForCards = isoFromDate(TODAY);
+        if (isMobile) {   // phones: seven readable day cards instead of a time grid
+            weekRoot.classList.add('week-cards');
+            weekRoot.innerHTML = renderWeekCards(data, todayIsoForCards);
+            return;
+        }
+        weekRoot.classList.remove('week-cards');
 
         const todayISO = `${CURRENT_YEAR}-${String(CURRENT_MONTH).padStart(2, '0')}-${String(CURRENT_DAY).padStart(2, '0')}`;
         const isoByIndex = data.days.map(d => d.date);
@@ -689,6 +696,34 @@ async function renderWeek() {
         clearTimeout(dim);
         if (token === viewToken) container.classList.remove('loading');
     }
+}
+
+/** Week on a phone: one card per day with its mood, marker and entries. */
+function renderWeekCards(data, todayIso) {
+    return data.days.map((d) => {
+        const date = new Date(d.year, d.month - 1, d.day);
+        const color = data.mood_colors[d.date];
+        const moodName = color ? ((window.MOODS || []).find((m) => m.color === color)?.name || '') : '';
+        const entries = data.events.filter((e) => {
+            const start = e.start_time.slice(0, 10);
+            const end = (e.end_time || e.start_time).slice(0, 10);
+            return start <= d.date && d.date <= end;
+        });
+        const list = entries.map((e) => `
+            <li><span class="wc-time">${escapeHtml(entryTimeLabel(e, d.date))}</span>
+                <span class="wc-name">${escapeHtml(e.name)}</span></li>`).join('');
+        return `
+            <button type="button" class="week-card${d.date === todayIso ? ' today' : ''}"
+                    onclick="openDayFromWeek(${d.year}, ${d.month}, ${d.day})"
+                    ${color ? `style="--mood: ${color}"` : ''}>
+                <span class="wc-head">
+                    <span class="wc-date">${escapeHtml(formatDate(date, { year: false }))}</span>
+                    ${moodName ? `<span class="wc-mood"><span class="mood-dot" aria-hidden="true"></span>${escapeHtml(moodName)}</span>` : ''}
+                    ${data.markers.includes(d.date) ? '<span class="diary-marker" title="Marked"></span>' : ''}
+                </span>
+                ${list ? `<ul class="wc-entries">${list}</ul>` : '<span class="wc-empty">Nothing written</span>'}
+            </button>`;
+    }).join('');
 }
 
 function openDayFromWeek(year, month, day) {
