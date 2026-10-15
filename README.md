@@ -73,9 +73,11 @@ After adding a user in dashboard:
 cd ../dashboard && uv run python scripts/sync_household_users.py
 ```
 
-> Code is baked into the image at build time. After pulling changes, rebuild:
-> `docker compose build calendar && docker compose up -d calendar`. A bare
-> `up -d` reuses the old image.
+> On the Pi, merged commits that pass CI deploy themselves within about five
+> minutes (see the dashboard README, "Deploying"). To deploy by hand: code is
+> baked into the image at build time, so after pulling run
+> `docker compose build calendar && docker compose up -d calendar`. A bare `up -d`
+> reuses the old image.
 
 The DB lives at `instance/events.db` (bind-mounted in compose). The container
 runs `flask db upgrade` on start, so migrations apply automatically.
