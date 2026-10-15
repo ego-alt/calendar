@@ -1500,8 +1500,8 @@ body.signed-out .login-button { display: none; }
 /* ---- entries as log lines: a monospace time gutter, the words beside it ---- */
 .event-card, .diary-event {
     display: grid;
-    grid-template-columns: 4.4em minmax(0, 1fr);
-    column-gap: var(--space-3);
+    grid-template-columns: 6ch minmax(0, 1fr);   /* just wide enough for "09:00" in the gutter's font */
+    column-gap: var(--space-2);
     align-items: start;
     background: none;
     border: 0;
@@ -1522,7 +1522,7 @@ body.signed-out .login-button { display: none; }
     padding-right: var(--space-2);
     border-right: 1px solid var(--color-border);
     font-family: var(--font-mono);
-    font-size: var(--text-sm);
+    font-size: var(--text-xs);
     line-height: 1.35;
     color: var(--color-text-secondary);
     margin: 0;
@@ -1537,7 +1537,7 @@ body.signed-out .login-button { display: none; }
 .subevents-container { border-top: 0; margin-top: var(--space-1); padding-top: 0; }
 .subevent-card {
     display: grid;
-    grid-template-columns: 3.6em minmax(0, 1fr);
+    grid-template-columns: 6ch minmax(0, 1fr);
     column-gap: var(--space-2);
     background: none;
     border: 0;
@@ -1553,12 +1553,13 @@ body.signed-out .login-button { display: none; }
 /* ---- facts in monospace, words in Inter (the logbook voice) ---- */
 .day::after, .year-day::after, .week-day-date, .week-hour-label, .week-event-time,
 .day-title, .diary-date, .search-result-date, .wc-date, .wc-time,
-.st-tile .n, .st-range, .shelf-count, .view-nav h2, #calTitle,
+.st-tile .n, .st-range, .shelf-count,
 .attachment-caption, .search-footer, .upload-progress {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
 }
-#calTitle { letter-spacing: -0.02em; }
+/* Page headings (the month, Diary, Year) stay in the heading face, like
+   "Your year in moods" and "Search" on the other tabs. */
 .day-title { font-weight: 600; letter-spacing: -0.02em; }
 
 /* ---- the mosaic's depth ---- */
