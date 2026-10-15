@@ -505,18 +505,18 @@ The problems are mostly the hover-era controls inside it.
 
 ## Top 10, ranked by how much better the app will feel
 
-| Rank | Fix | Section | Size |
-|---|---|---|---|
-| 1 | **Never lose writing:** keep drafts when the panel closes or Escape is pressed; confirm before discarding; keep text when a save fails | 4.1, 2.3 | **Small** |
-| 2 | **Mood where you write:** a labelled mood row at the top of the day panel/sheet; tapping a day always opens it; hide the eye icon on touch | 1.2, 7.1, 5 | **Medium** |
-| 3 | **Touch-ready day sheet:** one visible ⋯ per entry (Edit · Add moment · Delete), a marker toggle, attachments with a visible ×, the entry form at the top as a full-height sheet with a sticky Save | 7.2, 7.3, 7.4, 7.5, 1.3 | **Medium** |
-| 4 | **Undo instead of loss:** Undo toasts for entry, moment, attachment and mood-clear; soft delete and a trash | 4.2, 4.3, 4.4 | **Medium** |
-| 5 | **Correctness fixes:** escape user text (2.6); move the desktop panel below the top bar so the attachment + works (2.5); use the local date parser everywhere for iPhone (2.7) | 2.5, 2.6, 2.7 | **Small** |
-| 6 | **Feedback and fresh numbers:** one toast style for saves and failures; refetch Stats after changes; streak counts from yesterday; refresh the grid after edits | 2.3, 4.9, 4.10, 4.6, 8.1 | **Small** |
-| 7 | **Diary language and one entry form:** entries, not events; "Nothing written for this day yet"; one form component; plain error copy; native date and time pickers | 1.1, 3.2, 3.3, 4.5, 6 | **Medium** |
-| 8 | **Look-back views as real views:** full-screen Diary with moods, attachments and month navigation; merge Year into one tappable year grid with a year picker; mark today, add a Today button | 1.4, 1.5, 2.1 | **Large** |
-| 9 | **Receipts and tickets that look like keepsakes:** thumbnails, a lightbox, captions or a link to an entry, HEIC conversion, safe serving, a correct size-limit message | 1.7, 4.7, 4.8 | **Medium** |
-| 10 | **Stats that explain:** a "Mood with…" card for people and places, a year/range picker, a marker legend, phone-sized charts with tap details, and one consistent date format across the app | 1.8, 7.6, 3.1, 3.5 | **Large** |
+| Rank | Fix | Section | Size | Status |
+|---|---|---|---|---|
+| 1 | **Never lose writing:** keep drafts when the panel closes or Escape is pressed; confirm before discarding; keep text when a save fails | 4.1, 2.3 | **Small** | Done |
+| 2 | **Mood where you write:** a labelled mood row at the top of the day panel/sheet; tapping a day always opens it; hide the eye icon on touch | 1.2, 7.1, 5 | **Medium** | Done |
+| 3 | **Touch-ready day sheet:** one visible ⋯ per entry (Edit · Add moment · Delete), a marker toggle, attachments with a visible ×, the entry form at the top as a full-height sheet with a sticky Save | 7.2, 7.3, 7.4, 7.5, 1.3 | **Medium** | Done |
+| 4 | **Undo instead of loss:** Undo toasts for entry, moment, attachment and mood-clear; soft delete and a trash | 4.2, 4.3, 4.4 | **Medium** | To do |
+| 5 | **Correctness fixes:** escape user text (2.6); move the desktop panel below the top bar so the attachment + works (2.5); use the local date parser everywhere for iPhone (2.7) | 2.5, 2.6, 2.7 | **Small** | To do |
+| 6 | **Feedback and fresh numbers:** one toast style for saves and failures; refetch Stats after changes; streak counts from yesterday; refresh the grid after edits | 2.3, 4.9, 4.10, 4.6, 8.1 | **Small** | To do |
+| 7 | **Diary language and one entry form:** entries, not events; "Nothing written for this day yet"; one form component; plain error copy; native date and time pickers | 1.1, 3.2, 3.3, 4.5, 6 | **Medium** | To do |
+| 8 | **Look-back views as real views:** full-screen Diary with moods, attachments and month navigation; merge Year into one tappable year grid with a year picker; mark today, add a Today button | 1.4, 1.5, 2.1 | **Large** | To do |
+| 9 | **Receipts and tickets that look like keepsakes:** thumbnails, a lightbox, captions or a link to an entry, HEIC conversion, safe serving, a correct size-limit message | 1.7, 4.7, 4.8 | **Medium** | To do |
+| 10 | **Stats that explain:** a "Mood with…" card for people and places, a year/range picker, a marker legend, phone-sized charts with tap details, and one consistent date format across the app | 1.8, 7.6, 3.1, 3.5 | **Large** | To do |
 
 **Close runners-up:**
 - Week view as seven day cards on phones (1.6, 7.7, medium).
