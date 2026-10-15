@@ -1197,3 +1197,106 @@ h2 {
 @media (hover: none) {
     .eye-icon { display: none; }
 }
+
+/* ---- entry actions: hover icons on desktop, a ⋯ menu on touch ---- */
+.more-btn { display: none; }
+.event-card:focus-within .event-actions, .subevent-card:focus-within .subevent-actions { opacity: 1; }
+@media (hover: none) {
+    .event-actions, .subevent-actions { display: none; }
+    .more-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 44px;
+        height: 44px;
+        background: none;
+        border: 0;
+        color: var(--color-text-muted);
+        font-size: var(--text-base);
+        cursor: pointer;
+    }
+    .event-name, .subevent-name { padding-right: 36px; }
+    /* attachment delete: always visible and big enough to hit */
+    .attachment-delete { opacity: 1; width: 28px; height: 28px; }
+}
+.action-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 2060;
+    background: var(--color-bg-overlay);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+}
+.action-sheet[hidden] { display: none; }
+.action-sheet.open { opacity: 1; }
+.action-sheet-card {
+    width: min(420px, 100%);
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: var(--space-3) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    transform: translateY(16px);
+    transition: transform 0.18s ease;
+}
+.action-sheet.open .action-sheet-card { transform: none; }
+.action-sheet-title {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    text-align: center;
+    padding: var(--space-1) var(--space-2) var(--space-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.action-sheet-items { display: flex; flex-direction: column; gap: var(--space-1); }
+.action-sheet-item {
+    min-height: 48px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-inset);
+    color: var(--color-text-primary);
+    font: inherit;
+    cursor: pointer;
+}
+.action-sheet-item.danger { color: var(--color-danger-hover); }
+.action-sheet-cancel { margin-top: var(--space-2); background: none; color: var(--color-text-muted); }
+
+.form-buttons-title { display: none; flex: 1; text-align: center; font-weight: 600; color: var(--color-text-primary); align-self: center; }
+
+/* ---- phones: the entry form is a full-screen sheet with Save on top ---- */
+@media (max-width: 480px) {
+    body.entry-form-open .mode-bar,
+    body.entry-form-open .shell-bar { display: none; }
+    body.entry-form-open .entry-form {
+        position: fixed;
+        inset: 0;
+        z-index: 2050;
+        margin: 0;
+        border-radius: 0;
+        overflow-y: auto;
+        padding: calc(env(safe-area-inset-top) + var(--space-2)) var(--space-4) calc(var(--space-5) + env(safe-area-inset-bottom));
+        background: var(--color-bg-elevated);
+        animation: none;
+    }
+    body.entry-form-open .entry-form .form-buttons {
+        order: -1;
+        position: sticky;
+        top: calc(-1 * var(--space-2));
+        z-index: 1;
+        margin: 0 calc(-1 * var(--space-4)) var(--space-1);
+        padding: var(--space-2) var(--space-4);
+        background: var(--color-bg-elevated);
+        border-bottom: 1px solid var(--color-border-soft);
+    }
+    body.entry-form-open .entry-form .form-buttons .btn { flex: 0 0 auto; min-width: 88px; min-height: 40px; }
+    body.entry-form-open .entry-form .form-header { display: none; }   /* shown in the bar */
+    body.entry-form-open .form-buttons-title { display: block; }
+}

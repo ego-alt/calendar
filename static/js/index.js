@@ -147,7 +147,7 @@ function setupGlobalEventListeners() {
         const yearView = document.getElementById('yearView');
 
         const isInteractiveClick = event.target.closest(
-            '#sidebar, #colorPicker, .day, .eye-icon, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn, #viewSelect, .shell-menu, .week-grid, #confirmModal, #toasts'
+            '#sidebar, #colorPicker, .day, .eye-icon, #diaryView, #diaryViewBtn, #yearView, #yearViewBtn, #viewSelect, .shell-menu, .week-grid, #confirmModal, #toasts, #actionSheet'
         );
 
         if (!isInteractiveClick) {

@@ -225,6 +225,13 @@
         </div>
     </div>
     <div class="toasts" id="toasts" aria-live="polite"></div>
+    <div class="action-sheet" id="actionSheet" hidden>
+        <div class="action-sheet-card" role="menu">
+            <div class="action-sheet-title"></div>
+            <div class="action-sheet-items"></div>
+            <button type="button" class="action-sheet-item action-sheet-cancel">Cancel</button>
+        </div>
+    </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/app_root.js') }}"></script>

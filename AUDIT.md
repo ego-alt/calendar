@@ -415,10 +415,12 @@ The problems are mostly the hover-era controls inside it.
 - **What:** Edit, delete and add-moment are 16 px icons at opacity 0 on touch; the attachment × is 18 px at opacity 0. They're invisible, yet tappable by accident.
 - **Where:** `index.css` `.event-actions`, `.subevent-actions`, `.attachment-delete` (no `hover: none` rules)
 - **Fix:** On touch, show a single visible **⋯** button per entry (44 px) that opens a bottom sheet: Edit · Add moment · Delete (with Undo).
+- **Status:** Done. On touch screens each entry and moment has a visible 44×44 **⋯** that opens a bottom action sheet (Edit entry · Add a moment · Delete entry, or Edit/Delete moment). The hover icons are hidden there, and on desktop they also show on keyboard focus. The attachment × is always visible on touch, at 28 px.
 
 **7.3 The marker can't be set on a phone** [confirmed]
 - **What:** A double-tap on a day did nothing. There's no other way to set it.
 - **Fix:** A marker toggle in the day sheet (1.3).
+- **Status:** Done. *Mark this day* is a button in the day sheet, so it works on touch (see 1.3).
 
 **7.4 The keyboard and the entry form** [confirmed]
 - **What:**
@@ -429,6 +431,7 @@ The problems are mostly the hover-era controls inside it.
   - Open the form as a full-height sheet with a sticky header holding **Cancel / Save**.
   - Hide the mode bar while typing.
   - Use `type="date"` and `type="time"` (native wheels on iOS), or `inputmode="numeric"`.
+- **Status:** Done. On phones the entry form is a full-screen sheet with **Cancel · title · Save** pinned at the top, and the top and bottom bars hidden while you type. With a 300 px keyboard up, Save stayed at the top of the visible area. Date and time are native pickers (iOS wheels), and validation messages scroll into view. Cancel offers *Keep as draft* or *Discard*.
 
 **7.5 The day sheet** [confirmed]
 - **What:**
@@ -436,6 +439,7 @@ The problems are mostly the hover-era controls inside it.
   - No mood is shown.
   - The add-entry button sits below everything.
 - **Fix:** Use a "Tue 6 Oct 2026" heading with the mood row under it; cards show only the time.
+- **Status:** Done. The sheet is headed *Tue, 6 Oct 2026*, followed by the mood row and the marker, then **Write about this day**. Entry cards show only the time (09:00–10:00, *All day*, or the span for multi-day entries), not the date again.
 
 **7.6 Stats don't fit a phone** [confirmed]
 - **What:**

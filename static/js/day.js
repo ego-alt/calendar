@@ -34,14 +34,16 @@ function toast(message, { action, onAction, error = false } = {}) {
     setTimeout(dismiss, action ? 8000 : error ? 6000 : 3000);
 }
 
-/** In-app confirm; resolves true/false. */
-function askConfirm(text, { detail = '', ok = 'OK', danger = false } = {}) {
+/** In-app confirm. Resolves true (OK), false (the cancel button) or null
+ *  (dismissed: Escape or a tap outside), so callers can tell them apart. */
+function askConfirm(text, { detail = '', ok = 'OK', cancel = 'Cancel', danger = false } = {}) {
     return new Promise((resolve) => {
         const modal = document.getElementById('confirmModal');
         document.getElementById('confirmText').textContent = text;
         document.getElementById('confirmDetail').textContent = detail;
         const okBtn = document.getElementById('confirmOk');
         okBtn.textContent = ok;
+        document.getElementById('confirmCancel').textContent = cancel;
         okBtn.classList.toggle('btn-danger', danger);
         modal.hidden = false;
         okBtn.focus();
@@ -52,11 +54,11 @@ function askConfirm(text, { detail = '', ok = 'OK', danger = false } = {}) {
             resolve(value);
         };
         const onKey = (e) => {
-            if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); done(false); }
+            if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); done(null); }
         };
         okBtn.onclick = () => done(true);
         document.getElementById('confirmCancel').onclick = () => done(false);
-        modal.onclick = (e) => { if (e.target === modal) done(false); };
+        modal.onclick = (e) => { if (e.target === modal) done(null); };
         document.addEventListener('keydown', onKey, true);
     });
 }
@@ -279,6 +281,7 @@ function renderEntryCard(event) {
                 <button type="button" class="icon-btn" data-act="edit-sub" title="Edit moment" aria-label="Edit moment"><i class="fas fa-edit"></i></button>
                 <button type="button" class="icon-btn" data-act="delete-sub" title="Delete moment" aria-label="Delete moment"><i class="fas fa-trash"></i></button>
             </div>
+            <button type="button" class="more-btn" data-act="more-sub" aria-label="More actions for this moment"><i class="fas fa-ellipsis-h"></i></button>
             <div class="subevent-time">${escapeHtml(entryTimeLabel(s, dayState.iso))}</div>
             <div class="subevent-name">${escapeHtml(s.name)}</div>
             <div class="subevent-details">
@@ -294,6 +297,7 @@ function renderEntryCard(event) {
                 <button type="button" class="icon-btn" data-act="add-sub" title="Add a moment" aria-label="Add a moment"><i class="fas fa-plus-circle"></i></button>
                 <button type="button" class="icon-btn" data-act="delete" title="Delete entry" aria-label="Delete entry"><i class="fas fa-trash"></i></button>
             </div>
+            <button type="button" class="more-btn" data-act="more" aria-label="More actions for this entry"><i class="fas fa-ellipsis-h"></i></button>
             <div class="event-time">${escapeHtml(entryTimeLabel(event, dayState.iso))}</div>
             <div class="event-name">${escapeHtml(event.name)}</div>
             <div class="event-details">
@@ -411,6 +415,7 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null 
             <div class="form-error" role="alert" hidden></div>
             <div class="form-buttons">
                 <button type="button" class="btn btn-secondary cancel-btn" data-act="cancel-form">Cancel</button>
+                <span class="form-buttons-title" aria-hidden="true">${FORM_TITLES[mode]}</span>
                 <button type="submit" class="btn btn-primary save-btn">Save</button>
             </div>
         </form>`;
@@ -435,6 +440,7 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null 
     form.addEventListener('submit', (e) => { e.preventDefault(); submitEntryForm(); });
 
     document.getElementById('sidebar').classList.add('form-open');
+    document.body.classList.add('entry-form-open');
     form.elements.name.focus({ preventScroll: true });
     slot.scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
@@ -462,15 +468,18 @@ function closeEntryForm({ discard = false } = {}) {
     const slot = document.getElementById('entryFormSlot');
     if (slot) slot.innerHTML = '';
     document.getElementById('sidebar').classList.remove('form-open');
+    document.body.classList.remove('entry-form-open');
 }
 
 async function cancelEntryForm() {
     const form = document.getElementById('entryForm');
     if (form && entryForm && isDirty(readForm(form), entryForm.initial)) {
-        const ok = await askConfirm('Discard this entry?', {
-            detail: 'What you typed here will be lost.', ok: 'Discard', danger: true,
+        const choice = await askConfirm('Discard this entry?', {
+            detail: 'Or keep it as a draft: it comes back when you open this day again.',
+            ok: 'Discard', cancel: 'Keep as draft', danger: true,
         });
-        if (!ok) return;
+        if (choice === null) return;                    // dismissed: keep editing
+        if (choice === false) { closeEntryForm(); toast('Draft kept'); return; }
     }
     closeEntryForm({ discard: true });
 }
@@ -480,7 +489,11 @@ async function submitEntryForm() {
     if (!form || !entryForm) return;
     const values = readForm(form);
     const errorEl = form.querySelector('.form-error');
-    const showError = (msg) => { errorEl.textContent = msg; errorEl.hidden = false; };
+    const showError = (msg) => {
+        errorEl.textContent = msg;
+        errorEl.hidden = false;
+        errorEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });   // not hidden under a keyboard
+    };
     if (!values.name.trim()) { showError('Give this entry a name.'); form.elements.name.focus(); return; }
     if (!values.start_date) { showError('Pick a date.'); return; }
 
@@ -572,6 +585,34 @@ async function deleteAttachment(attachmentId) {
     await showSidebar(currentOpenDay);
 }
 
+// ---------- action sheet (touch: the ⋯ on an entry) ----------
+
+function openActionSheet(title, items) {
+    const sheet = document.getElementById('actionSheet');
+    sheet.querySelector('.action-sheet-title').textContent = title;
+    const list = sheet.querySelector('.action-sheet-items');
+    list.innerHTML = '';
+    items.forEach(({ label, danger, run }) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'action-sheet-item' + (danger ? ' danger' : '');
+        b.textContent = label;
+        b.addEventListener('click', (e) => { e.stopPropagation(); closeActionSheet(); run(); });
+        list.appendChild(b);
+    });
+    sheet.hidden = false;
+    requestAnimationFrame(() => sheet.classList.add('open'));
+}
+function closeActionSheet() {
+    const sheet = document.getElementById('actionSheet');
+    sheet.classList.remove('open');
+    setTimeout(() => { sheet.hidden = true; }, 180);
+}
+document.getElementById('actionSheet').addEventListener('click', (e) => {
+    e.stopPropagation();   // never counts as a tap outside the day panel
+    if (e.target.id === 'actionSheet' || e.target.closest('.action-sheet-cancel')) closeActionSheet();
+});
+
 // ---------- one click handler for the whole panel ----------
 
 document.getElementById('sidebarContent').addEventListener('click', (e) => {
@@ -594,6 +635,23 @@ document.getElementById('sidebarContent').addEventListener('click', (e) => {
             deleteAttachment(Number(target.closest('.attachment-tile').dataset.attachmentId));
             break;
         case 'retry': showSidebar(currentOpenDay); break;
+        case 'more': {
+            const entry = findEntry(eventId);
+            openActionSheet(entry.name, [
+                { label: 'Edit entry', run: () => openEntryForm('edit', { eventId }) },
+                { label: 'Add a moment', run: () => openEntryForm('sub-new', { eventId }) },
+                { label: 'Delete entry', danger: true, run: () => deleteEntry(eventId) },
+            ]);
+            break;
+        }
+        case 'more-sub': {
+            const entry = findEntry(eventId, subId);
+            openActionSheet(entry.name, [
+                { label: 'Edit moment', run: () => openEntryForm('sub-edit', { eventId, subId }) },
+                { label: 'Delete moment', danger: true, run: () => deleteEntry(eventId, subId) },
+            ]);
+            break;
+        }
         case 'mood': setDayMood(viewState.year, viewState.month, currentOpenDay, target.dataset.mood); break;
         case 'clear-mood': setDayMood(viewState.year, viewState.month, currentOpenDay, null); break;
         case 'marker': toggleDayMarker(viewState.year, viewState.month, currentOpenDay); break;
