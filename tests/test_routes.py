@@ -452,3 +452,12 @@ def test_export_everything(authed_client):
     day = json.loads(z.read("entries.json"))["days"][0]
     assert day["mood"] == "Great" and day["entries"][0]["name"] == "Concert"
     assert "## Mon 11 May 2026 · Great" in z.read("diary.md").decode()
+
+
+def test_month_day_info(authed_client):
+    authed_client.post("/events/", json={"name": "Trip", "start_date": "2026-05-03",
+                                         "end_date": "2026-05-04", "notes": "x" * 300})
+    _upload(authed_client, 2026, 5, 4)
+    info = authed_client.get("/get_month?year=2026&month=5").json["day_info"]
+    assert info["3"]["entries"] == 1 and info["3"]["chars"] == 304
+    assert info["4"]["attachments"] == 1 and "5" not in info

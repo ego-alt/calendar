@@ -114,6 +114,40 @@ def get_month_data(year, month, user_id: int | None):
     return calendar_data, mood_colors, days_with_events, days_with_marker
 
 
+def get_month_details(year, month, user_id: int | None) -> dict:
+    """Per day of the month: how many entries, how much was written (title +
+    notes of entries and moments, in characters) and how many attachments.
+    Drives the folded corners, photo notches and the status line."""
+    if not user_id:
+        return {}
+    from models import Attachment, SubEvent
+
+    start = datetime(year, month, 1)
+    end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+    info: dict[int, dict] = defaultdict(lambda: {"entries": 0, "chars": 0, "attachments": 0})
+    effective_end = func.coalesce(Event.end_time, Event.start_time)
+    events = Event.query.filter(
+        Event.user_id == user_id, Event.start_time < end, effective_end >= start
+    ).all()
+    for e in events:
+        first = max(e.start_time.date(), start.date())
+        last = min((e.end_time or e.start_time).date(), (end - timedelta(days=1)).date())
+        d = first
+        while d <= last:
+            info[d.day]["entries"] += 1
+            info[d.day]["chars"] += len(e.name or "") + len(e.notes or "")
+            d += timedelta(days=1)
+    for s in SubEvent.query.join(Event).filter(
+        Event.user_id == user_id, SubEvent.start_time >= start, SubEvent.start_time < end
+    ):
+        info[s.start_time.day]["chars"] += len(s.name or "") + len(s.notes or "")
+    for a in Attachment.query.join(DailyLog).filter(
+        DailyLog.user_id == user_id, DailyLog.date >= start.date(), DailyLog.date < end.date()
+    ):
+        info[a.daily_log.date.day]["attachments"] += 1
+    return {day: dict(v) for day, v in info.items()}
+
+
 def get_week_data(year, month, day, user_id: int | None):
     """Return week metadata, events, mood, and markers for the Mon-Sun week of the anchor."""
     anchor = datetime(year, month, day).date()

@@ -94,9 +94,13 @@
                          data-day="{{ day }}"
                          onclick="showSidebar({{ day }})"
                          {% if day in mood_colors %}style="background-color: {{ mood_colors[day] }}"{% endif %}>
-                        {% if day in days_with_events %}
-                            <div class="event-indicator"></div>
+                        {% set info = day_info.get(day) %}
+                        {% if info and info.chars %}
+                            <div class="fold fold-{{ 1 if info.chars < 280 else (2 if info.chars < 1200 else 3) }}" aria-hidden="true"></div>
+                        {% elif day in days_with_events %}
+                            <div class="fold fold-1" aria-hidden="true"></div>
                         {% endif %}
+                        {% if info and info.attachments %}<div class="photo-notch" aria-hidden="true"></div>{% endif %}
                         {% if day in days_with_marker %}
                             <div class="marker-indicator"></div>
                         {% endif %}
@@ -109,6 +113,7 @@
             </div>
             <div class="week-grid" id="viewWeek" style="display: none;"></div>
         </div>
+        <div class="status-line" id="statusLine" aria-live="polite"></div>
     </div>
     </main>
 
@@ -310,6 +315,7 @@
         window.INITIAL_VIEW = "{{ active_view|default('calendar') }}";
         window.PROXY_MODE = {{ 'true' if proxy_mode else 'false' }};
         window.SIGNED_IN = {{ 'true' if current_user.is_authenticated else 'false' }};
+        window.INITIAL_MONTH = {{ {"year": current_year, "month": current_month, "mood_colors": mood_colors, "day_info": day_info, "days_with_events": days_with_events} | tojson }};
         window.MOODS = {{ moods | map(attribute='__dict__') | list | tojson }};
     </script>
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>

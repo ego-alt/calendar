@@ -1231,8 +1231,23 @@ h2 {
 }
 .today-btn { padding: 2px var(--space-3); font-size: var(--text-sm); }
 .today-btn[hidden] { display: none; }
-.day.today { box-shadow: inset 0 0 0 2px var(--color-text-primary); }
-.day.today::after { font-weight: 700; color: var(--color-text-primary); }
+/* Today is the cursor: a terminal block caret in the corner, blinking slowly
+   (steady for reduced motion), and its number in full strength. */
+.day.today { border-color: var(--color-text-secondary); }
+.day.today::after { font-weight: 700; color: var(--color-text-primary); opacity: 1; }
+.day.today::before {
+    content: "";
+    position: absolute;
+    top: var(--space-1);
+    left: var(--space-1);
+    width: 7px;
+    height: 13px;
+    background: var(--color-text-primary);
+    border-radius: 1px;
+    animation: caret-blink 1.1s steps(1, end) infinite;
+}
+@keyframes caret-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .day.today::before { animation: none; } }
 
 /* ---- Diary ---- */
 .diary-day-head {
@@ -1485,3 +1500,121 @@ body.signed-out .login-button { display: none; }
 .first-run { margin-top: var(--space-3); }
 .day-tools { display: inline-flex; align-items: center; gap: 2px; }
 .day-flags { margin: calc(-1 * var(--space-1)) 0 var(--space-3); }
+
+/* ---- entries as log lines: a monospace time gutter, the words beside it ---- */
+.event-card, .diary-event {
+    display: grid;
+    grid-template-columns: 4.4em minmax(0, 1fr);
+    column-gap: var(--space-3);
+    align-items: start;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    padding: var(--space-2) 0 var(--space-3);
+    margin: 0;
+    border-bottom: 1px dashed var(--color-border-soft);
+}
+.event-card:hover, .diary-event:hover { background: var(--color-highlight-soft); }
+.event-card > *, .diary-event > * { grid-column: 2; }
+.event-card > .log-gutter, .diary-event > .log-gutter,
+.subevent-card > .log-gutter {
+    grid-column: 1;
+    grid-row: 1 / span 6;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-right: var(--space-2);
+    border-right: 1px solid var(--color-border);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.35;
+    color: var(--color-text-secondary);
+    margin: 0;
+    min-height: 1.4em;
+}
+.log-gutter .gutter-end { color: var(--color-text-muted); font-size: var(--text-xs); }
+.log-gutter .gutter-span { color: var(--color-text-muted); font-size: var(--text-xs); text-align: right; }
+.event-card > .event-actions, .event-card > .more-btn { grid-column: 2; }
+.event-name, .diary-event-name { margin-bottom: 4px; }
+.event-list { gap: 0; }
+/* moments: indented sub-lines with their own small gutter */
+.subevents-container { border-top: 0; margin-top: var(--space-1); padding-top: 0; }
+.subevent-card {
+    display: grid;
+    grid-template-columns: 3.6em minmax(0, 1fr);
+    column-gap: var(--space-2);
+    background: none;
+    border: 0;
+    border-left: 0;
+    padding: 4px 0;
+    margin: 0;
+}
+.subevent-card > * { grid-column: 2; }
+.subevent-card > .log-gutter { font-size: var(--text-xs); border-right-style: dotted; }
+.diary-subevent { border-top: 0; margin-top: 4px; padding-top: 0; padding-left: var(--space-3); border-left: 1px dotted var(--color-border); }
+
+
+/* ---- facts in monospace, words in Inter (the logbook voice) ---- */
+.day::after, .year-day::after, .week-day-date, .week-hour-label, .week-event-time,
+.day-title, .diary-date, .search-result-date, .wc-date, .wc-time,
+.st-tile .n, .st-range, .shelf-count, .view-nav h2, #calTitle,
+.attachment-caption, .search-footer, .upload-progress {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+#calTitle { letter-spacing: -0.02em; }
+.day-title { font-weight: 600; letter-spacing: -0.02em; }
+
+/* ---- the mosaic's depth ---- */
+/* a folded corner (bottom-right) that grows with how much was written */
+.fold {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-color: transparent var(--color-bg-base) var(--color-bg-base) transparent;
+    filter: drop-shadow(-1px -1px 0 rgba(235, 219, 178, 0.35));
+    border-bottom-right-radius: var(--radius-md);
+}
+.fold-1 { border-width: 0 7px 7px 0; }
+.fold-2 { border-width: 0 11px 11px 0; }
+.fold-3 { border-width: 0 15px 15px 0; }
+/* a small notch (top-left) when the day holds a photo or ticket */
+.photo-notch {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 9px;
+    height: 7px;
+    border: 1.5px solid rgba(235, 219, 178, 0.7);
+    border-radius: 2px;
+}
+.day.today .photo-notch { left: 17px; }
+.day:hover .photo-notch { opacity: 0; }   /* the quick-mood eye takes that corner */
+
+/* ---- status line: desktop month view, under the grid ---- */
+.status-line { display: none; }
+@media (hover: hover) and (min-width: 481px) {
+    body.view-calendar .status-line {
+        display: block;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 26px;
+        line-height: 26px;
+        padding: 0 var(--space-4);
+        background: var(--color-bg-chrome);
+        border-top: 1px solid var(--color-border-soft);
+        color: var(--color-text-muted);
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        white-space: pre;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        z-index: 1001;
+    }
+    body.view-calendar .status-line::before { content: "› "; color: var(--color-accent); }
+}

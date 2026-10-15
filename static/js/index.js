@@ -44,6 +44,57 @@ function parseLocalDateTime(str) {
     return new Date(y, m - 1, d, hh, mm);
 }
 
+/** The mosaic's depth: a folded corner that grows with how much was written
+ *  that day, and a small notch when the day holds a photo or ticket. */
+function foldMarkup(data, day) {
+    const info = (data.day_info || {})[day];
+    let html = '';
+    if (info && info.chars) {
+        const level = info.chars < 280 ? 1 : info.chars < 1200 ? 2 : 3;
+        html += `<div class="fold fold-${level}" aria-hidden="true"></div>`;
+    } else if ((data.days_with_events || []).includes(day)) {
+        html += '<div class="fold fold-1" aria-hidden="true"></div>';
+    }
+    if (info && info.attachments) html += '<div class="photo-notch" aria-hidden="true"></div>';
+    return html;
+}
+
+// ---------- status line (desktop month view) ----------
+// A vim-style line under the grid: the month in numbers, or the hovered day.
+
+function moodNameForColor(color) {
+    return (window.MOODS || []).find((m) => m.color === color)?.name || '';
+}
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+function renderStatusLine(day = null) {
+    const el = document.getElementById('statusLine');
+    const data = window.monthData;
+    if (!el || !data) return;
+    const info = data.day_info || {};
+    if (day) {
+        const date = new Date(data.year, data.month - 1, day);
+        const d = info[day] || {};
+        const mood = moodNameForColor((data.mood_colors || {})[day]);
+        const bits = [formatDate(date), mood || 'no mood',
+            d.entries ? plural(d.entries, 'entry').replace('entrys', 'entries') : 'nothing written'];
+        if (d.attachments) bits.push(plural(d.attachments, 'attachment'));
+        el.textContent = bits.join('  ·  ');
+        return;
+    }
+    const days = Object.keys(data.mood_colors || {}).length;
+    const entries = Object.values(info).reduce((n, d) => n + (d.entries || 0), 0);
+    const files = Object.values(info).reduce((n, d) => n + (d.attachments || 0), 0);
+    const monthName = `${MONTH_ABBR[data.month - 1]} ${data.year}`;
+    const bits = [monthName, `${days} ${days === 1 ? 'day' : 'days'} logged`, `${entries} ${entries === 1 ? 'entry' : 'entries'}`];
+    if (files) bits.push(plural(files, 'attachment'));
+    el.textContent = bits.join('  ·  ');
+}
+document.addEventListener('mouseover', (e) => {
+    const cell = e.target.closest && e.target.closest('#viewMonth .day.current-month');
+    renderStatusLine(cell ? Number(cell.dataset.day) : null);
+});
+
 /** Format a Date as a local "YYYY-MM-DD" ISO date string. */
 function isoFromDate(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -70,6 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSwipeNavigation();
     document.addEventListener('keydown', handleKeyPress);
     setupModeBar();
+    window.monthData = window.INITIAL_MONTH;
+    renderStatusLine();
     document.getElementById('todayBtn').addEventListener('click', goToToday);
     document.getElementById('firstRunBtn')?.addEventListener('click', async () => {
         await goToToday();
@@ -473,7 +526,7 @@ async function updateCalendarView() {
                      data-day="${day}"
                      onclick="showSidebar(${day})"
                      ${data.mood_colors[day] ? `style="background-color: ${data.mood_colors[day]}"` : ''}>
-                    ${data.days_with_events.includes(day) ? '<div class="event-indicator"></div>' : ''}
+                    ${foldMarkup(data, day)}
                     ${data.days_with_marker.includes(day) ? '<div class="marker-indicator"></div>' : ''}
                 </div>
             `).join('')}
@@ -483,6 +536,8 @@ async function updateCalendarView() {
         `;
 
         document.getElementById('viewMonth').innerHTML = monthInner;
+        window.monthData = { year, month, ...data };
+        renderStatusLine();
         setupMonthGridListeners();
         updateBottomBar();
         
@@ -892,10 +947,9 @@ async function loadMonthEvents() {
                     <div class="diary-subevent-title">${escapeHtml(s.name)}${s.where ? `<span class="diary-subevent-content"> · ${escapeHtml(s.where)}</span>` : ''}</div>
                     ${s.notes ? `<div class="diary-subevent-content">${escapeHtml(s.notes)}</div>` : ''}
                 </div>`).join('');
-            const time = entryTimeLabel(event, iso);
             return `
                 <div class="diary-event" data-day="${day}" role="button" tabindex="0">
-                    ${time && time !== 'All day' ? `<div class="diary-event-time">${escapeHtml(time)}</div>` : ''}
+                    <div class="diary-event-time log-gutter" title="${escapeHtml(entryTimeLabel(event, iso))}">${gutterTime(event, iso)}</div>
                     <div class="diary-event-name">${escapeHtml(event.name)}</div>
                     ${detail('fa-user', event.with_who)}
                     ${detail('fa-map-marker-alt', event.where)}

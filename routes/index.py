@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 from flask import Blueprint, jsonify, render_template, request
 
 from models import DailyLog, Event
-from utils import get_month_data, get_week_data, get_year_data
+from utils import get_month_data, get_month_details, get_week_data, get_year_data
 
 from ._helpers import current_user_id, json_login_required
 
@@ -33,6 +33,7 @@ def build_index_context() -> dict:
         "mood_colors": mood_colors,
         "days_with_events": days_with_events,
         "days_with_marker": days_with_marker,
+        "day_info": get_month_details(today.year, today.month, uid),
     }
 
 
@@ -58,6 +59,7 @@ def get_month():
             "mood_colors": mood_colors,
             "days_with_events": days_with_events,
             "days_with_marker": days_with_marker,
+            "day_info": get_month_details(year, month, current_user_id()),
         }
     )
 

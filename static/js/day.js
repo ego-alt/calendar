@@ -121,6 +121,22 @@ function entryTimeLabel(entry, onIso) {
     return end ? `${time(start)}–${time(end)}` : time(start);
 }
 
+/** The log gutter beside an entry: start over end ("09:00" / "10:00"),
+ *  "all day", or for a multi-day entry the span ("3–5 Oct"). */
+function gutterTime(entry, onIso) {
+    const start = parseLocalDateTime(entry.start_time);
+    const end = entry.end_time ? parseLocalDateTime(entry.end_time) : null;
+    const hm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    if (end && isoFromDate(start) !== isoFromDate(end)) {
+        const span = start.getMonth() === end.getMonth()
+            ? `${start.getDate()}–${end.getDate()} ${MONTH_ABBR[end.getMonth()]}`
+            : `${start.getDate()} ${MONTH_ABBR[start.getMonth()]}–${end.getDate()} ${MONTH_ABBR[end.getMonth()]}`;
+        return `<span class="gutter-span">${span}</span>`;
+    }
+    if (isAllDayEvent(entry)) return '<span class="gutter-span">all day</span>';
+    return `<span>${hm(start)}</span>${end ? `<span class="gutter-end">${hm(end)}</span>` : ''}`;
+}
+
 // ---------- drafts ----------
 
 const DRAFTS_KEY = 'calendar-drafts';
@@ -310,7 +326,7 @@ function renderEntryCard(event) {
                 <button type="button" class="icon-btn" data-act="delete-sub" title="Delete moment" aria-label="Delete moment"><i class="fas fa-trash"></i></button>
             </div>
             <button type="button" class="more-btn" data-act="more-sub" aria-label="More actions for this moment"><i class="fas fa-ellipsis-h"></i></button>
-            <div class="subevent-time">${escapeHtml(entryTimeLabel(s, dayState.iso))}</div>
+            <div class="subevent-time log-gutter" title="${escapeHtml(entryTimeLabel(s, dayState.iso))}">${gutterTime(s, dayState.iso)}</div>
             <div class="subevent-name">${escapeHtml(s.name)}</div>
             <div class="subevent-details">
                 ${renderDetail('fa-user', s.with_who)}
@@ -326,7 +342,7 @@ function renderEntryCard(event) {
                 <button type="button" class="icon-btn" data-act="delete" title="Delete entry" aria-label="Delete entry"><i class="fas fa-trash"></i></button>
             </div>
             <button type="button" class="more-btn" data-act="more" aria-label="More actions for this entry"><i class="fas fa-ellipsis-h"></i></button>
-            <div class="event-time">${escapeHtml(entryTimeLabel(event, dayState.iso))}</div>
+            <div class="event-time log-gutter" title="${escapeHtml(entryTimeLabel(event, dayState.iso))}">${gutterTime(event, dayState.iso)}</div>
             <div class="event-name">${escapeHtml(event.name)}</div>
             <div class="event-details">
                 ${renderDetail('fa-user', event.with_who)}

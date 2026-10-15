@@ -12,6 +12,11 @@ tickets that go with it, and the trends over time.
   Rough), toggle the **marker** (a small, unlabelled red dot, a private
   tracker shown quietly on the calendar and the mood trend), write **entries** with optional times, people, places and notes, add
   **moments** inside an entry, and attach **photos and PDFs**.
+- **The look** — a mood mosaic in a terminal logbook: each day a tile tinted
+  by its mood, its corner folding further the more you wrote, a small notch
+  when it holds a photo or ticket, today marked by a blinking caret; dates,
+  times and counts in monospace, entries as log lines with a time gutter, and
+  a status line under the month on desktop.
 - **Never lose writing** — half-written entries are kept as drafts per day and
   come back when the day reopens; deletes (entries, moments, attachments) can
   be undone, and are purged after 30 days.
