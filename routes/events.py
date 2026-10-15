@@ -175,13 +175,23 @@ def events():
     return jsonify({"status": "success", "message": "Saved", "id": event.id})
 
 
-@event_blueprint.route("/<int:event_id>", methods=["PUT", "DELETE"])
+@event_blueprint.route("/<int:event_id>", methods=["GET", "PUT", "DELETE"])
 @json_login_required
 def manage_event(event_id):
     event = Event.query.filter_by(id=event_id, user_id=current_user.id).first()
 
     if not event:
         return jsonify({"status": "error", "message": "That entry no longer exists."}), 404
+
+    if request.method == "GET":
+        subevents = sorted(event.subevents, key=lambda s: s.start_time)
+        return jsonify({
+            "status": "success",
+            "event": {
+                **retrieve_event_data(event),
+                "subevents": [retrieve_event_data(s) for s in subevents],
+            },
+        })
 
     if request.method == "DELETE":
         remove_event_safe(event.id)
@@ -242,14 +252,16 @@ def subevents(event_id):
         return jsonify({"status": "error", "message": "That entry no longer exists."}), 404
 
     try:
-        create_event(SubEvent, request.json, parent=parent_event, event_id=event_id)
+        subevent = create_event(SubEvent, request.json, parent=parent_event, event_id=event_id)
     except EntryError as e:
         return jsonify({"status": "error", "message": str(e)}), 400
     index_event_safe(parent_event)  # reindex parent with the new subevent folded in
-    return jsonify({"status": "success", "message": "Subevent created successfully"})
+    return jsonify({
+        "status": "success", "message": "Subevent created successfully", "id": subevent.id,
+    })
 
 
-@event_blueprint.route("/subevents/<int:subevent_id>", methods=["PUT", "DELETE"])
+@event_blueprint.route("/subevents/<int:subevent_id>", methods=["GET", "PUT", "DELETE"])
 @json_login_required
 def manage_subevent(subevent_id):
     subevent = (
@@ -260,6 +272,12 @@ def manage_subevent(subevent_id):
 
     if not subevent:
         return jsonify({"status": "error", "message": "That moment no longer exists."}), 404
+
+    if request.method == "GET":
+        return jsonify({
+            "status": "success",
+            "subevent": {**retrieve_event_data(subevent), "event_id": subevent.event_id},
+        })
 
     if request.method == "DELETE":
         parent_id = subevent.event_id
@@ -292,4 +310,38 @@ def month_events():
         event_data = retrieve_event_data(event)
         event_data["subevents"] = [retrieve_event_data(s) for s in subevents]
         events_data.append(event_data)
+    return jsonify({"status": "success", "events": events_data})
+
+
+# Longest span /events/range answers in one go; callers page by date beyond it.
+MAX_RANGE_DAYS = 366
+
+
+@event_blueprint.route("/range", methods=["GET"])
+@json_login_required
+def range_events():
+    """Entries overlapping ``from``..``to`` (ISO dates, both inclusive), with
+    their moments. For programmatic clients (the MCP server); the calendar UI
+    asks per day / month."""
+    try:
+        start_date = datetime.strptime(request.args.get("from", ""), "%Y-%m-%d")
+        end_date = datetime.strptime(request.args.get("to", ""), "%Y-%m-%d") + timedelta(days=1)
+    except ValueError:
+        return jsonify({
+            "status": "error", "message": "Give from and to as YYYY-MM-DD dates.",
+        }), 400
+    if end_date <= start_date:
+        return jsonify({"status": "error", "message": "The end is before the start."}), 400
+    if (end_date - start_date).days > MAX_RANGE_DAYS:
+        return jsonify({
+            "status": "error", "message": f"Ask for at most {MAX_RANGE_DAYS} days at a time.",
+        }), 400
+
+    events_data = []
+    for event in retrieve_events_within_range(start_date, end_date):
+        subevents = sorted(event.subevents, key=lambda s: s.start_time)
+        events_data.append({
+            **retrieve_event_data(event),
+            "subevents": [retrieve_event_data(s) for s in subevents],
+        })
     return jsonify({"status": "success", "events": events_data})
