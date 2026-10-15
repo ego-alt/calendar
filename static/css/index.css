@@ -1217,10 +1217,6 @@ h2 {
 #calendarContainer { transition: opacity 0.15s ease; }
 #calendarContainer.loading { opacity: 0.5; }
 
-/* sign in / out: icon + label on desktop, icon only on a phone's tight bar */
-.login-button { display: inline-flex; align-items: center; gap: var(--space-2); }
-.login-label { font-size: var(--text-sm); }
-@media (max-width: 480px) { .login-label { display: none; } }
 
 /* ---- today ---- */
 .cal-title-row {
@@ -1490,7 +1486,6 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 .first-run-title { font-weight: 600; margin: 0 0 var(--space-2); }
 .first-run-body { color: var(--color-text-muted); font-size: var(--text-sm); margin: 0 0 var(--space-3); }
 .first-run { box-sizing: border-box; }
-body.signed-out .login-button { display: none; }
 .first-run { margin-top: var(--space-3); }
 .day-tools { display: inline-flex; align-items: center; gap: 2px; }
 .day-flags { margin: calc(-1 * var(--space-1)) 0 var(--space-3); }

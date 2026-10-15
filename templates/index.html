@@ -50,19 +50,6 @@
                 <button type="button" class="mode-seg-btn" data-mode="year" title="Year (y)">Year</button>
                 <button type="button" class="mode-seg-btn" data-mode="diary" title="Diary (d)">Diary</button>
             </nav>
-            {# Behind the dashboard proxy, login/logout is the dashboard's job
-               (SSO) — only show local login/logout in standalone mode. #}
-            {% if not proxy_mode %}
-                {% if current_user.is_authenticated %}
-                    <button class="login-button btn btn-ghost" onclick="handleLogout()" title="Sign out" aria-label="Sign out">
-                        <i class="fas fa-right-from-bracket" aria-hidden="true"></i><span class="login-label">Sign out</span>
-                    </button>
-                {% else %}
-                    <button class="login-button btn btn-ghost" onclick="showLoginDialog()" title="Sign in" aria-label="Sign in">
-                        <i class="fas fa-right-to-bracket" aria-hidden="true"></i><span class="login-label">Sign in</span>
-                    </button>
-                {% endif %}
-            {% endif %}
         </div>
     </header>
     <main id="calendarView">

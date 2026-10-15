@@ -267,7 +267,7 @@ Time ranges are written with `--`, `-` and `–`.
 - Door-open and door-closed icons mean log in and log out.
 - A bare **+** in the panel header adds an attachment, not an entry.
 - **Fix:** Label them (*Mood*, *Sign out*, *Attach*), or swap in icons that match the action.
-- **Status:** Done. Sign in/out show a text label (icon only on phones). The quick-mood eye is labelled *Set mood*. The attach control is a paperclip titled *Attach a photo or file*. The ⋯ and the picker options have accessible names.
+- **Status:** Done. The quick-mood eye is labelled *Set mood*, the attach control is a paperclip titled *Attach photos or PDFs*, and the ⋯ and picker options have accessible names. The door icons are gone: signed out, the page is the sign-in card, and (later, to keep things light, like tapes) there is no sign-out button; behind the dashboard, signing out is the dashboard's job.
 
 **3.7 Feedback comes in three styles** [confirmed]
 - `alert()` boxes for sub-entry and edit errors.

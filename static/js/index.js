@@ -237,10 +237,7 @@ function setupGlobalEventListeners() {
         }
     });
 
-    document.querySelector('.login-overlay').addEventListener('click', (e) => {
-        // Signed out, the sign-in card *is* the page: it can't be dismissed.
-        if (e.target === e.currentTarget && window.SIGNED_IN) closeLoginDialog();
-    });
+    // Signed out, the sign-in card *is* the page (it can't be dismissed).
     document.querySelector('.login-content').addEventListener('click', (e) => {
         e.stopPropagation();
     });
@@ -759,17 +756,6 @@ function openDayFromWeek(year, month, day) {
     showSidebar(day);
 }
 
-function showLoginDialog() {
-    document.getElementById('loginOverlay').style.display = 'flex';
-    document.getElementById('username').focus();
-}
-
-function closeLoginDialog() {
-    document.getElementById('loginOverlay').style.display = 'none';
-    document.getElementById('loginForm').reset();
-    document.getElementById('loginError').style.display = 'none';
-}
-
 function showLoginError(message) {
     const el = document.getElementById('loginError');
     el.textContent = message;
@@ -800,23 +786,6 @@ async function handleLogin(event) {
     }
 }
 
-async function handleLogout() {
-    try {
-        if (window.PROXY_MODE) {
-            // Behind the dashboard proxy there's no local session — log out of
-            // the shared dashboard session, which deauths every app at once.
-            await fetch('/logout', { method: 'POST', credentials: 'same-origin' });
-            window.location.href = '/login';
-            return;
-        }
-        const response = await fetch(appUrl('/auth/logout'));
-        if (response.ok) {
-            location.reload();
-        }
-    } catch (error) {
-        console.error('Logout error:', error);
-    }
-}
 
 function toggleSidebar(sidebarType, show) {
     const diaryView = document.getElementById('diaryView');
