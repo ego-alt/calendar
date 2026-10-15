@@ -10,8 +10,11 @@
 
     /** Load (or reload) Stats. Anything that changes moods, markers or
      *  entries sets window.statsStale, so the next open shows fresh numbers. */
-    function loadStats() {
-        if (statsLoaded && !window.statsStale) return Promise.resolve();
+    let statsYear = null;   // null = last 12 months
+    function loadStats({ year } = {}) {
+        const changingRange = year !== undefined && year !== statsYear;
+        if (changingRange) statsYear = year;
+        if (statsLoaded && !window.statsStale && !changingRange) return Promise.resolve();
         if (statsLoading) return statsLoading;
         const view = document.getElementById("statsView");
         const status = document.getElementById("statsStatus");
@@ -20,7 +23,7 @@
         window.statsStale = false;
         statsLoading = (async () => {
             try {
-                const res = await fetch(appUrl("/stats/data"));
+                const res = await fetch(appUrl("/stats/data" + (statsYear ? `?year=${statsYear}` : "")));
                 if (!res.ok) throw new Error(`stats ${res.status}`);
                 window.renderStats(await res.json());
                 statsLoaded = true;
@@ -61,6 +64,19 @@
     }
 
     tabs.forEach((t) => t.addEventListener("click", () => setView(t.dataset.view)));
+    window.loadStats = loadStats;
+
+    // A heatmap cell opens that day on the calendar.
+    window.openDayFromStats = async (iso) => {
+        const [y, m, d] = iso.split("-").map(Number);
+        setView("calendar");
+        viewState.year = y;
+        viewState.month = m;
+        viewState.weekAnchor = { year: y, month: m, day: d };
+        if (viewState.mode === "week") toggleWeekView(false);   // shows that month
+        else await updateCalendarView();
+        showSidebar(d);
+    };
 
     // Browser back/forward closes or reopens the Stats view.
     window.addEventListener("popstate", (e) => {

@@ -24,10 +24,13 @@ function renderStats(data) {
         tip.style.left = x + "px";
         tip.style.top = y + "px";
     }
-    function attachTip(el, htmlFn) {
+    // Hover shows a floating tip; a tap (touch has no hover) writes the same
+    // details into the caption line under the chart.
+    function attachTip(el, htmlFn, detailEl) {
         el.addEventListener("mouseenter", (e) => { tip.innerHTML = htmlFn(); tip.hidden = false; moveTip(e); });
         el.addEventListener("mousemove", moveTip);
         el.addEventListener("mouseleave", () => { tip.hidden = true; });
+        if (detailEl) el.addEventListener("click", () => { detailEl.innerHTML = htmlFn(); });
     }
     // One mood breakdown row: swatch · name · "count · share%".
     const tipRow = (s) =>
@@ -35,12 +38,15 @@ function renderStats(data) {
 
     // tiles
     const t = data.tiles, tm = t.top_mood;
+    const avg = data.mood_with && data.mood_with.overall;
     const tiles = [
         { n: t.logged, l: `days logged of ${t.total}` },
-        {
-            n: t.current_streak,
-            l: "day streak" + (!t.today_logged && t.current_streak > 0 ? " · log today to keep it going" : ""),
-        },
+        t.current_streak == null
+            ? { n: avg != null ? `${avg.toFixed(1)}` : "—", l: "average mood (of 5)" }
+            : {
+                n: t.current_streak,
+                l: "day streak" + (!t.today_logged && t.current_streak > 0 ? " · log today to keep it going" : ""),
+            },
         { n: t.longest_streak, l: "day longest streak" },
         tm
             ? { n: esc(tm.name), l: `<span class="swatch" style="background:${esc(tm.color)}"></span>most common mood` }
@@ -56,7 +62,17 @@ function renderStats(data) {
         c.className = "st-cell";
         if (d.c) c.style.background = d.c;
         c.title = formatDate(new Date(d.d + "T00:00:00")) + (d.n ? " · " + d.n : " · no mood logged");
+        c.dataset.date = d.d;
         grid.appendChild(c);
+    });
+    grid.onclick = (e) => {
+        const cell = e.target.closest(".st-cell[data-date]");
+        if (cell && window.openDayFromStats) window.openDayFromStats(cell.dataset.date);
+    };
+    // Start at the most recent weeks (the grid scrolls sideways on phones).
+    requestAnimationFrame(() => {
+        const sc = document.querySelector(".st-hm-scroll");
+        if (sc) sc.scrollLeft = sc.scrollWidth;
     });
     const months = $("hmMonths");
     months.innerHTML = "";
@@ -91,7 +107,7 @@ function renderStats(data) {
                 d.style.background = s.color;
                 col.appendChild(d);
             });
-            if (tipFor) attachTip(col, () => tipFor(i));
+            if (tipFor) attachTip(col, () => tipFor(i), $("mixDetail"));
             el.appendChild(col);
         });
     }
@@ -127,6 +143,8 @@ function renderStats(data) {
             onSelect(btn.dataset);
         }; });
     }
+    $("mixDetail").textContent = "";
+    $("evDetail").textContent = "";
     renderMix("month");
     wireToggle($("mixToggle"), (ds) => renderMix(ds.view));
 
@@ -136,7 +154,7 @@ function renderStats(data) {
         .map((e) => `<div class="col" style="height:${e.count / evMax * 100}%"></div>`).join("");
     $("ev").querySelectorAll(".col").forEach((bar, i) => {
         const e = data.events_per_month[i];
-        attachTip(bar, () => `<div class="h">${esc(e.label)}</div><div class="row">${e.count} days with events</div>`);
+        attachTip(bar, () => `<div class="h">${esc(e.label)}</div><div class="row">${e.count} days with entries</div>`, $("evDetail"));
     });
     $("evLabels").innerHTML = data.events_per_month.map((e) => `<span>${esc(e.label[0])}</span>`).join("");
 
@@ -166,7 +184,8 @@ function renderStats(data) {
                 el.innerHTML = `<div class="st-empty">Not enough data yet.</div>`;
                 return;
             }
-            const W = 900, H = 160;
+            // Drawn at the card's real width so labels stay readable on phones.
+            const W = Math.max(280, Math.round(el.clientWidth || 900)), H = W < 500 ? 150 : 170;
             const pad = { top: 10, right: 10, bottom: 22, left: 38 };
             const w = W - pad.left - pad.right;
             const h = H - pad.top - pad.bottom;
@@ -204,11 +223,12 @@ function renderStats(data) {
                         <text x="${pad.left - 5}" y="${(+y + 4).toFixed(1)}" class="st-tlabel">${esc(s.name)}</text>`;
             }).join("");
 
-            let lastMo = -1;
+            let lastMo = -1, nth = 0;
             const xTicks = trend.map((d, i) => {
                 const mo = new Date(d.d + "T00:00:00").getMonth();
                 if (mo === lastMo) return "";
                 lastMo = mo;
+                if (W < 500 && nth++ % 2) return "";   // every other month on narrow screens
                 return `<text x="${xAt(i).toFixed(1)}" y="${H - 4}" class="st-tlabel">${MONTHS[mo]}</text>`;
             }).join("");
 
@@ -222,6 +242,56 @@ function renderStats(data) {
         wireToggle($("trendWin"), (ds) => { win = Number(ds.win); draw(); });
     })();
 
+
+    // Mood with… — people and places against the overall average.
+    (function () {
+        const mw = data.mood_with || { people: [], places: [] };
+        const el = $("moodWith");
+        const hint = $("moodWithHint");
+        if (mw.overall == null || (!mw.people.length && !mw.places.length)) {
+            hint.textContent = `Shows up once a person or place appears on ${mw.min_days || 3} days with a mood logged.`;
+            el.innerHTML = "";
+            return;
+        }
+        hint.textContent = `Average mood on days with each person or place, against your overall ${mw.overall.toFixed(1)} of 5. `
+            + `Only those seen on ${mw.min_days}+ days.`;
+        const maxDelta = Math.max(0.5, ...[...mw.people, ...mw.places].map((r) => Math.abs(r.delta)));
+        const row = (r) => {
+            const pct = Math.min(50, (Math.abs(r.delta) / maxDelta) * 50);
+            const side = r.delta >= 0 ? "up" : "down";
+            const sign = r.delta > 0 ? "+" : r.delta < 0 ? "−" : "±";
+            return `<div class="st-with-row" title="${esc(r.name)}: ${r.avg.toFixed(1)} on ${r.days} days">
+                <span class="st-with-name">${esc(r.name)}</span>
+                <span class="st-with-bar"><span class="st-with-fill ${side}" style="width:${pct}%"></span></span>
+                <span class="st-with-val">${sign}${Math.abs(r.delta).toFixed(1)} <span class="st-with-days">· ${r.days} days</span></span>
+            </div>`;
+        };
+        const col = (title, rows) => rows.length
+            ? `<div class="st-with-col"><h3>${title}</h3>${rows.slice(0, 8).map(row).join("")}</div>` : "";
+        el.innerHTML = col("People", mw.people) + col("Places", mw.places);
+    })();
+
+    // Range picker: last 12 months or any year with logs.
+    (function () {
+        const sel = $("statsRange");
+        const current = data.year ? String(data.year) : "";
+        sel.innerHTML = '<option value="">Last 12 months</option>'
+            + (data.years || []).map((y) => `<option value="${y}">${y}</option>`).join("");
+        sel.value = current;
+        document.querySelector("#statsView h1").textContent = data.year ? `${data.year} in moods` : "Your year in moods";
+        sel.onchange = () => window.loadStats && window.loadStats({ year: sel.value || null });
+    })();
+
+    window.lastStatsData = data;
 }
 
 window.renderStats = renderStats;
+
+// Redraw the trend when the width changes (it's drawn at the card's width).
+let statsResizeTimer = null;
+window.addEventListener("resize", () => {
+    clearTimeout(statsResizeTimer);
+    statsResizeTimer = setTimeout(() => {
+        if (window.lastStatsData && document.body.classList.contains("view-stats")) renderStats(window.lastStatsData);
+    }, 200);
+});

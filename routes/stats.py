@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, redirect, render_template, url_for
+from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from utils import get_stats_data
@@ -24,4 +24,5 @@ def stats_data():
     # JSON the Stats view fetches on open, so switching to it never reloads.
     if not current_user.is_authenticated:
         return jsonify({"error": "Please sign in again."}), 401
-    return jsonify(get_stats_data(current_user_id()))
+    year = request.args.get("year", type=int)
+    return jsonify(get_stats_data(current_user_id(), year=year))

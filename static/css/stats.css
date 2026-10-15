@@ -88,3 +88,45 @@
 }
 .st-status[hidden] { display: none; }
 #statsView.st-loading .st-card, #statsView.st-loading .st-tiles { opacity: 0.4; }
+
+/* ---- range picker ---- */
+.st-range-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.st-range-select { width: auto; font-size: var(--text-sm); padding: 4px var(--space-2); }
+
+/* ---- heatmap cells open their day ---- */
+.st-cell[data-date] { cursor: pointer; }
+
+/* ---- trend legend ---- */
+.st-trend-legend {
+    display: flex; align-items: center; gap: var(--space-2);
+    font-size: var(--text-xs); color: var(--color-text-muted); margin-top: var(--space-2);
+}
+.st-legend-line { width: 16px; height: 2px; background: var(--color-accent); display: inline-block; }
+.st-legend-mark { width: 7px; height: 7px; border-radius: var(--radius-pill); background: var(--color-danger); display: inline-block; margin-left: var(--space-3); }
+
+/* ---- tap details under the bar charts ---- */
+.st-detail { min-height: 1.4em; margin-top: var(--space-2); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.st-detail .h { font-weight: 600; }
+.st-detail .row { display: inline-flex; align-items: center; gap: 4px; margin-right: var(--space-3); }
+.st-detail .sw { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.st-detail .v { color: var(--color-text-muted); margin-left: 2px; }
+
+/* ---- Mood with… ---- */
+.st-with { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); }
+.st-with h3 { font-size: var(--text-sm); color: var(--color-text-muted); font-weight: 600; margin: 0 0 var(--space-2); }
+.st-with-row {
+    display: grid;
+    grid-template-columns: minmax(0, 7.5em) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 3px 0;
+    font-size: var(--text-sm);
+}
+.st-with-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-with-bar { position: relative; height: 8px; background: var(--color-bg-inset); border-radius: var(--radius-pill); }
+.st-with-bar::before { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--color-border); }
+.st-with-fill { position: absolute; top: 0; bottom: 0; border-radius: var(--radius-pill); }
+.st-with-fill.up { left: 50%; background: var(--color-accent); }
+.st-with-fill.down { right: 50%; background: #6b55b8; }
+.st-with-val { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.st-with-days { color: var(--color-text-muted); font-size: var(--text-xs); }

@@ -288,16 +288,83 @@ def compute_trend(user_id: int, start: date, end: date) -> list[dict]:
     return trend
 
 
-def get_stats_data(user_id: int) -> dict:
-    """Aggregate a user's last-12-months mood + event activity for the stats page.
+def stats_years(user_id: int) -> list[int]:
+    """Calendar years that have any logged mood, newest first (range picker)."""
+    rows = DailyLog.query.with_entities(DailyLog.date).filter(
+        DailyLog.user_id == user_id, DailyLog.mood_key.isnot(None)
+    ).all()
+    return sorted({d.year for (d,) in rows}, reverse=True)
 
-    Mood stats are count-based (no ordinal mood scale exists), so we report a
-    monthly mood *mix* rather than an average. All computed server-side; the
-    template embeds this as JSON and stats.js renders it.
+
+def _mean(values):
+    values = list(values)
+    return sum(values) / len(values) if values else None
+
+
+def mood_with(user_id: int, start: date, end: date, scores: dict, min_days: int = 3) -> dict:
+    """Average mood on days spent with each person / at each place, against the
+    overall average for the range. Only people and places seen on at least
+    `min_days` mood-logged days are listed (fewer is noise)."""
+    from models import SubEvent
+
+    people, places = defaultdict(set), defaultdict(set)
+    events = Event.query.filter(
+        Event.user_id == user_id,
+        Event.start_time >= datetime.combine(start, time.min),
+        Event.start_time <= datetime.combine(end, time.max),
+    ).all()
+    subs = SubEvent.query.join(Event).filter(
+        Event.user_id == user_id,
+        SubEvent.start_time >= datetime.combine(start, time.min),
+        SubEvent.start_time <= datetime.combine(end, time.max),
+    ).all()
+    for item in [*events, *subs]:
+        day = item.start_time.date()
+        if day not in scores:
+            continue
+        for name in (item.with_who or "").split(","):
+            if name.strip():
+                people[name.strip()].add(day)
+        if (item.where or "").strip():
+            places[item.where.strip()].add(day)
+    overall = _mean(scores.values())
+
+    def summarise(groups):
+        rows = [
+            {
+                "name": name,
+                "days": len(days),
+                "avg": round(_mean(scores[d] for d in days), 2),
+            }
+            for name, days in groups.items()
+            if len(days) >= min_days
+        ]
+        for r in rows:
+            r["delta"] = round(r["avg"] - overall, 2)
+        return sorted(rows, key=lambda r: (-r["delta"], -r["days"]))
+
+    return {
+        "overall": round(overall, 2) if overall is not None else None,
+        "min_days": min_days,
+        "people": summarise(people),
+        "places": summarise(places),
+    }
+
+
+def get_stats_data(user_id: int, year: int | None = None) -> dict:
+    """Aggregate a user's mood + entry activity for the stats page: the last
+    12 months by default, or one calendar year.
+
+    Moods have an ordinal score (moods.py) used for the trend line and the
+    "Mood with…" averages; the mix charts stay count-based. Computed
+    server-side; stats.js renders it.
     """
     today = date.today()
-    end = today
-    start = end - timedelta(days=364)
+    if year:
+        start, end = date(year, 1, 1), min(date(year, 12, 31), today)
+    else:
+        end = today
+        start = end - timedelta(days=364)
     grid_start = start - timedelta(days=start.weekday())  # back to Monday for the grid
 
     logs = (
@@ -350,7 +417,7 @@ def get_stats_data(user_id: int) -> dict:
     distribution = [
         {
             "name": m.name,
-            "color": m.color[:7],  # solid hex — no alpha on chart bars/legend
+            "color": m.color,  # the same value the calendar cells use
             "count": counts[m.name],
             "pct": round(counts[m.name] / len(window) * 100) if window else 0,
         }
@@ -378,7 +445,7 @@ def get_stats_data(user_id: int) -> dict:
 
     weekday = [_mix([m for dt, m in window.items() if dt.weekday() == wd]) for wd in range(7)]
 
-    slots = _trailing_months(today)
+    slots = [(year, m) for m in range(1, 13)] if year else _trailing_months(today)
     slot_index = {s: i for i, s in enumerate(slots)}
     month_mix = [
         {
@@ -393,6 +460,7 @@ def get_stats_data(user_id: int) -> dict:
         Event.query.filter(
             Event.user_id == user_id,
             Event.start_time >= datetime.combine(start, time.min),
+            Event.start_time <= datetime.combine(end, time.max),
         ).all()
     )
     # Count days with at least one event per month, not raw event totals — a
@@ -408,15 +476,21 @@ def get_stats_data(user_id: int) -> dict:
     ]
 
     trend = compute_trend(user_id, start, end)
+    scores = {dt: m.score for dt, m in window.items()}
+    includes_today = end == today
 
     return {
+        "year": year,
+        "years": stats_years(user_id),
+        "includes_today": includes_today,
+        "mood_with": mood_with(user_id, start, end, scores),
         "range_start": start.isoformat(),
         "range_end": end.isoformat(),
         "days": days,
         "tiles": {
             "logged": len(window),
             "total": (end - start).days + 1,
-            "current_streak": current,
+            "current_streak": current if includes_today else None,
             "today_logged": today_logged,
             "longest_streak": longest,
             "top_mood": top_mood,

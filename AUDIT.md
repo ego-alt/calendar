@@ -112,6 +112,10 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
   - Add a **"Mood with…"** card: average mood for each person and place logged at least N times, compared with your overall average.
   - Add a year/range picker.
   - Optionally add "this month vs last month".
+- **Status:** Done.
+  - **Mood with…:** a new Stats card lists the people and places seen on 3+ mood-logged days, each with its average mood against your overall average (*Leith +0.2 · 38 days*), as a centred bar. It counts entries and moments.
+  - **Period:** a range picker switches between *Last 12 months* and any calendar year with logs; the page title, tiles, heatmap, trend, mix and entry counts all follow. For a past year the streak tile becomes *average mood (of 5)*.
+  - **Tests:** cover both.
 
 ---
 
@@ -246,6 +250,7 @@ Time ranges are written with `--`, `-` and `–`.
   - The Stats legend uses solid colours while the heatmap cells use the transparent ones, so the legend doesn't quite match.
 - **Where:** `moods.py`; `utils.py` (`color[:7]` for the legend only)
 - **Fix:** Keep the palette's character but space the hues further apart (e.g. move Great towards yellow-green and Okay towards a neutral sand). Use the same values in the legend and cells.
+- **Status:** Done. Same green → violet character with the hues spaced apart: Great is yellow-green, Good green, Okay teal, Low blue, Rough violet (`moods.py`, 50% alpha kept). The legend, mix chart, picker and calendar now all use the exact same values; the picker no longer has its own hard-coded copy in CSS.
 
 **3.6 Icons that mean something else** [confirmed]
 - An eye sets the mood.
@@ -482,6 +487,7 @@ The problems are mostly the hover-era controls inside it.
   - Draw the trend at the card's real width (or show the last 3 months on phones).
   - Scroll the heatmap to the right end on load.
   - Make cells and bars tappable, showing a small caption under the chart; a heatmap cell should also open that day.
+- **Status:** Done. The trend is drawn at the card's real width (labels 12 px on a phone, every other month when narrow) and redrawn on resize. The heatmap opens scrolled to the most recent weeks. Tapping a mix column or an entries bar writes its breakdown under the chart (hover still shows the tip), and tapping a heatmap day opens that day in the calendar. A legend explains the line and the red *Marked day* dots.
 
 **7.7 Week view on a phone** [confirmed]
 - **What:** Entries are cut to "08:…", "10:…" with names hidden.
@@ -549,7 +555,7 @@ The problems are mostly the hover-era controls inside it.
 | 7 | **Diary language and one entry form:** entries, not events; "Nothing written for this day yet"; one form component; plain error copy; native date and time pickers | 1.1, 3.2, 3.3, 4.5, 6 | **Medium** | Done |
 | 8 | **Look-back views as real views:** full-screen Diary with moods, attachments and month navigation; merge Year into one tappable year grid with a year picker; mark today, add a Today button | 1.4, 1.5, 2.1 | **Large** | Done |
 | 9 | **Receipts and tickets that look like keepsakes:** thumbnails, a lightbox, captions or a link to an entry, HEIC conversion, safe serving, a correct size-limit message | 1.7, 4.7, 4.8 | **Medium** | Done |
-| 10 | **Stats that explain:** a "Mood with…" card for people and places, a year/range picker, a marker legend, phone-sized charts with tap details, and one consistent date format across the app | 1.8, 7.6, 3.1, 3.5 | **Large** | To do |
+| 10 | **Stats that explain:** a "Mood with…" card for people and places, a year/range picker, a marker legend, phone-sized charts with tap details, and one consistent date format across the app | 1.8, 7.6, 3.1, 3.5 | **Large** | Done |
 
 **Close runners-up:**
 - Week view as seven day cards on phones (1.6, 7.7, medium).

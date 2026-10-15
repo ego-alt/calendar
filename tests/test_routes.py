@@ -113,7 +113,8 @@ def test_mood_update_and_marker(authed_client):
     assert update.status_code == 200
 
     month = authed_client.get("/get_month?year=2026&month=5").get_json()
-    assert month["mood_colors"]["11"] == "#2ecc7180"
+    from moods import MOOD_BY_KEY
+    assert month["mood_colors"]["11"] == MOOD_BY_KEY["great"].color
 
     toggle = authed_client.post("/mood/marker/toggle", json={
         "year": 2026, "month": 5, "day": 11,
@@ -391,3 +392,32 @@ def test_week_label_day_month_order(authed_client):
     assert label(10, 7) == "5–11 Oct 2026"
     assert label(10, 1) == "28 Sep – 4 Oct 2026"
     assert label(1, 1) == "29 Dec 2025 – 4 Jan 2026"
+
+
+def test_mood_with_people_and_places(authed_client):
+    """Days with Sam are 'great', days with Lea 'low': each set against the overall average."""
+    from datetime import date, timedelta
+    today = date.today()
+    for i in range(1, 7):
+        d = today - timedelta(days=i)
+        sam = i <= 3
+        authed_client.post("/mood/update", json={"year": d.year, "month": d.month, "day": d.day,
+                                                 "mood": "great" if sam else "low"})
+        authed_client.post("/events/", json={
+            "name": "Walk", "start_date": d.isoformat(), "end_date": d.isoformat(),
+            "with_who": "Sam" if sam else "Lea, Jonas", "where": "Leith" if sam else "Home"})
+    mw = authed_client.get("/stats/data").json["mood_with"]
+    assert mw["overall"] == 3.5
+    people = {p["name"]: p for p in mw["people"]}
+    sam = people["Sam"]
+    assert sam["avg"] == 5 and sam["delta"] == 1.5 and sam["days"] == 3
+    assert people["Lea"]["delta"] == -1.5 and people["Jonas"]["days"] == 3
+    assert [p["name"] for p in mw["places"]] == ["Leith", "Home"]
+
+
+def test_stats_for_a_past_year(authed_client):
+    authed_client.post("/mood/update", json={"year": 2024, "month": 3, "day": 5, "mood": "good"})
+    data = authed_client.get("/stats/data?year=2024").json
+    assert data["range_start"] == "2024-01-01" and data["range_end"] == "2024-12-31"
+    assert data["tiles"]["logged"] == 1 and data["tiles"]["current_streak"] is None
+    assert 2024 in data["years"] and [m["label"] for m in data["month_mix"]][0] == "Jan"

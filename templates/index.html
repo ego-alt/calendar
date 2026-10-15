@@ -99,7 +99,7 @@
     </main>
 
     <div class="color-picker" id="colorPicker">
-        {% for m in moods %}<button type="button" class="color-option" data-mood="{{ m.key }}" title="{{ m.name }}" aria-label="{{ m.name }}"></button>{% endfor %}
+        {% for m in moods %}<button type="button" class="color-option" data-mood="{{ m.key }}" title="{{ m.name }}" aria-label="{{ m.name }}" style="background: {{ m.color }}"></button>{% endfor %}
         <button type="button" class="color-option color-clear" data-mood="clear" title="Clear mood" aria-label="Clear mood"><i class="fas fa-times"></i></button>
     </div>
 
@@ -127,7 +127,12 @@
         <div class="st-wrap">
             <header class="st-header">
                 <h1>Your year in moods</h1>
-                <div class="st-range" id="range"></div>
+                <div class="st-range-row">
+                    <div class="st-range" id="range"></div>
+                    <select class="input st-range-select" id="statsRange" aria-label="Which period">
+                        <option value="">Last 12 months</option>
+                    </select>
+                </div>
             </header>
 
             <div class="st-status" id="statsStatus" role="status" hidden></div>
@@ -135,7 +140,7 @@
 
             <section class="st-card">
                 <h2>Mood calendar</h2>
-                <p class="hint">Every logged day, coloured by mood</p>
+                <p class="hint">Every logged day, coloured by mood. Tap a day to open it.</p>
                 <div class="st-hm-scroll">
                     <div class="st-hm-months" id="hmMonths"></div>
                     <div class="st-hm-body">
@@ -157,6 +162,13 @@
                 </div>
                 <p class="hint">Daily mood score</p>
                 <div id="trend"></div>
+                <div class="st-trend-legend"><span class="st-legend-line"></span>Mood <span class="st-legend-mark"></span>Marked day</div>
+            </section>
+
+            <section class="st-card">
+                <h2>Mood with…</h2>
+                <p class="hint" id="moodWithHint">Average mood on days with each person or place, against your overall average.</p>
+                <div class="st-with" id="moodWith"></div>
             </section>
 
             <div class="st-2col">
@@ -171,6 +183,7 @@
                     <p class="hint">How your mood composition shifted</p>
                     <div class="st-stack" id="mixStack"></div>
                     <div class="st-stack-labels" id="mixLabels"></div>
+                    <div class="st-detail" id="mixDetail" aria-live="polite"></div>
                 </section>
                 <section class="st-card">
                     <div class="st-mix-header">
@@ -179,6 +192,7 @@
                     <p class="hint">Days each month you wrote something</p>
                     <div class="st-ev" id="ev"></div>
                     <div class="st-ev-labels" id="evLabels"></div>
+                    <div class="st-detail" id="evDetail" aria-live="polite"></div>
                 </section>
             </div>
 
