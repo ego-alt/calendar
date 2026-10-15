@@ -83,6 +83,19 @@ async function api(path, { method = 'GET', json, form } = {}) {
     return data;
 }
 
+// ---------- offline ----------
+
+// The app and the days you've already looked at open offline (sw.js). Saving
+// needs the connection: a failed save keeps the form and its draft.
+if ('serviceWorker' in navigator && window.SIGNED_IN) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register(appUrl('/sw.js'), { scope: appUrl('/') })
+            .catch((err) => console.warn('Service worker registration failed:', err));
+    });
+}
+window.addEventListener('offline', () => toast("You're offline. You can read; saving waits until you're back.", { error: true }));
+window.addEventListener('online', () => toast('Back online'));
+
 // ---------- dates ----------
 
 /** "Tue 6 Oct 2026" — the one long date format (see AUDIT 3.1). */

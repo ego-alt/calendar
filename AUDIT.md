@@ -202,6 +202,11 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **Fix:**
   - At least keep unsent text in local storage and retry.
   - Ideally make it installable with an offline shell, as tapes now is.
+- **Status:** Done (reading offline; writing still needs the connection).
+  - **Installable:** the calendar has a manifest, a mood-grid icon and favicon, and a theme colour.
+  - **Offline:** a service worker keeps the app and every month, day, diary and stats view you've opened readable offline (network-first), plus photo thumbnails. Writes are never cached.
+  - **Notices:** going offline says *You're offline. You can read; saving waits until you're back.* A save made offline keeps the form and its text (and the draft), and the same Save works once you're back.
+  - **Verified:** offline reload, a viewed day, an unvisited day (clear message with retry), and saving offline then online.
 
 ---
 

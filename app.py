@@ -16,6 +16,7 @@ from routes import (
     export_blueprint,
     index_blueprint,
     mood_blueprint,
+    pwa_blueprint,
     search_blueprint,
     stats_blueprint,
 )
@@ -81,6 +82,7 @@ def create_app(config=None):
     app.register_blueprint(export_blueprint)
     app.register_blueprint(index_blueprint)
     app.register_blueprint(mood_blueprint)
+    app.register_blueprint(pwa_blueprint)
     app.register_blueprint(search_blueprint)
     app.register_blueprint(stats_blueprint)
 
