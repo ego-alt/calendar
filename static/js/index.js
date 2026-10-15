@@ -587,7 +587,7 @@ async function renderWeek() {
             </div>
             ${allDayEvents.length > 0 ? `
                 <div class="week-allday-row">
-                    <div class="week-allday-label">all-day</div>
+                    <div class="week-allday-label">All day</div>
                     ${allDayBars}
                 </div>
             ` : ''}
@@ -647,7 +647,7 @@ async function handleLogin(event) {
         }
     } catch (error) {
         console.error('Login error:', error);
-        $('#loginError').text('An error occurred. Please try again.').show();
+        $('#loginError').text("Couldn't reach the calendar. Check your connection.").show();
     }
 }
 

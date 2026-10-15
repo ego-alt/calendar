@@ -91,7 +91,7 @@ def test_combined_date_and_mood():
     r = _r("feeling low last week")
     assert r.mood == "low"
     assert (r.date_from, r.date_to) == (datetime(2026, 6, 15), datetime(2026, 6, 22))
-    assert r.labels == ["last week", "mood: low"]
+    assert r.labels == ["last week", "low days"]
 
 
 def test_plain_query_untouched():
@@ -187,14 +187,14 @@ def test_who_multiple_and():
     assert r.who == ["Mom", "Dad"]
     assert r.who_op == "and"
     assert r.residual_q == "dinner"
-    assert r.labels == ["with: Mom, Dad"]
+    assert r.labels == ["with Mom, Dad"]
 
 
 def test_who_multiple_or():
     r = _rw("Mom or Dad")
     assert r.who == ["Mom", "Dad"]
     assert r.who_op == "or"
-    assert r.labels == ["with: Mom or Dad"]
+    assert r.labels == ["with Mom or Dad"]
 
 
 def test_who_comma_separated():
@@ -220,4 +220,4 @@ def test_who_where_and_date_combined():
     assert r.who == ["Sarah"]
     assert (r.date_from, r.date_to) == (datetime(2026, 5, 1), datetime(2026, 6, 1))
     assert r.residual_q == "dinner"
-    assert r.labels == ["last month", "with: Sarah"]
+    assert r.labels == ["last month", "with Sarah"]

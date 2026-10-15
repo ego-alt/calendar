@@ -23,5 +23,5 @@ def stats():
 def stats_data():
     # JSON the Stats view fetches on open, so switching to it never reloads.
     if not current_user.is_authenticated:
-        return jsonify({"error": "unauthorized"}), 401
+        return jsonify({"error": "Please sign in again."}), 401
     return jsonify(get_stats_data(current_user_id()))

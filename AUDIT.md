@@ -27,6 +27,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
   - Use diary language: *entry* instead of *event*; *"Nothing written for this day yet"*; **Write about this day**.
   - Keep times optional and folded away ("Add a time").
   - Call sub-events *moments* or *details* (see 6).
+- **Status:** Done. The app now speaks diary: *Write about this day*, *Nothing written for this day yet.*, *New entry / Edit entry / Add a moment*, *What happened? · Who was there? · Where?*, From/To with *Times are optional*, *All day* in week view, and *Days with entries* in Stats.
 
 **1.2 Setting the mood, the core action, has no proper home** [confirmed]
 - **What:** You set a mood through an eye icon that's invisible until you hover over a day in month view. You pick from five unlabelled colour dots, whose names exist only as tooltips. You can't set or even see the mood in the day panel, week view, year view or diary.
@@ -209,6 +210,7 @@ Time ranges are written with `--`, `-` and `–`.
 - **Field labels:** *Event name*, *Event Name*, *Subevent Name*; *Who* and *With Who*.
 - **Views:** the Diary button opens "Month Overview"; the Year icon opens "Year Overview".
 - **Fix:** Use one noun (*entry*), one verb per action, and sentence case. Name panels after their buttons.
+- **Status:** Done (the Diary and Year titles change with those views in #8). One noun (*entry*, with *moments* inside), one verb per action, sentence case throughout. Search and server messages use the same words (*That entry no longer exists.*).
 
 **3.3 Three forms for the same thing** [confirmed]
 - **What:**
@@ -237,6 +239,7 @@ Time ranges are written with `--`, `-` and `–`.
 - Door-open and door-closed icons mean log in and log out.
 - A bare **+** in the panel header adds an attachment, not an entry.
 - **Fix:** Label them (*Mood*, *Sign out*, *Attach*), or swap in icons that match the action.
+- **Status:** Done. Sign in/out show a text label (icon only on phones). The quick-mood eye is labelled *Set mood*. The attach control is a paperclip titled *Attach a photo or file*. The ⋯ and the picker options have accessible names.
 
 **3.7 Feedback comes in three styles** [confirmed]
 - `alert()` boxes for sub-entry and edit errors.
@@ -399,6 +402,12 @@ That turns 10 steps with three traps into about 4 steps: tap today, tap a mood, 
 | Login | Login / Username / Password / door icon | Sign in · Sign out (with text) |
 | Server JSON errors | Internal server error / unknown mood / Authentication required | Plain-language messages the UI can show as is |
 
+**Status: done.** Every row is in the app, with two adjustments:
+- Search labels read *Showing last month · with Sam* (plain phrases, not removable chips).
+- The upload limit message is *That file is over 10 MB.*
+
+The Diary and Year rows land with #8, and the trend legend with #10.
+
 ---
 
 ## 7. Mobile (375 px, touch)
@@ -523,7 +532,7 @@ The problems are mostly the hover-era controls inside it.
 | 4 | **Undo instead of loss:** Undo toasts for entry, moment, attachment and mood-clear; soft delete and a trash | 4.2, 4.3, 4.4 | **Medium** | Done |
 | 5 | **Correctness fixes:** escape user text (2.6); move the desktop panel below the top bar so the attachment + works (2.5); use the local date parser everywhere for iPhone (2.7) | 2.5, 2.6, 2.7 | **Small** | Done |
 | 6 | **Feedback and fresh numbers:** one toast style for saves and failures; refetch Stats after changes; streak counts from yesterday; refresh the grid after edits | 2.3, 4.9, 4.10, 4.6, 8.1 | **Small** | Done |
-| 7 | **Diary language and one entry form:** entries, not events; "Nothing written for this day yet"; one form component; plain error copy; native date and time pickers | 1.1, 3.2, 3.3, 4.5, 6 | **Medium** | To do |
+| 7 | **Diary language and one entry form:** entries, not events; "Nothing written for this day yet"; one form component; plain error copy; native date and time pickers | 1.1, 3.2, 3.3, 4.5, 6 | **Medium** | Done |
 | 8 | **Look-back views as real views:** full-screen Diary with moods, attachments and month navigation; merge Year into one tappable year grid with a year picker; mark today, add a Today button | 1.4, 1.5, 2.1 | **Large** | To do |
 | 9 | **Receipts and tickets that look like keepsakes:** thumbnails, a lightbox, captions or a link to an entry, HEIC conversion, safe serving, a correct size-limit message | 1.7, 4.7, 4.8 | **Medium** | To do |
 | 10 | **Stats that explain:** a "Mood with…" card for people and places, a year/range picker, a marker legend, phone-sized charts with tap details, and one consistent date format across the app | 1.8, 7.6, 3.1, 3.5 | **Large** | To do |

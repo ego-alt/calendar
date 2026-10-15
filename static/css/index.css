@@ -1310,3 +1310,8 @@ h2 {
 /* month/week loading: dim the grid instead of looking stuck */
 #calendarContainer { transition: opacity 0.15s ease; }
 #calendarContainer.loading { opacity: 0.5; }
+
+/* sign in / out: icon + label on desktop, icon only on a phone's tight bar */
+.login-button { display: inline-flex; align-items: center; gap: var(--space-2); }
+.login-label { font-size: var(--text-sm); }
+@media (max-width: 480px) { .login-label { display: none; } }

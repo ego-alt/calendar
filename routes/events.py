@@ -239,7 +239,7 @@ def restore_subevent(subevent_id):
 def subevents(event_id):
     parent_event = Event.query.filter_by(id=event_id, user_id=current_user.id).first()
     if not parent_event:
-        return jsonify({"status": "error", "message": "Event not found"}), 404
+        return jsonify({"status": "error", "message": "That entry no longer exists."}), 404
 
     try:
         create_event(SubEvent, request.json, parent=parent_event, event_id=event_id)
@@ -259,7 +259,7 @@ def manage_subevent(subevent_id):
     )
 
     if not subevent:
-        return jsonify({"status": "error", "message": "Subevent not found"}), 404
+        return jsonify({"status": "error", "message": "That moment no longer exists."}), 404
 
     if request.method == "DELETE":
         parent_id = subevent.event_id

@@ -60,7 +60,7 @@ def list_attachments():
 def upload_attachment():
     upload = request.files.get("file")
     if not upload or not upload.filename:
-        return jsonify({"status": "error", "message": "No file provided"}), 400
+        return jsonify({"status": "error", "message": "Choose a file to attach."}), 400
 
     year = int(request.form["year"])
     month = int(request.form["month"])
@@ -97,7 +97,7 @@ def upload_attachment():
 def download_attachment(attachment_id):
     attachment = _get_owned_attachment(attachment_id)
     if not attachment:
-        return jsonify({"status": "error", "message": "Attachment not found"}), 404
+        return jsonify({"status": "error", "message": "That file is already gone."}), 404
 
     return send_from_directory(
         current_app.config["ATTACHMENT_DIR"],

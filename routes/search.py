@@ -114,11 +114,11 @@ def search_events():
         labels.append(date_label)
     if not explicit_who and routed.who:
         sep = " or " if routed.who_op == "or" else ", "
-        labels.append("with: " + sep.join(routed.who))
+        labels.append("with " + sep.join(routed.who))
     if not explicit_where and routed.where:
-        labels.append(f"at: {routed.where}")
+        labels.append(f"at {routed.where}")
     if not explicit_mood and routed.mood:
-        labels.append(f"mood: {routed.mood}")
+        labels.append(f"{routed.mood} days")
 
     results = [retrieve_event_data(event) for event, _ in matches]
     return jsonify({"status": "success", "results": results, "parsed": {"labels": labels}})

@@ -346,7 +346,7 @@ def _extract_who_where(text, people, places):
         core = re.sub(r"^the\s+", "", place, flags=re.I)
         m = re.search(rf"\b(?:at|in|@)\s+(?:the\s+)?{re.escape(core)}\b", text, re.I)
         if m:
-            where, where_label = place, f"at: {place}"
+            where, where_label = place, f"at {place}"
             text = _strip(text, m)
             break
 
@@ -364,7 +364,7 @@ def _extract_who_where(text, people, places):
                 if canon and canon not in who:
                     who.append(canon)
             who_op = "or" if re.search(r"\bor\b", phrase, re.I) else "and"
-            who_label = "with: " + (" or " if who_op == "or" else ", ").join(who)
+            who_label = "with " + (" or " if who_op == "or" else ", ").join(who)
             text = _strip(text, m)
 
     return who, who_op, where, who_label, where_label, text
@@ -385,7 +385,7 @@ def _extract_mood(text):
         if m:
             word = m[1].lower()
             key = _MOOD_ALIASES.get(word, word)
-            return key, f"mood: {key}", _strip(text, m)
+            return key, f"{key} days", _strip(text, m)
     return None, None, text
 
 

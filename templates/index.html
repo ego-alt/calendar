@@ -17,16 +17,16 @@
 <body class="view-{{ active_view|default('calendar') }}">
     <div id="loginOverlay" class="login-overlay" style="display: none;">
         <div class="login-content">
-            <h2>Login</h2>
+            <h2>Sign in</h2>
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group">
-                    <input class="input" type="text" id="username" name="username" required placeholder="Username">
+                    <input class="input" type="text" id="username" name="username" required placeholder="Username" autocomplete="username">
                 </div>
                 <div class="form-group">
-                    <input class="input" type="password" id="password" name="password" required placeholder="Password">
+                    <input class="input" type="password" id="password" name="password" required placeholder="Password" autocomplete="current-password">
                 </div>
                 <div id="loginError" class="error" style="display: none;"></div>
-                <button type="submit" class="btn btn-primary">Login</button>
+                <button type="submit" class="btn btn-primary">Sign in</button>
             </form>
         </div>
     </div>
@@ -52,12 +52,12 @@
                (SSO) — only show local login/logout in standalone mode. #}
             {% if not proxy_mode %}
                 {% if current_user.is_authenticated %}
-                    <button class="login-button btn btn-ghost" onclick="handleLogout()" title="Log out">
-                        <i class="fas fa-door-closed"></i>
+                    <button class="login-button btn btn-ghost" onclick="handleLogout()" title="Sign out" aria-label="Sign out">
+                        <i class="fas fa-right-from-bracket" aria-hidden="true"></i><span class="login-label">Sign out</span>
                     </button>
                 {% else %}
-                    <button class="login-button btn btn-ghost" onclick="showLoginDialog()" title="Log in">
-                        <i class="fas fa-door-open"></i>
+                    <button class="login-button btn btn-ghost" onclick="showLoginDialog()" title="Sign in" aria-label="Sign in">
+                        <i class="fas fa-right-to-bracket" aria-hidden="true"></i><span class="login-label">Sign in</span>
                     </button>
                 {% endif %}
             {% endif %}
@@ -171,9 +171,9 @@
                 </section>
                 <section class="st-card">
                     <div class="st-mix-header">
-                        <h2>Days with events</h2>
+                        <h2>Days with entries</h2>
                     </div>
-                    <p class="hint">Days each month with at least one event</p>
+                    <p class="hint">Days each month you wrote something</p>
                     <div class="st-ev" id="ev"></div>
                     <div class="st-ev-labels" id="evLabels"></div>
                 </section>
@@ -188,7 +188,7 @@
                 <h1>Search</h1>
             </header>
             <div class="search-controls">
-                <input class="input" type="search" id="searchInput" placeholder="Search your entries…" autocomplete="off">
+                <input class="input" type="search" id="searchInput" placeholder="Search your diary…" aria-label="Search your diary" autocomplete="off">
                 <div class="search-filters">
                     <input class="input" type="date" id="searchFrom" aria-label="From date">
                     <input class="input" type="date" id="searchTo" aria-label="To date">
@@ -202,7 +202,7 @@
             </div>
             <div class="search-interpreted" id="searchInterpreted" style="display:none"></div>
             <div class="search-results" id="searchResults">
-                <div class="search-hint">Search across every diary entry by meaning, words, or filters.</div>
+                <div class="search-hint">Search every entry by meaning or words, e.g. “dinner with Sam last month”.</div>
             </div>
         </div>
     </main>

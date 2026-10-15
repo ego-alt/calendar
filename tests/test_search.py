@@ -137,7 +137,7 @@ def test_search_routes_who_from_text(authed_client):
 
     res = authed_client.get("/search/data?q=coffee with Mom").get_json()
     assert [r["with_who"] for r in res["results"]] == ["Mom"]
-    assert "with: Mom" in res["parsed"]["labels"]
+    assert "with Mom" in res["parsed"]["labels"]
 
 
 def test_search_who_conjunction(authed_client):
@@ -148,7 +148,7 @@ def test_search_who_conjunction(authed_client):
     # "and" → only the entry where with_who contains both
     res_and = authed_client.get("/search/data?q=with Mom and Dad").get_json()
     assert [r["name"] for r in res_and["results"]] == ["Lunch"]
-    assert "with: Mom, Dad" in res_and["parsed"]["labels"]
+    assert "with Mom, Dad" in res_and["parsed"]["labels"]
 
     # "or" → any of them
     res_or = authed_client.get("/search/data?q=Mom or Dad").get_json()

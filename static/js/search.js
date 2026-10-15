@@ -18,7 +18,7 @@
     const interpretedEl = document.getElementById('searchInterpreted');
     const filters = [fromEl, toEl, moodEl, whoEl, whereEl];
 
-    const HINT = '<div class="search-hint">Search across every diary entry by meaning, words, or filters.</div>';
+    const HINT = '<div class="search-hint">Search every entry by meaning or words, e.g. “dinner with Sam last month”.</div>';
     let debounce;
     let lastRequest = 0;
 
@@ -47,7 +47,7 @@
             interpretedEl.textContent = '';
             return;
         }
-        interpretedEl.textContent = `Interpreted: ${labels.join(' · ')}`;
+        interpretedEl.textContent = `Showing ${labels.join(' · ')}`;
         interpretedEl.style.display = '';
     }
 
@@ -70,19 +70,20 @@
                 renderResults(data.results);
             } else {
                 renderInterpreted(null);
-                resultsEl.innerHTML = '<div class="error-message">Search failed</div>';
+                resultsEl.innerHTML = '<div class="error-message">Couldn\'t search right now. Try again.</div>';
             }
         } catch (error) {
             if (stamp !== lastRequest) return;
             console.error('Search error:', error);
             renderInterpreted(null);
-            resultsEl.innerHTML = '<div class="error-message">Search error</div>';
+            resultsEl.innerHTML = '<div class="error-message">Couldn\'t search right now. Check your connection and try again.</div>';
         }
     }
 
     function renderResults(results) {
         if (!results.length) {
-            resultsEl.innerHTML = '<div class="no-events">No matching entries</div>';
+            const q = input.value.trim();
+            resultsEl.innerHTML = `<div class="no-events">${q ? `Nothing matches “${esc(q)}”.` : 'Nothing matches.'} Try fewer words or clear the filters.</div>`;
             return;
         }
         resultsEl.innerHTML = results.map((r) => {
