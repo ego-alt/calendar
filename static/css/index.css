@@ -1306,3 +1306,7 @@ h2 {
     body.entry-form-open .entry-form .form-header { display: none; }   /* shown in the bar */
     body.entry-form-open .form-buttons-title { display: block; }
 }
+
+/* month/week loading: dim the grid instead of looking stuck */
+#calendarContainer { transition: opacity 0.15s ease; }
+#calendarContainer.loading { opacity: 0.5; }

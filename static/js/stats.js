@@ -9,10 +9,13 @@ function renderStats(data) {
     $("range").textContent = fmt(data.range_start) + " – " + fmt(data.range_end);
 
     // Shared hover tooltip: one floating element, follows the cursor.
-    const tip = document.createElement("div");
-    tip.className = "st-tip";
+    let tip = document.querySelector(".st-tip");
+    if (!tip) {
+        tip = document.createElement("div");
+        tip.className = "st-tip";
+        document.body.appendChild(tip);
+    }
     tip.hidden = true;
-    document.body.appendChild(tip);
     function moveTip(e) {
         const pad = 14, r = tip.getBoundingClientRect();
         let x = e.clientX + pad, y = e.clientY + pad;
@@ -34,7 +37,10 @@ function renderStats(data) {
     const t = data.tiles, tm = t.top_mood;
     const tiles = [
         { n: t.logged, l: `days logged of ${t.total}` },
-        { n: t.current_streak, l: "day current streak" },
+        {
+            n: t.current_streak,
+            l: "day streak" + (!t.today_logged && t.current_streak > 0 ? " · log today to keep it going" : ""),
+        },
         { n: t.longest_streak, l: "day longest streak" },
         tm
             ? { n: esc(tm.name), l: `<span class="swatch" style="background:${esc(tm.color)}"></span>most common mood` }
@@ -44,6 +50,7 @@ function renderStats(data) {
 
     // heatmap
     const grid = $("hmGrid");
+    grid.innerHTML = "";
     data.days.forEach((d) => {
         const c = document.createElement("div");
         c.className = "st-cell";
@@ -52,6 +59,7 @@ function renderStats(data) {
         grid.appendChild(c);
     });
     const months = $("hmMonths");
+    months.innerHTML = "";
     const weeks = Math.ceil(data.days.length / 7);
     months.style.gridTemplateColumns = `repeat(${weeks}, 13px)`;
     let lastMonth = -1;
@@ -112,11 +120,12 @@ function renderStats(data) {
     // buttons (so the trend and mix toggles don't clear each other's state).
     function wireToggle(container, onSelect) {
         const btns = container.querySelectorAll(".st-tab");
-        btns.forEach((btn) => btn.addEventListener("click", () => {
+        // onclick (not addEventListener) so re-rendering doesn't stack handlers.
+        btns.forEach((btn) => { btn.onclick = () => {
             btns.forEach((b) => b.classList.remove("active"));
             btn.classList.add("active");
             onSelect(btn.dataset);
-        }));
+        }; });
     }
     renderMix("month");
     wireToggle($("mixToggle"), (ds) => renderMix(ds.view));

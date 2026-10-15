@@ -305,3 +305,18 @@ def test_clearing_mood_keeps_a_day_with_only_deleted_attachments(authed_client, 
     authed_client.delete(f"/attachments/{attachment_id}")
     authed_client.post("/mood/update", json={"year": 2026, "month": 5, "day": 12, "mood": None})
     assert authed_client.post(f"/attachments/{attachment_id}/restore").status_code == 200
+
+
+def test_streak_counts_from_yesterday_until_today_is_logged(authed_client):
+    from datetime import date, timedelta
+    today = date.today()
+    for back in (1, 2, 3):
+        d = today - timedelta(days=back)
+        authed_client.post("/mood/update", json={"year": d.year, "month": d.month, "day": d.day,
+                                                 "mood": "okay"})
+    tiles = authed_client.get("/stats/data").json["tiles"]
+    assert tiles["current_streak"] == 3 and tiles["today_logged"] is False
+    authed_client.post("/mood/update", json={"year": today.year, "month": today.month,
+                                             "day": today.day, "mood": "good"})
+    tiles = authed_client.get("/stats/data").json["tiles"]
+    assert tiles["current_streak"] == 4 and tiles["today_logged"] is True

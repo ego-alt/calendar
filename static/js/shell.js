@@ -6,18 +6,39 @@
     if (!bar) return;
     const tabs = Array.from(bar.querySelectorAll(".shell-tab"));
     let statsLoaded = false;
+    let statsLoading = null;
 
-    async function loadStats() {
-        if (statsLoaded) return;
-        statsLoaded = true;
-        try {
-            const res = await fetch(appUrl("/stats/data"));
-            if (!res.ok) throw new Error(`stats ${res.status}`);
-            window.renderStats(await res.json());
-        } catch (e) {
-            statsLoaded = false; // allow a retry on the next open
-            console.error("Failed to load stats:", e);
-        }
+    /** Load (or reload) Stats. Anything that changes moods, markers or
+     *  entries sets window.statsStale, so the next open shows fresh numbers. */
+    function loadStats() {
+        if (statsLoaded && !window.statsStale) return Promise.resolve();
+        if (statsLoading) return statsLoading;
+        const view = document.getElementById("statsView");
+        const status = document.getElementById("statsStatus");
+        const firstLoad = !statsLoaded;
+        if (firstLoad) { view.classList.add("st-loading"); status.textContent = "Loading your stats…"; status.hidden = false; }
+        window.statsStale = false;
+        statsLoading = (async () => {
+            try {
+                const res = await fetch(appUrl("/stats/data"));
+                if (!res.ok) throw new Error(`stats ${res.status}`);
+                window.renderStats(await res.json());
+                statsLoaded = true;
+                status.hidden = true;
+            } catch (e) {
+                window.statsStale = true;   // try again on the next open
+                console.error("Failed to load stats:", e);
+                if (!statsLoaded) {
+                    status.innerHTML = 'Couldn\'t load your stats. <button type="button" class="link-btn" id="statsRetry">Try again</button>';
+                    status.hidden = false;
+                    document.getElementById("statsRetry").onclick = () => loadStats();
+                }
+            } finally {
+                view.classList.remove("st-loading");
+                statsLoading = null;
+            }
+        })();
+        return statsLoading;
     }
 
     const PATHS = { calendar: "/", stats: "/stats", search: "/search" };

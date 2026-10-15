@@ -12,7 +12,7 @@ let viewState = {
     weekAnchor: { year: CURRENT_YEAR, month: CURRENT_MONTH, day: CURRENT_DAY },
 };
 
-let isLoading = false;
+let viewToken = 0;   // latest month/week load; older responses are ignored
 let currentOpenDay = null;
 
 /** Shared by color picker UI (eye icon, options, document dismiss). */
@@ -317,7 +317,6 @@ function setupSwipeNavigation() {
 }
 
 async function updateMonth(direction) {
-    if (isLoading) return;
 
     if (viewState.mode === 'week') {
         await shiftWeek(direction);
@@ -341,7 +340,6 @@ async function updateMonth(direction) {
 }
 
 async function updateYear(direction) {
-    if (isLoading) return;
     viewState.year += direction === 'next' ? 1 : -1;
     if (viewState.mode === 'week') {
         const a = viewState.weekAnchor;
@@ -365,11 +363,18 @@ async function updateCalendarView() {
         await renderWeek();
         return;
     }
-    isLoading = true;
+    // Every navigation starts a load; only the newest one is drawn, so quick
+    // key presses or swipes are never dropped. The grid dims if it's slow.
+    const token = ++viewToken;
+    const { year, month } = viewState;
+    const container = document.getElementById('calendarContainer');
+    const dim = setTimeout(() => container.classList.add('loading'), 150);
 
     try {
-        const response = await fetch(appUrl(`/get_month?year=${viewState.year}&month=${viewState.month}`));
+        const response = await fetch(appUrl(`/get_month?year=${year}&month=${month}`));
+        if (!response.ok) throw new Error(`month ${response.status}`);
         const data = await response.json();
+        if (token !== viewToken) return;
         
         // Update main header
         document.querySelector('h1').textContent = data.month_label;
@@ -409,9 +414,14 @@ async function updateCalendarView() {
         }
 
     } catch (error) {
+        if (token !== viewToken) return;
         console.error('Error updating calendar:', error);
+        toast(`Couldn't load ${new Date(year, month - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}.`, {
+            error: true, action: 'Retry', onAction: () => updateCalendarView(),
+        });
     } finally {
-        isLoading = false;
+        clearTimeout(dim);
+        if (token === viewToken) container.classList.remove('loading');
     }
 }
 
@@ -450,17 +460,15 @@ function toggleWeekView(show) {
 }
 
 async function renderWeek() {
-    if (isLoading) return;
-    isLoading = true;
-    document.getElementById('viewWeek').innerHTML = '<div class="loading-indicator">Loading…</div>';
+    const token = ++viewToken;
+    const container = document.getElementById('calendarContainer');
+    const dim = setTimeout(() => container.classList.add('loading'), 150);
     try {
         const a = viewState.weekAnchor;
         const response = await fetch(appUrl(`/get_week?year=${a.year}&month=${a.month}&day=${a.day}`));
         const data = await response.json();
-        if (data.status !== 'success') {
-            console.error('Failed to load week data');
-            return;
-        }
+        if (token !== viewToken) return;
+        if (data.status !== 'success') throw new Error('week');
 
         document.querySelector('h1').textContent = data.week_label;
 
@@ -592,9 +600,12 @@ async function renderWeek() {
         const body = weekRoot.querySelector('.week-grid-body');
         if (body) body.scrollTop = 7 * HOUR_H;
     } catch (error) {
+        if (token !== viewToken) return;
         console.error('Error loading week:', error);
+        toast("Couldn't load that week.", { error: true, action: 'Retry', onAction: () => renderWeek() });
     } finally {
-        isLoading = false;
+        clearTimeout(dim);
+        if (token === viewToken) container.classList.remove('loading');
     }
 }
 

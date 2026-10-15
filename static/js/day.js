@@ -266,6 +266,7 @@ async function showSidebar(day) {
 
 /** Re-fetch the open day and the visible calendar after a change. */
 async function refreshAfterChange() {
+    window.statsStale = true;
     if (currentOpenDay != null) await showSidebar(currentOpenDay);
     await updateCalendarView();
 }

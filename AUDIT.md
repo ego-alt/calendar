@@ -119,6 +119,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **What:** With the network cut:
   - picking a mood closed the picker, the colour didn't stick, and no message appeared;
   - saving a new entry made the form disappear with no message.
+- **Status:** Done. Failures say so: entry saves keep the form with the reason (#1), mood and marker changes roll back with a message, deletes report errors, a failed month or week load shows *Couldn't load December 2026.* with **Retry**, and Stats shows an error with *Try again*. (Offline drafts: 2.10.)
 
   Delete, attachment delete and stats failures only log to the console. Elsewhere the app uses `alert()`.
 - **Where:** `index.js` (most `catch` blocks are `console.error`); `shell.js` `loadStats`
@@ -137,6 +138,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
   - Clear the panel to the new date heading plus a skeleton immediately.
   - Dim the grid while a month loads.
   - Give Stats a skeleton and a retry message.
+- **Status:** Done. The day panel shows the new date and *Loading…* at once (never the previous day). Month and week loads dim the grid after 150 ms, and every key press or swipe counts: only the newest load is drawn, so three quick `l` presses go exactly three months on. Stats shows *Loading your stats…* on its first load, and an error with retry.
 
 **2.5 The desktop day panel's header sits under the top bar** [confirmed]
 - **What:** The panel starts at the top of the window, so its header (the date and the add-attachment +) sits at y 20–44, entirely under the 47px top bar. You can't click the **+** on desktop. On phones the sheet is placed correctly.
@@ -293,6 +295,7 @@ Time ranges are written with `--`, `-` and `–`.
 - **What:** Saving an edit refreshes only the day panel. If you moved the entry to another date, the month grid's dots and week view stay stale until you navigate.
 - **Where:** `index.js` `editEvent` save handler (no `updateCalendarView`)
 - **Fix:** Refresh the visible view after every save and delete.
+- **Status:** Done. After any save, delete or undo, the panel and the visible month or week view are reloaded, so dots and colours are never stale.
 
 **4.7 An oversized upload reports the wrong reason** [confirmed]
 - **What:** An 11 MB file returns 500 instead of 413, because the generic error wrapper catches it. The app then says *"Upload failed"*, not *"File too large (max 10 MB)"*.
@@ -314,11 +317,13 @@ Time ranges are written with `--`, `-` and `–`.
 **4.9 Stats show old numbers after you log** [confirmed]
 - **What:** Stats load once per page visit and are fetched in the background on start. I logged today as "Great"; the tiles stayed at 285 days and a 0-day streak until a full reload.
 - **Fix:** Refetch Stats on each open, or invalidate after any mood, marker or entry change.
+- **Status:** Done. Stats re-fetch on open whenever a mood, marker or entry changed since they were drawn. Verified: clearing today's mood dropped *286 days logged* to 285 without a reload.
 
 **4.10 The streak reads 0 every morning** [confirmed]
 - **What:** "Current streak" counts back from today, so until today is logged it shows 0, even after 16 logged days in a row.
 - **Why:** For a retrospective log you usually fill in the day in the evening. A 0 every morning is discouraging and wrong.
 - **Fix:** If today isn't logged yet, count from yesterday ("16 days, log today to keep it going").
+- **Status:** Done. If today isn't logged yet, the streak counts from yesterday and the tile reads *3 day streak · log today to keep it going*. Covered by a test.
 
 **4.11 No export** [code]
 - **What:** Years of diary live in one SQLite file, with no way to export them.
@@ -477,6 +482,7 @@ The problems are mostly the hover-era controls inside it.
   - Optimistic colour change, rolled back with a message on failure.
   - A "Saved" toast.
   - Undo for deletes.
+- **Status:** Done. Mood and marker change on screen at once (rolled back on failure) with an Undo toast; saves show *Saved*, deletes *Deleted “…” · Undo*; Stats reflect changes.
 
 **8.2 Loading** [confirmed]
 - **What:**
@@ -516,7 +522,7 @@ The problems are mostly the hover-era controls inside it.
 | 3 | **Touch-ready day sheet:** one visible ⋯ per entry (Edit · Add moment · Delete), a marker toggle, attachments with a visible ×, the entry form at the top as a full-height sheet with a sticky Save | 7.2, 7.3, 7.4, 7.5, 1.3 | **Medium** | Done |
 | 4 | **Undo instead of loss:** Undo toasts for entry, moment, attachment and mood-clear; soft delete and a trash | 4.2, 4.3, 4.4 | **Medium** | Done |
 | 5 | **Correctness fixes:** escape user text (2.6); move the desktop panel below the top bar so the attachment + works (2.5); use the local date parser everywhere for iPhone (2.7) | 2.5, 2.6, 2.7 | **Small** | Done |
-| 6 | **Feedback and fresh numbers:** one toast style for saves and failures; refetch Stats after changes; streak counts from yesterday; refresh the grid after edits | 2.3, 4.9, 4.10, 4.6, 8.1 | **Small** | To do |
+| 6 | **Feedback and fresh numbers:** one toast style for saves and failures; refetch Stats after changes; streak counts from yesterday; refresh the grid after edits | 2.3, 4.9, 4.10, 4.6, 8.1 | **Small** | Done |
 | 7 | **Diary language and one entry form:** entries, not events; "Nothing written for this day yet"; one form component; plain error copy; native date and time pickers | 1.1, 3.2, 3.3, 4.5, 6 | **Medium** | To do |
 | 8 | **Look-back views as real views:** full-screen Diary with moods, attachments and month navigation; merge Year into one tappable year grid with a year picker; mark today, add a Today button | 1.4, 1.5, 2.1 | **Large** | To do |
 | 9 | **Receipts and tickets that look like keepsakes:** thumbnails, a lightbox, captions or a link to an entry, HEIC conversion, safe serving, a correct size-limit message | 1.7, 4.7, 4.8 | **Medium** | To do |

@@ -80,3 +80,11 @@
     .st-tile .n { font-size: 1.15rem; }
     .st-card h2 { font-size: var(--text-base); }
 }
+
+/* loading / error line, and the dimmed view while the first load runs */
+.st-status {
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-4);
+}
+.st-status[hidden] { display: none; }
+#statsView.st-loading .st-card, #statsView.st-loading .st-tiles { opacity: 0.4; }

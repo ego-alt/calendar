@@ -360,9 +360,12 @@ def get_stats_data(user_id: int) -> dict:
     top = max(distribution, key=lambda x: x["count"]) if distribution else None
     top_mood = {"name": top["name"], "color": top["color"]} if top else None
 
-    # Streaks (consecutive logged days).
+    # Streaks (consecutive logged days). Days are usually logged in the
+    # evening, so an unlogged today doesn't break the streak: count from
+    # yesterday and say today is still open.
+    today_logged = end in logged_dates
     current = 0
-    dd = end
+    dd = end if today_logged else end - timedelta(days=1)
     while dd in logged_dates:
         current += 1
         dd -= timedelta(days=1)
@@ -414,6 +417,7 @@ def get_stats_data(user_id: int) -> dict:
             "logged": len(window),
             "total": (end - start).days + 1,
             "current_streak": current,
+            "today_logged": today_logged,
             "longest_streak": longest,
             "top_mood": top_mood,
         },
