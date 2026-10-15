@@ -186,6 +186,7 @@ async function setDayMood(year, month, day, key, { undoable = true } = {}) {
         return;
     }
     window.statsStale = true;
+    document.getElementById('firstRun')?.remove();
     const previous = result.previous ?? null;
     if (!undoable || previous === key) return;
     const label = key ? `Mood: ${moodByKey(key).name}` : 'Mood cleared';
@@ -278,6 +279,7 @@ async function showSidebar(day) {
 /** Re-fetch the open day and the visible calendar after a change. */
 async function refreshAfterChange() {
     window.statsStale = true;
+    document.getElementById('firstRun')?.remove();
     if (document.getElementById('yearView').classList.contains('active')) loadYearView(viewState.year, { keepScroll: true });
     if (currentOpenDay != null) await showSidebar(currentOpenDay);
     await updateCalendarView();

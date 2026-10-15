@@ -14,10 +14,12 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/shell.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/search.css') }}">
 </head>
-<body class="view-{{ active_view|default('calendar') }}">
-    <div id="loginOverlay" class="login-overlay" style="display: none;">
+{% set signed_out = not current_user.is_authenticated and not proxy_mode %}
+<body class="view-{{ active_view|default('calendar') }}{% if signed_out %} signed-out{% endif %}">
+    <div id="loginOverlay" class="login-overlay" style="display: {{ 'flex' if signed_out else 'none' }};">
         <div class="login-content">
             <h2>Sign in</h2>
+            {% if signed_out %}<p class="login-lede">Your calendar, moods and diary are waiting.</p>{% endif %}
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group">
                     <input class="input" type="text" id="username" name="username" required placeholder="Username" autocomplete="username">
@@ -62,6 +64,13 @@
     </header>
     <main id="calendarView">
     <div class="content-wrapper">
+        {% if first_run %}
+        <div class="first-run" id="firstRun">
+            <p class="first-run-title">Start with today.</p>
+            <p class="first-run-body">Tap any day to note how it felt, write what happened, and attach a receipt or ticket. Your stats fill in after a few days.</p>
+            <button type="button" class="btn btn-primary" id="firstRunBtn">Log today</button>
+        </div>
+        {% endif %}
         <div class="cal-title-row">
             <h1 id="calTitle">{{ date_label }}</h1>
             <button type="button" class="btn btn-secondary today-btn" id="todayBtn" title="Back to today (t)" hidden>Today</button>
@@ -293,6 +302,7 @@
     <script>
         window.INITIAL_VIEW = "{{ active_view|default('calendar') }}";
         window.PROXY_MODE = {{ 'true' if proxy_mode else 'false' }};
+        window.SIGNED_IN = {{ 'true' if current_user.is_authenticated else 'false' }};
         window.MOODS = {{ moods | map(attribute='__dict__') | list | tojson }};
     </script>
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>

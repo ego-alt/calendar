@@ -10,17 +10,28 @@ def test_index_anonymous(client):
     assert client.get("/").status_code == 200
 
 
-def test_get_month_anonymous(client):
-    response = client.get("/get_month?year=2026&month=5")
-    assert response.status_code == 200
-    body = response.get_json()
+def test_index_anonymous_shows_sign_in(client):
+    html = client.get("/").get_data(as_text=True)
+    assert "signed-out" in html and "Sign in" in html
+
+
+def test_calendar_data_requires_sign_in(client):
+    for url in ("/get_month?year=2026&month=5", "/get_year?year=2026",
+                "/get_week?year=2026&month=5&day=1"):
+        response = client.get(url)
+        assert response.status_code == 401 and response.json["message"] == "Please sign in again."
+
+
+def test_get_month_signed_in(authed_client):
+    body = authed_client.get("/get_month?year=2026&month=5").get_json()
     assert body["month_label"] == "May 2026"
+    assert len(authed_client.get("/get_year?year=2026").get_json()["months"]) == 12
 
 
-def test_get_year_anonymous(client):
-    response = client.get("/get_year?year=2026")
-    assert response.status_code == 200
-    assert len(response.get_json()["months"]) == 12
+def test_first_run_card_until_something_is_logged(authed_client):
+    assert 'id="firstRun"' in authed_client.get("/").get_data(as_text=True)
+    authed_client.post("/mood/update", json={"year": 2026, "month": 5, "day": 1, "mood": "good"})
+    assert 'id="firstRun"' not in authed_client.get("/").get_data(as_text=True)
 
 
 def test_events_requires_auth(client):

@@ -2,9 +2,10 @@ from datetime import date, datetime, timedelta
 
 from flask import Blueprint, jsonify, render_template, request
 
+from models import DailyLog, Event
 from utils import get_month_data, get_week_data, get_year_data
 
-from ._helpers import current_user_id
+from ._helpers import current_user_id, json_login_required
 
 index_blueprint = Blueprint("index_routes", __name__)
 
@@ -16,7 +17,14 @@ def build_index_context() -> dict:
     calendar_data, mood_colors, days_with_events, days_with_marker = get_month_data(
         today.year, today.month, current_user_id()
     )
+    uid = current_user_id()
+    # First run: nothing logged and nothing written yet → a welcome card.
+    first_run = bool(uid) and (
+        DailyLog.query.filter_by(user_id=uid).first() is None
+        and Event.query.filter_by(user_id=uid).first() is None
+    )
     return {
+        "first_run": first_run,
         "calendar_data": calendar_data,
         "date_label": today.strftime("%B %Y"),
         "current_year": today.year,
@@ -34,6 +42,7 @@ def index():
 
 
 @index_blueprint.route("/get_month", methods=["GET"])
+@json_login_required
 def get_month():
     year = int(request.args.get("year"))
     month = int(request.args.get("month"))
@@ -54,6 +63,7 @@ def get_month():
 
 
 @index_blueprint.route("/get_week", methods=["GET"])
+@json_login_required
 def get_week():
     year = int(request.args.get("year"))
     month = int(request.args.get("month"))
@@ -79,6 +89,7 @@ def get_week():
 
 
 @index_blueprint.route("/get_year", methods=["GET"])
+@json_login_required
 def get_year():
     year = int(request.args.get("year"))
     months_data = get_year_data(year, current_user_id())

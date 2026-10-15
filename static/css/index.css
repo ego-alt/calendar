@@ -1548,3 +1548,26 @@ kbd {
 .wc-time { color: var(--color-text-muted); min-width: 5.5em; flex-shrink: 0; }
 .wc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wc-empty { display: block; margin-top: var(--space-1); font-size: var(--text-sm); color: var(--color-text-muted); }
+
+/* ---- signed out: the sign-in card is the page ---- */
+body.signed-out main, body.signed-out .mode-bar, body.signed-out .shell-switch,
+body.signed-out .mode-seg, body.signed-out .keys-btn { display: none !important; }
+body.signed-out .login-overlay { background: var(--color-bg-base); }
+.login-lede { color: var(--color-text-muted); font-size: var(--text-sm); margin: calc(-1 * var(--space-3)) 0 var(--space-4); }
+
+/* ---- first run ---- */
+.first-run {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto var(--space-5);
+    padding: var(--space-4) var(--space-5);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-inset);
+    text-align: center;
+}
+.first-run-title { font-weight: 600; margin: 0 0 var(--space-2); }
+.first-run-body { color: var(--color-text-muted); font-size: var(--text-sm); margin: 0 0 var(--space-3); }
+.first-run { box-sizing: border-box; }
+body.signed-out .login-button { display: none; }
+.first-run { margin-top: var(--space-3); }

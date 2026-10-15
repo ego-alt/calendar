@@ -132,6 +132,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **What:** In standalone mode, a signed-out visitor sees an empty month and an empty day panel, with no prompt to sign in (only the door icon in the corner). `/`, `/get_month`, `/get_week` and `/get_year` don't require a login.
 - **Where:** `routes/index.py`; `templates/index.html`
 - **Fix:** Show the sign-in card in place of the calendar, and require login on those endpoints. Behind the dashboard proxy this doesn't arise.
+- **Status:** Done. Signed out in standalone mode, the page is the sign-in card (*Your calendar, moods and diary are waiting.*) with the calendar, tabs and mode bar hidden; it can't be dismissed into an empty calendar. `/get_month`, `/get_week` and `/get_year` now require sign-in (401 with a plain message), and Stats isn't pre-loaded when signed out. Behind the dashboard nothing changes: it handles sign-in. Covered by tests.
 
 **2.3 Failures happen silently** [confirmed]
 - **What:** With the network cut:
@@ -194,6 +195,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **Fix:**
   - Add a one-time card on the calendar: *"Tap a day to note how it felt and what happened."*
   - In Stats, replace the zero tiles with *"Stats appear after a week of logging."*
+- **Status:** Done. With nothing logged yet, the calendar shows a *Start with today.* card explaining what a day holds, with a **Log today** button that opens today's panel; it disappears after the first mood or entry. Stats shows *Your stats fill in once you've logged a few days…* instead of zero tiles and empty charts (and *No moods logged in 2024.* for an empty year). Covered by a test and checked with a fresh account.
 
 **2.10 Offline**
 - **What:** Nothing works offline. There's no manifest or service worker, unlike library and tapes now. A lost connection mid-entry surfaces nothing (2.3).

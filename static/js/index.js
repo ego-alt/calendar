@@ -79,6 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', handleKeyPress);
     setupModeBar();
     document.getElementById('todayBtn').addEventListener('click', goToToday);
+    document.getElementById('firstRunBtn')?.addEventListener('click', async () => {
+        await goToToday();
+        showSidebar(CURRENT_DAY);
+    });
     const keysModal = document.getElementById('keysModal');
     keysModal.addEventListener('click', (e) => { if (e.target === keysModal) keysModal.hidden = true; });
     document.getElementById('keysBtn')?.addEventListener('click', () => { keysModal.hidden = false; });
@@ -212,7 +216,8 @@ function setupGlobalEventListeners() {
     });
 
     document.querySelector('.login-overlay').addEventListener('click', (e) => {
-        if (e.target === e.currentTarget) closeLoginDialog();
+        // Signed out, the sign-in card *is* the page: it can't be dismissed.
+        if (e.target === e.currentTarget && window.SIGNED_IN) closeLoginDialog();
     });
     document.querySelector('.login-content').addEventListener('click', (e) => {
         e.stopPropagation();

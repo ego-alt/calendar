@@ -130,3 +130,4 @@
 .st-with-fill.down { right: 50%; background: #6b55b8; }
 .st-with-val { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .st-with-days { color: var(--color-text-muted); font-size: var(--text-xs); }
+#statsView.st-nothing .st-card, #statsView.st-nothing .st-tiles { display: none; }

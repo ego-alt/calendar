@@ -7,6 +7,18 @@ function renderStats(data) {
     const fmt = (iso) => formatDate(new Date(iso + "T00:00:00"), { weekday: false });
 
     $("range").textContent = fmt(data.range_start) + " – " + fmt(data.range_end);
+    // Nothing logged in this period: say what will appear, not a page of zeros.
+    const empty = !data.tiles.logged;
+    document.getElementById("statsView").classList.toggle("st-nothing", empty);
+    const status = $("statsStatus");
+    if (empty) {
+        status.textContent = data.year
+            ? `No moods logged in ${data.year}.`
+            : "Your stats fill in once you've logged a few days. Start with today on the Calendar.";
+        status.hidden = false;
+    } else if (!status.querySelector("#statsRetry")) {
+        status.hidden = true;
+    }
 
     // Shared hover tooltip: one floating element, follows the cursor.
     let tip = document.querySelector(".st-tip");
