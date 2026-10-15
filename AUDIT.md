@@ -586,3 +586,15 @@ The problems are mostly the hover-era controls inside it.
 - Export (4.11, small).
 - Offline drafts and an installable app (2.10, medium).
 - Search filters behind a button, plus result counts (7.8, 8.4, small).
+
+---
+
+## Added for the MCP server (2026-10-15)
+
+Endpoints for programmatic clients; the UI doesn't use them. See
+`dashboard/mcp/AUDIT.md` for the server's own audit.
+
+- `GET /events/<id>` and `GET /events/subevents/<id>`: one entry (with its moments) or one moment.
+- `GET /events/range?from=YYYY-MM-DD&to=YYYY-MM-DD`: entries overlapping a range, both ends inclusive, at most 366 days.
+- `POST /events/<id>/subevents` now returns the new moment's `id`.
+- `PUT /events/<id>` accepts `move_moments: true`, which shifts the moments with the entry's start. Without it, an entry with moments couldn't be moved by an API client.
