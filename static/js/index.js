@@ -57,6 +57,14 @@ function isoFromDate(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/* One date style everywhere (AUDIT 3.1): "Tue 6 Oct 2026", built by hand so
+ * it doesn't vary by browser locale (Chrome's en-GB says "Sept", adds commas). */
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WEEKDAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function formatDate(d, { weekday = true, year = true } = {}) {
+    return `${weekday ? WEEKDAY_ABBR[d.getDay()] + ' ' : ''}${d.getDate()} ${MONTH_ABBR[d.getMonth()]}${year ? ' ' + d.getFullYear() : ''}`;
+}
+
 /** Escape user-controlled strings for safe insertion into HTML template literals. */
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, c => ({
@@ -590,7 +598,7 @@ async function renderWeek() {
                 const top = (startMins / 60) * HOUR_H;
                 const height = (durMins / 60) * HOUR_H;
                 const timeLabel = e.end_time
-                    ? `${formatTimeOfDay(e._start)} - ${formatTimeOfDay(e._end)}`
+                    ? `${formatTimeOfDay(e._start)}–${formatTimeOfDay(e._end)}`
                     : formatTimeOfDay(e._start);
                 return `
                     <div class="week-event-block" style="top: ${top}px; height: ${height}px;"

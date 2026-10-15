@@ -87,11 +87,11 @@ async function api(path, { method = 'GET', json, form } = {}) {
 
 /** "Tue 6 Oct 2026" — the one long date format (see AUDIT 3.1). */
 function formatDayLong(date) {
-    return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    return formatDate(date);
 }
 /** "Tue 6 Oct" */
 function formatDayShort(date) {
-    return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    return formatDate(date, { year: false });
 }
 /** "09:00–10:00", "All day", or for a multi-day entry the span seen from `onIso`. */
 function entryTimeLabel(entry, onIso) {

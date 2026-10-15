@@ -383,3 +383,11 @@ def test_caption_and_link_to_entry(authed_client):
     assert listed["caption"] == "Ticket" and listed["event_id"] == event_id
     r = authed_client.patch(f"/attachments/{att_id}", json={"event_id": None})
     assert r.json["attachment"]["event_id"] is None
+
+
+def test_week_label_day_month_order(authed_client):
+    def label(month, day):
+        return authed_client.get(f"/get_week?year=2026&month={month}&day={day}").json["week_label"]
+    assert label(10, 7) == "5–11 Oct 2026"
+    assert label(10, 1) == "28 Sep – 4 Oct 2026"
+    assert label(1, 1) == "29 Dec 2025 – 4 Jan 2026"

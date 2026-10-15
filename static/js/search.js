@@ -89,9 +89,7 @@
         resultsEl.innerHTML = results.map((r) => {
             const [datePart] = (r.start_time || '').split(' ');
             const [y, m, d] = datePart.split('-').map(Number);
-            const display = new Date(y, m - 1, d).toLocaleDateString('en-GB', {
-                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-            });
+            const display = formatDate(new Date(y, m - 1, d));
             const detail = (icon, text) =>
                 text ? `<div class="diary-event-detail"><i class="fas ${icon}"></i> ${esc(text)}</div>` : '';
             return `

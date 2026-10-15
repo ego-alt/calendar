@@ -4,7 +4,7 @@ function renderStats(data) {
     const $ = (id) => document.getElementById(id);
     const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-    const fmt = (iso) => new Date(iso + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    const fmt = (iso) => formatDate(new Date(iso + "T00:00:00"), { weekday: false });
 
     $("range").textContent = fmt(data.range_start) + " – " + fmt(data.range_end);
 
@@ -55,7 +55,7 @@ function renderStats(data) {
         const c = document.createElement("div");
         c.className = "st-cell";
         if (d.c) c.style.background = d.c;
-        c.title = new Date(d.d + "T00:00:00").toDateString() + (d.n ? " · " + d.n : " · —");
+        c.title = formatDate(new Date(d.d + "T00:00:00")) + (d.n ? " · " + d.n : " · no mood logged");
         grid.appendChild(c);
     });
     const months = $("hmMonths");

@@ -201,6 +201,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 ## 3. Inconsistency within the app
 
 **3.1 Dates come in at least seven formats** [confirmed]
+- **Status:** Done. One style everywhere: days *Tue 6 Oct 2026* (or *Tue 6 Oct* in context), weeks *12–18 Oct 2026* / *28 Sep – 4 Oct 2026*, ranges *16 Oct 2025 – 15 Oct 2026*, times *09:00–10:00* (en dash). Dates are built by hand rather than with browser locales, so Chrome's *Sept* and stray commas are gone, and it's the same on every device. The week label is fixed on the server (covered by a test). Entry fields use native date pickers, which follow the device's locale.
 
 | Where | Shows |
 |---|---|
