@@ -43,6 +43,17 @@ def create_app(config=None):
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_prefix=1)
 
+    # Version static URLs by file date, so a deploy's new CSS/JS is fetched
+    # at once instead of an older copy from the browser or offline cache.
+    @app.url_defaults
+    def _static_version(endpoint, values):
+        if endpoint == "static" and "filename" in values and "v" not in values:
+            path = pathlib.Path(app.static_folder) / values["filename"]
+            try:
+                values["v"] = int(path.stat().st_mtime)
+            except OSError:
+                pass
+
     @app.errorhandler(413)
     def too_large(_e):
         mb = app.config["MAX_CONTENT_LENGTH"] // (1024 * 1024)

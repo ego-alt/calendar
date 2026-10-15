@@ -23,7 +23,6 @@
     <div id="loginOverlay" class="login-overlay" style="display: {{ 'flex' if signed_out else 'none' }};">
         <div class="login-content">
             <h2>Sign in</h2>
-            {% if signed_out %}<p class="login-lede">Your calendar, moods and diary are waiting.</p>{% endif %}
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group">
                     <input class="input" type="text" id="username" name="username" required placeholder="Username" autocomplete="username">
@@ -70,8 +69,8 @@
     <div class="content-wrapper">
         {% if first_run %}
         <div class="first-run" id="firstRun">
-            <p class="first-run-title">Start with today.</p>
-            <p class="first-run-body">Tap any day to note how it felt, write what happened, and attach a receipt or ticket. Your stats fill in after a few days.</p>
+            <p class="first-run-title">Nothing logged yet.</p>
+            <p class="first-run-body">Tap a day to set its mood, add entries and attach receipts or tickets. Stats appear after a few days.</p>
             <button type="button" class="btn btn-primary" id="firstRunBtn">Log today</button>
         </div>
         {% endif %}
@@ -278,7 +277,7 @@
                 <dt><kbd>j</kbd> <kbd>k</kbd></dt><dd>Next / previous year</dd>
                 <dt><kbd>t</kbd></dt><dd>Today</dd>
                 <dt><kbd>m</kbd> <kbd>w</kbd> <kbd>y</kbd> <kbd>d</kbd></dt><dd>Month, Week, Year, Diary</dd>
-                <dt><kbd>n</kbd></dt><dd>Write about the open day (or today)</dd>
+                <dt><kbd>n</kbd></dt><dd>New entry on the open day (or today)</dd>
                 <dt><kbd>1</kbd>–<kbd>5</kbd></dt><dd>Mood for the open day, Great → Rough</dd>
                 <dt><kbd>x</kbd></dt><dd>Toggle the marker on the open day</dd>
                 <dt><kbd>/</kbd></dt><dd>Search</dd>

@@ -36,7 +36,7 @@ tickets that go with it, and the trends over time.
 - **Installable** — add it to a phone's home screen; days you've opened stay
   readable offline.
 - **Keyboard** — `←`/`→` (or `h`/`l`) month or week, `j`/`k` year, `t` today,
-  `m` `w` `y` `d` views, `n` write, `1`–`5` mood, `x` marker, `/` search, `?`
+  `m` `w` `y` `d` views, `n` new entry, `1`–`5` mood, `x` marker, `/` search, `?`
   for the list.
 
 ## Development Setup (uv)

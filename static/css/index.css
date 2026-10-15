@@ -1480,7 +1480,6 @@ kbd {
 body.signed-out main, body.signed-out .mode-bar, body.signed-out .shell-switch,
 body.signed-out .mode-seg, body.signed-out .keys-btn { display: none !important; }
 body.signed-out .login-overlay { background: var(--color-bg-base); }
-.login-lede { color: var(--color-text-muted); font-size: var(--text-sm); margin: calc(-1 * var(--space-3)) 0 var(--space-4); }
 
 /* ---- first run ---- */
 .first-run {

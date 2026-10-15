@@ -398,9 +398,9 @@ function renderDay() {
             </span>
         </div>
         <div id="dayMoodSlot"></div>
-        <button class="add-event-btn btn btn-primary" type="button" data-act="new">Write about this day</button>
+        <button class="add-event-btn btn btn-primary" type="button" data-act="new">New entry</button>
         <div id="entryFormSlot"></div>
-        <div class="event-list">${cards || '<div class="no-events">Nothing written for this day yet.</div>'}</div>
+        <div class="event-list">${cards || '<div class="no-events">No entries yet.</div>'}</div>
         ${renderAttachments()}`;
     renderMoodRow();
 }
@@ -455,7 +455,7 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null 
         <form class="entry-form" id="entryForm" novalidate>
             <div class="form-header">${FORM_TITLES[mode]}</div>
             ${parent ? `<div class="form-context">Part of “${escapeHtml(parent.name)}”</div>` : ''}
-            ${draft ? `<div class="form-note">Restored your unsaved text.</div>` : ''}
+            ${draft ? `<div class="form-note">Draft restored.</div>` : ''}
             <input class="input" name="name" placeholder="What happened?" aria-label="What happened?" autocomplete="off">
             <div class="field-row">
                 <span class="field-label">From</span>

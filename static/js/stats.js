@@ -14,7 +14,7 @@ function renderStats(data) {
     if (empty) {
         status.textContent = data.year
             ? `No moods logged in ${data.year}.`
-            : "Your stats fill in once you've logged a few days. Start with today on the Calendar.";
+            : "Stats appear after a few days of logging.";
         status.hidden = false;
     } else if (!status.querySelector("#statsRetry")) {
         status.hidden = true;
@@ -57,7 +57,7 @@ function renderStats(data) {
             ? { n: avg != null ? `${avg.toFixed(1)}` : "—", l: "average mood (of 5)" }
             : {
                 n: t.current_streak,
-                l: "day streak" + (!t.today_logged && t.current_streak > 0 ? " · log today to keep it going" : ""),
+                l: "day streak" + (!t.today_logged && t.current_streak > 0 ? " · today not logged yet" : ""),
             },
         { n: t.longest_streak, l: "day longest streak" },
         tm

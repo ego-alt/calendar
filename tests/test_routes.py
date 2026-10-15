@@ -461,3 +461,8 @@ def test_month_day_info(authed_client):
     info = authed_client.get("/get_month?year=2026&month=5").json["day_info"]
     assert info["3"]["entries"] == 1 and info["3"]["chars"] == 304
     assert info["4"]["attachments"] == 1 and "5" not in info
+
+
+def test_static_urls_are_versioned(authed_client):
+    html = authed_client.get("/").get_data(as_text=True)
+    assert "static/js/day.js?v=" in html and "static/css/index.css?v=" in html

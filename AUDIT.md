@@ -27,7 +27,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
   - Use diary language: *entry* instead of *event*; *"Nothing written for this day yet"*; **Write about this day**.
   - Keep times optional and folded away ("Add a time").
   - Call sub-events *moments* or *details* (see 6).
-- **Status:** Done. The app now speaks diary: *Write about this day*, *Nothing written for this day yet.*, *New entry / Edit entry / Add a moment*, *What happened? · Who was there? · Where?*, From/To with *Times are optional*, *All day* in week view, and *Days with entries* in Stats.
+- **Status:** Done. The app now speaks diary, in a plain logbook voice: **New entry**, *No entries yet.*, *New entry / Edit entry / Add a moment*, *What happened? · Who was there? · Where?*, From/To with *Times are optional*, *All day* in week view, and *Days with entries* in Stats.
 
 **1.2 Setting the mood, the core action, has no proper home** [confirmed]
 - **What:** You set a mood through an eye icon that's invisible until you hover over a day in month view. You pick from five unlabelled colour dots, whose names exist only as tooltips. You can't set or even see the mood in the day panel, week view, year view or diary.
@@ -132,7 +132,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **What:** In standalone mode, a signed-out visitor sees an empty month and an empty day panel, with no prompt to sign in (only the door icon in the corner). `/`, `/get_month`, `/get_week` and `/get_year` don't require a login.
 - **Where:** `routes/index.py`; `templates/index.html`
 - **Fix:** Show the sign-in card in place of the calendar, and require login on those endpoints. Behind the dashboard proxy this doesn't arise.
-- **Status:** Done. Signed out in standalone mode, the page is the sign-in card (*Your calendar, moods and diary are waiting.*) with the calendar, tabs and mode bar hidden; it can't be dismissed into an empty calendar. `/get_month`, `/get_week` and `/get_year` now require sign-in (401 with a plain message), and Stats isn't pre-loaded when signed out. Behind the dashboard nothing changes: it handles sign-in. Covered by tests.
+- **Status:** Done. Signed out in standalone mode, the page is the sign-in card with the calendar, tabs and mode bar hidden; it can't be dismissed into an empty calendar. `/get_month`, `/get_week` and `/get_year` now require sign-in (401 with a plain message), and Stats isn't pre-loaded when signed out. Behind the dashboard nothing changes: it handles sign-in. Covered by tests.
 
 **2.3 Failures happen silently** [confirmed]
 - **What:** With the network cut:
@@ -196,7 +196,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **Fix:**
   - Add a one-time card on the calendar: *"Tap a day to note how it felt and what happened."*
   - In Stats, replace the zero tiles with *"Stats appear after a week of logging."*
-- **Status:** Done. With nothing logged yet, the calendar shows a *Start with today.* card explaining what a day holds, with a **Log today** button that opens today's panel; it disappears after the first mood or entry. Stats shows *Your stats fill in once you've logged a few days…* instead of zero tiles and empty charts (and *No moods logged in 2024.* for an empty year). Covered by a test and checked with a fresh account.
+- **Status:** Done. With nothing logged yet, the calendar shows a *Nothing logged yet.* card explaining what a day holds, with a **Log today** button that opens today's panel; it disappears after the first mood or entry. Stats shows *Stats appear after a few days of logging.* instead of zero tiles and empty charts (and *No moods logged in 2024.* for an empty year). Covered by a test and checked with a fresh account.
 
 **2.10 Offline**
 - **What:** Nothing works offline. There's no manifest or service worker, unlike library and tapes now. A lost connection mid-entry surfaces nothing (2.3).
@@ -291,7 +291,7 @@ Time ranges are written with `--`, `-` and `–`.
 - **Fix:**
   - Never discard a form with text in it. Keep the draft per day in memory and local storage, and restore it when the day reopens.
   - Closing a form with changes asks *"Discard this entry?"*.
-- **Status:** Done. Every keystroke in the entry form is kept per day and form (localStorage). Closing the panel, tapping outside, swiping it away or pressing Escape keeps the text, and the form comes back with *Restored your unsaved text* when that day is opened again. Only Cancel clears it, after asking *Discard this entry?* if anything changed; a successful save clears it too. A failed save keeps the form and its text open with the reason. Verified on desktop and at 375px touch.
+- **Status:** Done. Every keystroke in the entry form is kept per day and form (localStorage). Closing the panel, tapping outside, swiping it away or pressing Escape keeps the text, and the form comes back with *Draft restored* when that day is opened again. Only Cancel clears it, after asking *Discard this entry?* if anything changed; a successful save clears it too. A failed save keeps the form and its text open with the reason. Verified on desktop and at 375px touch.
 
 **4.2 Deleting an entry is instant and permanent** [confirmed]
 - **What:** One tap on the bin icon deletes the entry and all its sub-entries. No confirmation, no undo. The same goes for sub-entries.
@@ -356,7 +356,7 @@ Time ranges are written with `--`, `-` and `–`.
 - **What:** "Current streak" counts back from today, so until today is logged it shows 0, even after 16 logged days in a row.
 - **Why:** For a retrospective log you usually fill in the day in the evening. A 0 every morning is discouraging and wrong.
 - **Fix:** If today isn't logged yet, count from yesterday ("16 days, log today to keep it going").
-- **Status:** Done. If today isn't logged yet, the streak counts from yesterday and the tile reads *3 day streak · log today to keep it going*. Covered by a test.
+- **Status:** Done. If today isn't logged yet, the streak counts from yesterday and the tile reads *3 day streak · today not logged yet*. Covered by a test.
 
 **4.11 No export** [code]
 - **What:** Years of diary live in one SQLite file, with no way to export them.
@@ -439,7 +439,7 @@ That turns 10 steps with three traps into about 4 steps: tap today, tap a mood, 
 | Login | Login / Username / Password / door icon | Sign in · Sign out (with text) |
 | Server JSON errors | Internal server error / unknown mood / Authentication required | Plain-language messages the UI can show as is |
 
-**Status: done.** Every row is in the app, with two adjustments:
+**Status: done.** Every row is in the app. Later the voice was made plainer to suit the logbook look: **New entry** (not *Write about this day*), *No entries yet.*, *No entries in October.*, *Draft restored.*, *today not logged yet*. Two other adjustments:
 - Search labels read *Showing last month · with Sam* (plain phrases, not removable chips).
 - The upload limit message is *That file is over 10 MB.*
 
@@ -494,7 +494,7 @@ The problems are mostly the hover-era controls inside it.
   - No mood is shown.
   - The add-entry button sits below everything.
 - **Fix:** Use a "Tue 6 Oct 2026" heading with the mood row under it; cards show only the time.
-- **Status:** Done. The sheet is headed *Tue, 6 Oct 2026*, followed by the mood row and the marker, then **Write about this day**. Entry cards show only the time (09:00–10:00, *All day*, or the span for multi-day entries), not the date again.
+- **Status:** Done. The sheet is headed *Tue, 6 Oct 2026*, followed by the mood row and the marker, then **New entry**. Entry cards show only the time (09:00–10:00, *All day*, or the span for multi-day entries), not the date again.
 
 **7.6 Stats don't fit a phone** [confirmed]
 - **What:**
@@ -510,7 +510,7 @@ The problems are mostly the hover-era controls inside it.
 **7.7 Week view on a phone** [confirmed]
 - **What:** Entries are cut to "08:…", "10:…" with names hidden.
 - **Fix:** Use the seven day cards (1.6).
-- **Status:** Done. On phones Week is seven day cards (*Mon 12 Oct · Okay ●*, a mood-coloured edge, the marker, and each entry with its time, or *Nothing written*). Today is outlined, and tapping a card opens the day.
+- **Status:** Done. On phones Week is seven day cards (*Mon 12 Oct · Okay ●*, a mood-coloured edge, the marker, and each entry with its time, or *No entries*). Today is outlined, and tapping a card opens the day.
 
 **7.8 Search filters on a phone** [confirmed]
 - **What:** Five filter fields wrap into a block above the results, and the two date pickers don't say which is From and which is To.

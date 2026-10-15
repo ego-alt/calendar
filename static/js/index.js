@@ -77,7 +77,7 @@ function renderStatusLine(day = null) {
         const d = info[day] || {};
         const mood = moodNameForColor((data.mood_colors || {})[day]);
         const bits = [formatDate(date), mood || 'no mood',
-            d.entries ? plural(d.entries, 'entry').replace('entrys', 'entries') : 'nothing written'];
+            d.entries ? `${d.entries} ${d.entries === 1 ? 'entry' : 'entries'}` : 'no entries'];
         if (d.attachments) bits.push(plural(d.attachments, 'attachment'));
         el.textContent = bits.join('  ·  ');
         return;
@@ -770,7 +770,7 @@ function renderWeekCards(data, todayIso) {
                     ${moodName ? `<span class="wc-mood"><span class="mood-dot" aria-hidden="true"></span>${escapeHtml(moodName)}</span>` : ''}
                     ${data.markers.includes(d.date) ? '<span class="diary-marker" aria-hidden="true"></span>' : ''}
                 </span>
-                ${list ? `<ul class="wc-entries">${list}</ul>` : '<span class="wc-empty">Nothing written</span>'}
+                ${list ? `<ul class="wc-entries">${list}</ul>` : '<span class="wc-empty">No entries</span>'}
             </button>`;
     }).join('');
 }
@@ -930,7 +930,7 @@ async function loadMonthEvents() {
     ].map(Number))].sort((a, b) => a - b);
 
     if (!days.length) {
-        content.innerHTML = `<div class="no-events">Nothing written in ${escapeHtml(monthLong)}.</div>`;
+        content.innerHTML = `<div class="no-events">No entries in ${escapeHtml(monthLong)}.</div>`;
         return;
     }
     const moodName = (color) => (window.MOODS || []).find((m) => m.color === color)?.name || '';

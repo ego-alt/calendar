@@ -18,7 +18,7 @@ def build_index_context() -> dict:
         today.year, today.month, current_user_id()
     )
     uid = current_user_id()
-    # First run: nothing logged and nothing written yet → a welcome card.
+    # First run: no moods and no entries yet → a short how-to card.
     first_run = bool(uid) and (
         DailyLog.query.filter_by(user_id=uid).first() is None
         and Event.query.filter_by(user_id=uid).first() is None
