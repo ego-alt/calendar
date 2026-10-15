@@ -142,6 +142,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **What:** The panel starts at the top of the window, so its header (the date and the add-attachment +) sits at y 20–44, entirely under the 47px top bar. You can't click the **+** on desktop. On phones the sheet is placed correctly.
 - **Where:** `index.css` `.sidebar` (fixed, full height, from 0)
 - **Fix:** Start the panel below the bar: `top: var(--shell-bar-h)` and `height: calc(100dvh - var(--shell-bar-h))`.
+- **Status:** Done. On desktop the day panel starts below the top bar (as Diary and Year already did). The date heading and the attach button (now a paperclip) are visible and clickable (checked with a hit test). Phones keep the bottom sheet.
 
 **2.6 Text that looks like HTML is rendered as HTML** [confirmed]
 - **What:** A note reading `Check <b>bold</b>` displays in bold in the day panel and diary. A note containing `a<b` with nothing after it can swallow the rest of the text.
@@ -159,6 +160,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **Fix:**
   - Use `parseLocalDateTime` everywhere, or have the API return ISO `YYYY-MM-DDTHH:MM`.
   - Check the day panel on your iPhone.
+- **Status:** Done. Every "YYYY-MM-DD HH:MM" string is parsed by `parseLocalDateTime` (time labels, diary grouping, diary times), never `new Date(string)`. Checked in Safari's JS engine on this Mac: the helper parses correctly where `new Date()` gave Invalid Date. Stats already used the safe `T` form.
 
 **2.8 Weird and large data** [confirmed]
 - Long titles, long place names, multi-line notes, emoji and accents all wrap and display well in the panel and diary. Line breaks in notes are kept.
@@ -513,7 +515,7 @@ The problems are mostly the hover-era controls inside it.
 | 2 | **Mood where you write:** a labelled mood row at the top of the day panel/sheet; tapping a day always opens it; hide the eye icon on touch | 1.2, 7.1, 5 | **Medium** | Done |
 | 3 | **Touch-ready day sheet:** one visible ⋯ per entry (Edit · Add moment · Delete), a marker toggle, attachments with a visible ×, the entry form at the top as a full-height sheet with a sticky Save | 7.2, 7.3, 7.4, 7.5, 1.3 | **Medium** | Done |
 | 4 | **Undo instead of loss:** Undo toasts for entry, moment, attachment and mood-clear; soft delete and a trash | 4.2, 4.3, 4.4 | **Medium** | Done |
-| 5 | **Correctness fixes:** escape user text (2.6); move the desktop panel below the top bar so the attachment + works (2.5); use the local date parser everywhere for iPhone (2.7) | 2.5, 2.6, 2.7 | **Small** | To do |
+| 5 | **Correctness fixes:** escape user text (2.6); move the desktop panel below the top bar so the attachment + works (2.5); use the local date parser everywhere for iPhone (2.7) | 2.5, 2.6, 2.7 | **Small** | Done |
 | 6 | **Feedback and fresh numbers:** one toast style for saves and failures; refetch Stats after changes; streak counts from yesterday; refresh the grid after edits | 2.3, 4.9, 4.10, 4.6, 8.1 | **Small** | To do |
 | 7 | **Diary language and one entry form:** entries, not events; "Nothing written for this day yet"; one form component; plain error copy; native date and time pickers | 1.1, 3.2, 3.3, 4.5, 6 | **Medium** | To do |
 | 8 | **Look-back views as real views:** full-screen Diary with moods, attachments and month navigation; merge Year into one tappable year grid with a year picker; mark today, add a Today button | 1.4, 1.5, 2.1 | **Large** | To do |

@@ -654,6 +654,12 @@ h2 {
 
 /* Desktop styles (default) */
 @media (min-width: 481px) {
+    /* The day panel starts below the fixed top bar (its header and the attach
+       button were hidden under it). */
+    .sidebar {
+        top: var(--shell-bar-h);
+        height: calc(100dvh - var(--shell-bar-h));
+    }
     .color-picker {
         position: absolute;  /* Position relative to clicked day */
         display: none;

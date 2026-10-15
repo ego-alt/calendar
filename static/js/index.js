@@ -23,7 +23,8 @@ let globalListenersAttached = false;
 
 /** Format a Date or "YYYY-MM-DD HH:MM" string as "HH:MM" (24h). */
 function formatTimeOfDay(input) {
-    const date = input instanceof Date ? input : new Date(input);
+    // Parse "YYYY-MM-DD HH:MM" by hand: Safari can't parse it (Invalid Date).
+    const date = input instanceof Date ? input : parseLocalDateTime(input);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
@@ -718,8 +719,8 @@ async function loadMonthEvents() {
 
             const eventsByDay = {};
             data.events.forEach(event => {
-                const startDate = new Date(event.start_time);
-                const endDate = new Date(event.end_time || event.start_time);
+                const startDate = parseLocalDateTime(event.start_time);
+                const endDate = parseLocalDateTime(event.end_time || event.start_time);
                 
                 // Create a copy of start date to iterate through
                 let currentDate = new Date(startDate);
@@ -762,7 +763,7 @@ async function loadMonthEvents() {
                     
                     eventsByDay[day].forEach(event => {
                         const daySubevents = (event.subevents || []).filter(s => {
-                            const d = new Date(s.start_time);
+                            const d = parseLocalDateTime(s.start_time);
                             return d.getDate() === parseInt(day) &&
                                    d.getMonth() + 1 === viewState.month &&
                                    d.getFullYear() === viewState.year;
@@ -801,8 +802,8 @@ async function loadMonthEvents() {
 function formatEventTime(event, displayDay) {
     if (isAllDayEvent(event)) return '';
 
-    const eventStart = new Date(event.start_time);
-    const eventEnd = event.end_time ? new Date(event.end_time) : new Date(event.start_time);
+    const eventStart = parseLocalDateTime(event.start_time);
+    const eventEnd = parseLocalDateTime(event.end_time || event.start_time);
     const isMultiDay = eventStart.toDateString() !== eventEnd.toDateString();
 
     if (isMultiDay) {
