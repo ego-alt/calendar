@@ -539,7 +539,7 @@ The problems are mostly the hover-era controls inside it.
   - Month changes have no loading state and drop key presses meanwhile.
   - The day panel shows the previous day while loading (2.4).
 - **Fix:** As 2.4. Also prefetch the next and previous month for instant swipes.
-- **Status:** Done (see 2.4). The grid dims while a month or week loads, key presses are never dropped, the day panel shows the right date immediately, and Stats/Diary/Year show loading and retry states. Prefetching neighbouring months wasn't needed: loads measured well under 200 ms.
+- **Status:** Done (see 2.4). The grid dims while a month or week loads, key presses are never dropped, the day panel shows the right date immediately, and Stats/Diary/Year show loading and retry states. Prefetching neighbouring months wasn't needed: measured on this Mac with a year of data, a month loads in ~12 ms, a week 15 ms, a day 18 ms, a year 35 ms and Stats 59 ms (the Pi will be several times slower, still well under the 150 ms dimming threshold for most views).
 
 **8.3 Keyboard shortcuts** [code]
 - **What:**
