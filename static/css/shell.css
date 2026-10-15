@@ -89,29 +89,6 @@
     display: none;
 }
 
-/* Month/Week as a compact dropdown — a styled native select (custom chevron,
-   native menu) that stays small on mobile and reads as "proper". */
-.shell-select {
-    appearance: none;
-    -webkit-appearance: none;
-    font: inherit;
-    font-size: var(--text-sm);
-    color: var(--color-text-primary);
-    background-color: var(--color-bg-inset);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    padding: 6px 30px 6px 12px;
-    min-width: 6rem; /* steady, standard dropdown width across Month/Week */
-    cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23a0a0a0' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-}
-.shell-select:focus-visible {
-    outline: 2px solid var(--color-accent-hover);
-    outline-offset: 1px;
-}
-
 /* Clear the fixed bar, and top-align the view content so the Calendar and Stats
    headings sit at the same height (they were centred vs top-aligned, so the
    title jumped on toggle). */

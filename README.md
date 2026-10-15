@@ -4,14 +4,35 @@
 
 ## Features
 
-- **Interactive Calendar Interface**
-  - Monthly view with intuitive navigation
-  - Keyboard shortcuts for navigation (h/l keys)
+A retrospective life log: how each day felt, what happened, the receipts and
+tickets that go with it, and the trends over time.
 
-- **Event Management**
-  - Create, edit, and delete events
-  - Add location, attendees, and notes to events
-  - Daily mood logging with color coding
+- **Calendar** — Month, Week, Year and Diary views (one switch on desktop, a
+  bottom bar on phones). Tap any day to open it: set its **mood** (Great →
+  Rough), **mark** it (a red dot, shown on the calendar and the mood trend),
+  write **entries** with optional times, people, places and notes, add
+  **moments** inside an entry, and attach **photos and PDFs**.
+- **Never lose writing** — half-written entries are kept as drafts per day and
+  come back when the day reopens; deletes (entries, moments, attachments) can
+  be undone, and are purged after 30 days.
+- **Diary** — a month to read back, day by day, with moods, entries, moments
+  and attachments; **Year** — twelve tappable months.
+- **Stats** — logged days, streak, mood calendar (tap a day to open it), mood
+  over time (actual / 7-day / 28-day), mood mix by month or weekday, days with
+  entries, and **Mood with…**: average mood with each person and at each place
+  against your overall average. Last 12 months or any year.
+- **Search** — by meaning, words and filters (date, mood, who, where); typed
+  phrases like "dinner with Sam last month" are understood.
+- **Receipts & tickets** — from the day panel or the phone scanner app; HEIC
+  photos become JPEGs, every photo gets a thumbnail, and each attachment can
+  have a caption and belong to one of the day's entries.
+- **Export** — the whole diary as a zip (JSON, a Markdown diary, the original
+  files), from the foot of the Stats page.
+- **Installable** — add it to a phone's home screen; days you've opened stay
+  readable offline.
+- **Keyboard** — `←`/`→` (or `h`/`l`) month or week, `j`/`k` year, `t` today,
+  `m` `w` `y` `d` views, `n` write, `1`–`5` mood, `x` mark, `/` search, `?` for
+  the list.
 
 ## Development Setup (uv)
 
@@ -21,6 +42,11 @@
 ```bash
 uv sync
 ```
+
+   On an Intel Mac this fails: the locked `onnxruntime` (used by search) only
+   ships wheels for Apple-silicon Macs, Linux and Windows. Either develop on one
+   of those, or install the dependencies into a separate environment with an
+   older `onnxruntime<1.20`.
 
 3. Initialize the database (fresh clones):
 

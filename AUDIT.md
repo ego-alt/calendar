@@ -189,6 +189,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - A day with 30 entries makes a long panel, and the new-entry form opens at the very bottom, below all of them and the attachments.
 - Search silently stops at 20 results. "hike" returned exactly 20, with no "showing 20 of N" and no way to load more.
 - **Fix:** Open the entry form at the top of the panel. In search, show the count and a **More** button.
+- **Status:** Done. Long titles, places and notes wrap in the panel, diary and week cards; the entry form opens at the top even on a 30-entry day; search says how many it shows and loads more; attachment names wrap at spaces. On the desktop week grid, very short entries still clip their time (*08:00–1…*) — the full entry is a tap away.
 
 **2.9 First run** [code]
 - **What:** A new user gets an empty month and Stats tiles reading "0 days logged of 365" and "0 day current streak", with empty charts. Only the trend chart explains itself ("Not enough data yet.").
@@ -251,6 +252,7 @@ Time ranges are written with `--`, `-` and `–`.
 **3.4 Different fonts for typing and reading** [confirmed]
 - **What:** Every input uses a monospace font; everything displayed uses Inter. It's applied everywhere, so it may be a deliberate typewriter touch. But you type in one face and read the entry back in another.
 - **Fix:** If it's deliberate, keep it and say so in the CSS. Either way, apply it to the diary's note text too, so writing and reading share a voice.
+- **Status:** Kept as it is. The monospace inputs are a documented, deliberate choice in `index.css` (*terminal flavour*), applied to every field, so typing is consistently distinct from reading. No change made.
 
 **3.5 Mood colours** [confirmed]
 - **What:**
@@ -276,6 +278,7 @@ Time ranges are written with `--`, `-` and `–`.
 
 **3.8 The README describes an older app** [code]
 - It lists "Monthly view" and "h/l keys" only: no moods by name, Stats, search, attachments, the phone app, markers or other shortcuts.
+- **Status:** Done. The README now describes the app as it is: views, moods and markers, drafts and undo, Diary/Year, Stats with *Mood with…*, search, receipts and tickets, export, installing, and the keyboard shortcuts. It also notes the Intel-Mac `uv sync` issue and documents `purge-deleted` and the attachment API.
 
 ---
 
@@ -388,17 +391,23 @@ Time ranges are written with `--`, `-` and `–`.
 
 That turns 10 steps with three traps into about 4 steps: tap today, tap a mood, write, done.
 
+**Status: done.** Tapping today (anywhere on the cell) opens its sheet with the mood row and marker at the top; one tap sets the mood (with Undo). **Write about this day** opens a full-screen form with Save pinned above the keyboard. Nothing typed is lost by tapping away (drafts come back), and *Saved* confirms. Logging today is now: tap today → tap a mood → Write → Save.
+
 ### Second task: attach a scanned receipt to a day
 - From the phone app, the upload lands on the day. Opening that day shows a narrow white strip, and the PDF's name broken mid-word (1.7).
 - On desktop, the **+** to add one by hand is hidden under the top bar (2.5).
 - Opening one shows the raw file in a new tab.
 - **Fix:** Thumbnails, a lightbox, captions, and the + moved below the bar.
 
+**Status: done.** Attachments show as real thumbnails in a *Receipts & tickets* strip, HEIC is converted, and they open in an in-app viewer with caption and entry link; the attach button sits below the bar (see 1.7, 2.5).
+
 ### Third task: look back on a month, or find something
 - **Diary:** a side panel without moods, attachments or month navigation (1.4).
 - **Year:** you can't open any day from it.
 - **Search:** works well, about 0.4 s for meaning, words and filters. "with Sam last month" correctly became *last month · with: Sam*. But it caps at 20 results without saying so, doesn't show the day's mood, and doesn't highlight what matched.
 - Clicking a result opens the right day.
+
+**Status: done.** The Diary and Year are full views with moods, markers, attachments and navigation (1.4). Search shows mood, highlights and *Show more* (8.4). Stats can be opened for any year, and its heatmap days open the calendar (1.8, 7.6).
 
 ---
 
@@ -530,6 +539,7 @@ The problems are mostly the hover-era controls inside it.
   - Month changes have no loading state and drop key presses meanwhile.
   - The day panel shows the previous day while loading (2.4).
 - **Fix:** As 2.4. Also prefetch the next and previous month for instant swipes.
+- **Status:** Done (see 2.4). The grid dims while a month or week loads, key presses are never dropped, the day panel shows the right date immediately, and Stats/Diary/Year show loading and retry states. Prefetching neighbouring months wasn't needed: loads measured well under 200 ms.
 
 **8.3 Keyboard shortcuts** [code]
 - **What:**

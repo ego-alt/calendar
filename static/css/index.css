@@ -51,7 +51,7 @@ body {
     box-sizing: border-box;
 }
 
-h1, h2, .form-header, .event-form-header, .subevent-form-header {
+h1, h2, .form-header {
     color: var(--color-text-primary);
     text-align: center;
     margin-bottom: var(--space-5);
@@ -93,15 +93,6 @@ h2 {
     font-size: var(--text-lg);
 }
 
-.event-form-header, .subevent-form-header {
-    font-size: var(--text-sm);
-    font-weight: bold;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: var(--space-1);
-    margin-bottom: var(--space-2);
-    text-align: left;
-}
-
 /* Group all lists */
 .event-list, .diary-events, .subevents-list {
     display: flex;
@@ -130,10 +121,6 @@ h2 {
 .attachment-tile {
     position: relative;
 }
-.attachment-link {
-    display: block;
-    text-decoration: none;
-}
 .attachment-tile img {
     width: 100%;
     height: auto;
@@ -145,10 +132,6 @@ h2 {
     background: var(--color-bg-inset);
     border-radius: var(--radius-sm);
     overflow: hidden;
-}
-.attachment-tile:not(:has(img)) .attachment-link {
-    width: 100%;
-    height: 100%;
 }
 .attachment-upload-btn {
     cursor: pointer;
@@ -209,33 +192,19 @@ h2 {
     background: var(--color-danger);
 }
 
-.event-form, #newSubEventForm, #editEventForm, #loginForm {
+#loginForm {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
 }
 
-.event-form-container, .subevent-form-container {
-    background: var(--color-bg-inset);
-    border-radius: var(--radius-md);
-    padding: var(--space-3);
-    margin: var(--space-3) 0;
-    animation: fadeIn 0.3s ease;
-    box-shadow: 0 2px 8px var(--color-shadow-soft);
-}
-
-.loading-indicator, .error-message, .no-events, .subevents-loading, .subevents-error {
+.loading-indicator, .error-message, .no-events {
     color: var(--color-text-muted);
     text-align: center;
 }
 
 .no-events {
     margin-top: var(--space-5);
-}
-
-.subevents-loading, .subevents-error {
-    font-size: var(--text-sm);
-    padding: var(--space-1) 0;
 }
 
 .loading-indicator, .error-message, .no-events {
@@ -312,12 +281,7 @@ h2 {
 .day:hover {
     border-color: var(--color-text-primary);
 }
-.prev-month,
-.next-month,
-.prev-month::after,
-.next-month::after,
-.year-prev-month,
-.year-next-month {
+.prev-month, .next-month, .prev-month::after, .next-month::after, .year-prev-month {
     opacity: 0.3;
 }
 /* Month-view weekday labels — kept in sync with .week-day-weekday so the two
@@ -462,25 +426,6 @@ h2 {
     color: var(--color-text-muted);
     font-size: var(--text-sm);
 }
-/* Form text fields — base chrome via .input; sub-event/edit forms tighten the
- * type size to fit the narrower nested panels. */
-#newSubEventForm input,
-#newSubEventForm textarea,
-#editEventForm input,
-#editEventForm textarea {
-    font-size: var(--text-sm);
-}
-.event-form textarea,
-#newSubEventForm textarea,
-#editEventForm textarea {
-    min-height: 60px;
-    resize: vertical;
-}
-.start-inputs,
-.end-inputs {
-    display: flex;
-    gap: var(--space-2);
-}
 /* Form action buttons — layout only; chrome via .btn + variant. */
 .add-event-btn, .cancel-btn, .save-btn {
     flex: 1;
@@ -489,7 +434,7 @@ h2 {
     margin-top: var(--space-3);
     width: 100%;
 }
-.event-detail-item, .subevent-detail-item, .diary-event-detail {
+.event-detail-item, .diary-event-detail {
     margin-bottom: var(--space-1);
 }
 .event-detail-item:last-child {
@@ -604,10 +549,6 @@ h2 {
     font-weight: bold;
     margin-bottom: var(--space-1);
 }
-.form-row {
-    display: flex;
-    gap: var(--space-2);
-}
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-5px); }
     to { opacity: 1; transform: translateY(0); }
@@ -681,12 +622,7 @@ h2 {
     }
     /* iOS zooms the page when focusing any field under 16px and never zooms
      * back out. Keep the visual scale but lift these to 16px on phones. */
-    .date-input,
-    .time-input,
-    #newSubEventForm input,
-    #newSubEventForm textarea,
-    #editEventForm input,
-    #editEventForm textarea {
+    .date-input, .time-input {
         font-size: var(--text-base);
     }
     .color-picker {
