@@ -99,6 +99,23 @@ def create_app(config=None):
 
     db.init_app(app)
     Migrate(app, db)
+
+    # Load the search model in the background at start-up, so the first search
+    # doesn't wait several seconds for it (tests and CLI commands skip this).
+    import click
+
+    in_cli = click.get_current_context(silent=True) is not None   # flask db upgrade, flask run…
+    if not app.config.get("TESTING") and not in_cli and os.environ.get("SEARCH_WARMUP", "1") == "1":
+        import threading
+
+        def _warm():
+            try:
+                from search_index import _get_model
+                _get_model()
+            except Exception:  # noqa: BLE001 — search still loads it on first use
+                app.logger.warning("Search model warm-up failed", exc_info=True)
+
+        threading.Thread(target=_warm, daemon=True).start()
     return app
 
 

@@ -3,7 +3,8 @@ from datetime import date, datetime, timedelta
 from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
 
-from models import Event, db
+from models import DailyLog, Event, db
+from moods import MOOD_BY_KEY
 from query_router import route_query
 from search_index import search
 
@@ -91,7 +92,7 @@ def search_events():
     where = explicit_where or routed.where
 
     try:
-        limit = min(int(request.args.get("limit", 20)), 100)
+        limit = max(1, min(int(request.args.get("limit", 20)), 100))
     except (TypeError, ValueError):
         limit = 20
 
@@ -104,8 +105,10 @@ def search_events():
         who=who,
         who_op=who_op,
         where=where,
-        limit=limit,
+        limit=limit + 1,   # one extra tells us whether there are more
     )
+    more = len(matches) > limit
+    matches = matches[:limit]
 
     # Chip labels: only what the router actually applied (explicit controls show
     # themselves in their own inputs).
@@ -120,5 +123,21 @@ def search_events():
     if not explicit_mood and routed.mood:
         labels.append(f"{routed.mood} days")
 
-    results = [retrieve_event_data(event) for event, _ in matches]
-    return jsonify({"status": "success", "results": results, "parsed": {"labels": labels}})
+    # Each result carries its day's mood, so the list reads like the diary.
+    days = {event.start_time.date() for event, _ in matches}
+    moods = {
+        log.date: log.mood_key
+        for log in DailyLog.query.filter(
+            DailyLog.user_id == uid, DailyLog.date.in_(days), DailyLog.mood_key.isnot(None)
+        )
+    } if days else {}
+    results = []
+    for event, _ in matches:
+        mood = MOOD_BY_KEY.get(moods.get(event.start_time.date()))
+        results.append({
+            **retrieve_event_data(event),
+            "mood": {"name": mood.name, "color": mood.color} if mood else None,
+        })
+    return jsonify({
+        "status": "success", "results": results, "more": more, "parsed": {"labels": labels},
+    })

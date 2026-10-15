@@ -173,3 +173,16 @@ def test_search_reflects_edits_and_deletes(authed_client):
 
     authed_client.delete(f"/events/{event_id}")
     assert authed_client.get("/search/data?q=retrospective").get_json()["results"] == []
+
+
+def test_results_say_when_there_are_more_and_carry_mood(authed_client):
+    for i in range(1, 4):
+        authed_client.post("/events/", json={"name": f"Swim {i}", "start_date": f"2026-04-0{i}",
+                                             "end_date": f"2026-04-0{i}", "notes": "pool swim"})
+    authed_client.post("/mood/update", json={"year": 2026, "month": 4, "day": 1, "mood": "great"})
+    res = authed_client.get("/search/data?where=&q=&from=2026-04-01&to=2026-04-03&limit=2").json
+    assert len(res["results"]) == 2 and res["more"] is True
+    res = authed_client.get("/search/data?from=2026-04-01&to=2026-04-03&limit=5").json
+    assert res["more"] is False
+    by_name = {r["name"]: r for r in res["results"]}
+    assert by_name["Swim 1"]["mood"]["name"] == "Great" and by_name["Swim 2"]["mood"] is None

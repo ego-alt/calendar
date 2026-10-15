@@ -206,16 +206,21 @@
                 <h1>Search</h1>
             </header>
             <div class="search-controls">
-                <input class="input" type="search" id="searchInput" placeholder="Search your diary…" aria-label="Search your diary" autocomplete="off">
-                <div class="search-filters">
-                    <input class="input" type="date" id="searchFrom" aria-label="From date">
-                    <input class="input" type="date" id="searchTo" aria-label="To date">
+                <div class="search-row">
+                    <input class="input" type="search" id="searchInput" placeholder="Search your diary…" aria-label="Search your diary" autocomplete="off">
+                    <button type="button" class="btn btn-secondary filters-btn" id="filtersBtn" aria-expanded="false" aria-controls="searchFilters">
+                        Filters<span class="filters-count" id="filtersCount" hidden></span>
+                    </button>
+                </div>
+                <div class="search-filters" id="searchFilters">
+                    <label class="filter-field"><span>From</span><input class="input" type="date" id="searchFrom"></label>
+                    <label class="filter-field"><span>To</span><input class="input" type="date" id="searchTo"></label>
                     <select class="input" id="searchMood" aria-label="Mood">
                         <option value="">Any mood</option>
                         {% for m in moods %}<option value="{{ m.key }}">{{ m.name }}</option>{% endfor %}
                     </select>
-                    <input class="input" type="text" id="searchWho" placeholder="Who" autocomplete="off">
-                    <input class="input" type="text" id="searchWhere" placeholder="Where" autocomplete="off">
+                    <input class="input" type="text" id="searchWho" placeholder="Who" aria-label="Who" autocomplete="off">
+                    <input class="input" type="text" id="searchWhere" placeholder="Where" aria-label="Where" autocomplete="off">
                 </div>
             </div>
             <div class="search-interpreted" id="searchInterpreted" style="display:none"></div>

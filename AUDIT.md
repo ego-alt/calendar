@@ -496,6 +496,7 @@ The problems are mostly the hover-era controls inside it.
 **7.8 Search filters on a phone** [confirmed]
 - **What:** Five filter fields wrap into a block above the results, and the two date pickers don't say which is From and which is To.
 - **Fix:** Collapse them behind a **Filters** button (with a count badge); label From and To.
+- **Status:** Done. On phones the five filters fold behind a **Filters** button with a count badge; the date filters are labelled **From** and **To** everywhere.
 
 ---
 
@@ -540,6 +541,7 @@ The problems are mostly the hover-era controls inside it.
 **8.4 Search** [confirmed]
 - **What:** Quick and smart (meaning plus words plus parsed filters). But it caps at 20 results without saying so, doesn't show the day's mood on results, and doesn't highlight matches.
 - **Fix:** Show "20 of 63 · More", a mood swatch on each result, and highlighted matched words.
+- **Status:** Done. Results end with *20 entries · Show more* (20 more each time, up to 100; the server fetches one extra to know). Each result shows its day's mood, and the searched words are highlighted in titles, people, places and notes. The embedding model now loads in the background when the server starts (not in tests or CLI commands), so the first search no longer waits for it.
 
 ---
 
