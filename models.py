@@ -61,6 +61,11 @@ class Attachment(db.Model):
     size_bytes = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, server_default=func.now())
     deleted_at = db.Column(db.DateTime, nullable=True, index=True)  # soft delete (undo)
+    caption = db.Column(db.String, nullable=True)
+    # Optional: the entry this receipt/ticket belongs to (else it's the day's).
+    event_id = db.Column(
+        db.Integer, db.ForeignKey("events.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     __table_args__ = (db.Index("ix_attachments_daily_log", "daily_log_id"),)
 

@@ -66,6 +66,8 @@ def purge_deleted(older_than: timedelta = PURGE_AFTER) -> int:
     touched_logs = set()
     for attachment in old_attachments:
         (folder / attachment.stored_name).unlink(missing_ok=True)
+        thumb = folder / "thumbs" / (pathlib.Path(attachment.stored_name).stem + ".jpg")
+        thumb.unlink(missing_ok=True)
         touched_logs.add(attachment.daily_log_id)
         db.session.delete(attachment)
         removed += 1

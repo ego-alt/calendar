@@ -7,10 +7,41 @@ from flask_login import current_user
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
-from models import Attachment, DailyLog, db
+from models import Attachment, DailyLog, Event, db
 from trash import now, purge_deleted
 
 from ._helpers import json_login_required
+
+# Receipts, tickets and photos: images and PDFs only. Anything else could be
+# served from this origin and run as the app (AUDIT 4.8).
+IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/heif"}
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif"}
+THUMB_SIZE = 480
+
+
+def _thumb_path(stored_name):
+    return pathlib.Path(current_app.config["ATTACHMENT_DIR"]) / "thumbs" / (
+        pathlib.Path(stored_name).stem + ".jpg"
+    )
+
+
+def _make_thumb(source, stored_name):
+    """A small JPEG preview, turned the right way up (phone photos carry EXIF
+    rotation). Returns True if one was written."""
+    from PIL import Image, ImageOps
+
+    try:
+        with Image.open(source) as img:
+            img = ImageOps.exif_transpose(img)
+            img.thumbnail((THUMB_SIZE, THUMB_SIZE))
+            path = _thumb_path(stored_name)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            img.convert("RGB").save(path, "JPEG", quality=82)
+        return True
+    except Exception:  # noqa: BLE001 — a preview is best-effort
+        current_app.logger.exception("Couldn't make a thumbnail for %s", stored_name)
+        return False
+
 
 attachment_blueprint = Blueprint("attachments", __name__, url_prefix="/attachments")
 
@@ -21,6 +52,9 @@ def _attachment_payload(attachment):
         "filename": attachment.original_filename,
         "mime_type": attachment.mime_type,
         "size_bytes": attachment.size_bytes,
+        "caption": attachment.caption,
+        "event_id": attachment.event_id,
+        "is_image": attachment.mime_type.startswith("image/"),
     }
 
 
@@ -94,23 +128,68 @@ def upload_attachment():
         db.session.add(daily_log)
         db.session.flush()
 
-    secured = secure_filename(upload.filename) or "attachment"
+    filename = upload.filename
+    secured = secure_filename(filename) or "attachment"
     ext = pathlib.Path(secured).suffix.lower()
-    stored_name = f"{uuid.uuid4().hex}{ext}"
-    storage_path = pathlib.Path(current_app.config["ATTACHMENT_DIR"]) / stored_name
+    mime = (upload.mimetype or "").lower()
+    is_pdf = mime == "application/pdf" or ext == ".pdf"
+    is_image = mime in IMAGE_TYPES or ext in IMAGE_EXTS
+    if not (is_pdf or is_image):
+        db.session.rollback()
+        return jsonify({
+            "status": "error", "message": "Only photos and PDFs can be attached.",
+        }), 415
+
+    folder = pathlib.Path(current_app.config["ATTACHMENT_DIR"])
+    stored_name = f"{uuid.uuid4().hex}{'.pdf' if is_pdf else ext}"
+    storage_path = folder / stored_name
     upload.save(storage_path)
-    size_bytes = storage_path.stat().st_size
+
+    if is_image:
+        from PIL import Image
+
+        try:
+            # iPhone photos arrive as HEIC, which browsers can't show: keep a JPEG.
+            if ext in {".heic", ".heif"} or mime in {"image/heic", "image/heif"}:
+                import pillow_heif
+
+                pillow_heif.register_heif_opener()
+                jpeg_name = pathlib.Path(stored_name).stem + ".jpg"
+                with Image.open(storage_path) as img:
+                    img.convert("RGB").save(folder / jpeg_name, "JPEG", quality=90)
+                storage_path.unlink(missing_ok=True)
+                stored_name, storage_path = jpeg_name, folder / jpeg_name
+                filename = str(pathlib.Path(filename).with_suffix(".jpg"))
+                mime = "image/jpeg"
+            else:
+                with Image.open(storage_path) as img:
+                    fmt = img.format
+                    img.verify()   # it really is an image
+                mime = Image.MIME.get(fmt, mime) or mime
+        except Exception:  # noqa: BLE001
+            storage_path.unlink(missing_ok=True)
+            db.session.rollback()
+            return jsonify({
+                "status": "error", "message": "That photo couldn't be read. Try another format.",
+            }), 400
+        _make_thumb(storage_path, stored_name)
 
     attachment = Attachment(
         daily_log_id=daily_log.id,
-        original_filename=upload.filename,
+        original_filename=filename,
         stored_name=stored_name,
-        mime_type=upload.mimetype or "application/octet-stream",
-        size_bytes=size_bytes,
+        mime_type="application/pdf" if is_pdf else mime,
+        size_bytes=storage_path.stat().st_size,
     )
     db.session.add(attachment)
     db.session.commit()
     return jsonify({"status": "success", "attachment": _attachment_payload(attachment)})
+
+
+def _safe_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Content-Security-Policy"] = "default-src 'none'; img-src 'self'; sandbox"
+    return response
 
 
 @attachment_blueprint.route("/<int:attachment_id>", methods=["GET"])
@@ -119,14 +198,54 @@ def download_attachment(attachment_id):
     attachment = _get_owned_attachment(attachment_id)
     if not attachment:
         return jsonify({"status": "error", "message": "That file is already gone."}), 404
-
-    return send_from_directory(
+    mime = attachment.mime_type
+    viewable = mime.startswith("image/") or mime == "application/pdf"
+    response = send_from_directory(
         current_app.config["ATTACHMENT_DIR"],
         attachment.stored_name,
         mimetype=attachment.mime_type,
         download_name=attachment.original_filename,
-        as_attachment=False,
+        as_attachment=not viewable,   # anything else is a download, never rendered here
+        max_age=86400,
     )
+    return _safe_headers(response)
+
+
+@attachment_blueprint.route("/<int:attachment_id>/thumb", methods=["GET"])
+@json_login_required
+def attachment_thumb(attachment_id):
+    attachment = _get_owned_attachment(attachment_id)
+    if not attachment or not attachment.mime_type.startswith("image/"):
+        return jsonify({"status": "error", "message": "No preview."}), 404
+    path = _thumb_path(attachment.stored_name)
+    if not path.exists():   # older uploads: make it now
+        source = pathlib.Path(current_app.config["ATTACHMENT_DIR"]) / attachment.stored_name
+        if not _make_thumb(source, attachment.stored_name):
+            return jsonify({"status": "error", "message": "No preview."}), 404
+    response = send_from_directory(path.parent, path.name, mimetype="image/jpeg", max_age=86400)
+    return _safe_headers(response)
+
+
+@attachment_blueprint.route("/<int:attachment_id>", methods=["PATCH"])
+@json_login_required
+def update_attachment(attachment_id):
+    """Caption and/or the entry it belongs to (null to unlink)."""
+    attachment = _get_owned_attachment(attachment_id)
+    if not attachment:
+        return jsonify({"status": "error", "message": "That file is already gone."}), 404
+    data = request.get_json(silent=True) or {}
+    if "caption" in data:
+        caption = (data["caption"] or "").strip()
+        attachment.caption = caption[:500] or None
+    if "event_id" in data:
+        event_id = data["event_id"]
+        if event_id is not None:
+            event = Event.query.filter_by(id=event_id, user_id=current_user.id).first()
+            if not event:
+                return jsonify({"status": "error", "message": "That entry no longer exists."}), 404
+        attachment.event_id = event_id
+    db.session.commit()
+    return jsonify({"status": "success", "attachment": _attachment_payload(attachment)})
 
 
 @attachment_blueprint.route("/<int:attachment_id>", methods=["DELETE"])

@@ -94,6 +94,12 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
   - A lightbox viewer with swipe.
   - An optional caption and an optional link to an entry.
   - Convert HEIC to JPEG on upload.
+- **Status:** Done (PDF first-page previews left out; PDFs show a clear icon card).
+  - **Display:** each day has a *Receipts & tickets* strip of uniform 3:4 thumbnails, made server-side with Pillow (480 px, turned the right way up; older uploads get one on first view). PDFs show as icon cards whose names wrap at spaces.
+  - **Viewer:** tapping one opens an in-app viewer with ‹ › arrows, arrow keys and swipe, *Original*, *Delete* (with Undo), a caption, and a *Belongs to* menu that links it to one of the day's entries; linked ones then show in that entry's card.
+  - **Upload:** iPhone HEIC photos are converted to JPEG on upload, and progress shows as *Uploading 2 of 3…*. The attach control says *photos or PDFs, up to 10 MB each*.
+  - **Diary:** thumbnails open the viewer read-only.
+  - **Tests:** cover HEIC, thumbnails, captions and links.
 
 **1.8 Stats show *that* mood changed, never *why*** [confirmed]
 - **What:**
@@ -322,6 +328,7 @@ Time ranges are written with `--`, `-` and `–`.
   - Accept images and PDFs only.
   - Serve anything else as a download.
   - Add `X-Content-Type-Options: nosniff` and a restrictive CSP on attachment responses.
+- **Status:** Done. Only images and PDFs are accepted (*Only photos and PDFs can be attached.*), and images must actually decode. Every attachment response carries `X-Content-Type-Options: nosniff` and a sandboxing CSP, and any older non-image, non-PDF file is served as a download, never rendered. Covered by a test (an `.html` upload is refused).
 
 **4.9 Stats show old numbers after you log** [confirmed]
 - **What:** Stats load once per page visit and are fetched in the background on start. I logged today as "Great"; the tiles stayed at 285 days and a 0-day streak until a full reload.
@@ -540,7 +547,7 @@ The problems are mostly the hover-era controls inside it.
 | 6 | **Feedback and fresh numbers:** one toast style for saves and failures; refetch Stats after changes; streak counts from yesterday; refresh the grid after edits | 2.3, 4.9, 4.10, 4.6, 8.1 | **Small** | Done |
 | 7 | **Diary language and one entry form:** entries, not events; "Nothing written for this day yet"; one form component; plain error copy; native date and time pickers | 1.1, 3.2, 3.3, 4.5, 6 | **Medium** | Done |
 | 8 | **Look-back views as real views:** full-screen Diary with moods, attachments and month navigation; merge Year into one tappable year grid with a year picker; mark today, add a Today button | 1.4, 1.5, 2.1 | **Large** | Done |
-| 9 | **Receipts and tickets that look like keepsakes:** thumbnails, a lightbox, captions or a link to an entry, HEIC conversion, safe serving, a correct size-limit message | 1.7, 4.7, 4.8 | **Medium** | To do |
+| 9 | **Receipts and tickets that look like keepsakes:** thumbnails, a lightbox, captions or a link to an entry, HEIC conversion, safe serving, a correct size-limit message | 1.7, 4.7, 4.8 | **Medium** | Done |
 | 10 | **Stats that explain:** a "Mood with…" card for people and places, a year/range picker, a marker legend, phone-sized charts with tap details, and one consistent date format across the app | 1.8, 7.6, 3.1, 3.5 | **Large** | To do |
 
 **Close runners-up:**

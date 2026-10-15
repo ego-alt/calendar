@@ -17,6 +17,8 @@ dependencies = [
     "markupsafe==3.0.2",
     "numpy>=2.4.6",
     "packaging==24.2",
+    "pillow>=11.0",
+    "pillow-heif>=0.18",
     "pytest==8.3.4",
     "ruff==0.9.7",
     "sqlalchemy==2.0.38",

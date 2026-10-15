@@ -229,6 +229,18 @@
         </div>
     </div>
     <div class="toasts" id="toasts" aria-live="polite"></div>
+    <div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-label="Attachment">
+        <div class="viewer-bar">
+            <span class="viewer-count"></span>
+            <a class="btn btn-ghost viewer-open" target="_blank" rel="noopener" title="Open the original"><i class="fas fa-up-right-from-square" aria-hidden="true"></i> Original</a>
+            <button type="button" class="btn btn-ghost viewer-delete" title="Delete"><i class="fas fa-trash" aria-hidden="true"></i> Delete</button>
+            <button type="button" class="btn btn-ghost viewer-close" aria-label="Close"><i class="fas fa-times"></i></button>
+        </div>
+        <button type="button" class="viewer-nav viewer-prev" data-step="-1" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>
+        <div class="viewer-stage"></div>
+        <button type="button" class="viewer-nav viewer-next" data-step="1" aria-label="Next"><i class="fas fa-chevron-right"></i></button>
+        <div class="viewer-meta"></div>
+    </div>
     <div class="action-sheet" id="actionSheet" hidden>
         <div class="action-sheet-card" role="menu">
             <div class="action-sheet-title"></div>

@@ -288,6 +288,7 @@ function renderDetail(icon, text, extraClass = '') {
 }
 
 function renderEntryCard(event) {
+    const linked = dayState.attachments.filter((a) => a.event_id === event.id);
     const subs = (event.subevents || []).map((s) => `
         <div class="subevent-card" data-event-id="${event.id}" data-subevent-id="${s.id}">
             <div class="subevent-actions">
@@ -319,24 +320,34 @@ function renderEntryCard(event) {
                 ${renderDetail('fa-sticky-note', event.notes, 'entry-notes')}
             </div>
             ${subs ? `<div class="subevents-container"><div class="subevents-list">${subs}</div></div>` : ''}
+            ${linked.length ? `<div class="entry-attachments">${linked.map((a) => attachmentTile(a, { small: true })).join('')}</div>` : ''}
+        </div>`;
+}
+
+/** One attachment tile: a real thumbnail for photos, an icon card for PDFs. */
+function attachmentTile(a, { small = false } = {}) {
+    const name = escapeHtml(a.filename);
+    const caption = a.caption ? escapeHtml(a.caption) : '';
+    const preview = a.is_image
+        ? `<img src="${appUrl(`/attachments/${a.id}/thumb`)}" alt="${caption || name}" loading="lazy">`
+        : `<span class="attachment-icon"><i class="fas fa-file-pdf" aria-hidden="true"></i><span>${name}</span></span>`;
+    return `
+        <div class="attachment-tile${small ? ' small' : ''}" data-attachment-id="${a.id}">
+            <button type="button" class="attachment-open" data-act="view-attachment" title="${caption || name}" aria-label="Open ${caption || name}">${preview}</button>
+            ${small ? '' : `<button type="button" class="attachment-delete" data-act="delete-attachment" title="Delete" aria-label="Delete ${name}"><i class="fas fa-times"></i></button>`}
+            ${caption && !small ? `<div class="attachment-caption">${caption}</div>` : ''}
         </div>`;
 }
 
 function renderAttachments() {
-    const items = dayState.attachments.map((a) => {
-        const name = escapeHtml(a.filename);
-        const url = appUrl(`/attachments/${a.id}`);
-        const isImage = a.mime_type && a.mime_type.startsWith('image/');
-        const preview = isImage
-            ? `<img src="${url}" alt="${name}" loading="lazy">`
-            : `<div class="attachment-icon"><i class="fas fa-file"></i><span>${name}</span></div>`;
-        return `
-            <div class="attachment-tile" data-attachment-id="${a.id}">
-                <a class="attachment-link" href="${url}" target="_blank" rel="noopener" title="${name}">${preview}</a>
-                <button type="button" class="attachment-delete" data-act="delete-attachment" title="Delete" aria-label="Delete ${name}"><i class="fas fa-times"></i></button>
-            </div>`;
-    }).join('');
-    return items ? `<div class="attachments-section"><div class="attachments-grid">${items}</div></div>` : '';
+    // Attachments linked to an entry show in its card; the rest belong to the day.
+    const own = dayState.attachments.filter((a) => !a.event_id || !findEntry(a.event_id));
+    if (!own.length) return '';
+    return `
+        <section class="attachments-section">
+            <div class="section-label">Receipts &amp; tickets</div>
+            <div class="attachments-grid">${own.map((a) => attachmentTile(a)).join('')}</div>
+        </section>`;
 }
 
 function renderDay() {
@@ -346,8 +357,8 @@ function renderDay() {
     content.innerHTML = `
         <div class="sidebar-header">
             <span class="day-title">${escapeHtml(formatDayLong(date))}</span>
-            <label class="attachment-upload-btn" title="Attach a photo or file">
-                <input type="file" multiple hidden onchange="handleAttachmentUpload(event)">
+            <label class="attachment-upload-btn" title="Attach photos or PDFs (up to 10 MB each)">
+                <input type="file" multiple hidden accept="image/*,.heic,.heif,application/pdf" onchange="handleAttachmentUpload(event)">
                 <i class="fas fa-paperclip" aria-hidden="true"></i><span class="sr-only">Attach</span>
             </label>
         </div>
@@ -583,7 +594,11 @@ async function handleAttachmentUpload(event) {
     event.target.value = '';
     if (!files.length || currentOpenDay == null) return;
     let added = 0;
-    for (const file of files) {
+    const progress = document.createElement('div');
+    progress.className = 'upload-progress';
+    document.querySelector('#sidebarContent .sidebar-header')?.after(progress);
+    for (const [index, file] of files.entries()) {
+        progress.textContent = files.length > 1 ? `Uploading ${index + 1} of ${files.length}…` : `Uploading ${file.name}…`;
         const form = new FormData();
         form.append('file', file);
         form.append('year', viewState.year);
@@ -596,6 +611,7 @@ async function handleAttachmentUpload(event) {
             toast(`${file.name}: ${error.message}`, { error: true });
         }
     }
+    progress.remove();
     if (added) toast(added === 1 ? 'Attached' : `Attached ${added} files`);
     await showSidebar(currentOpenDay);
 }
@@ -624,6 +640,100 @@ async function deleteAttachment(attachmentId) {
     });
     await showSidebar(currentOpenDay);
 }
+
+// ---------- the attachment viewer ----------
+
+let viewer = null;   // { list, index, editable }
+
+/** Show attachments one at a time: photo (or PDF card), caption, the entry
+ *  it belongs to, Open original and Delete. Arrow keys and swipes move. */
+function openViewer(list, index, { editable = true } = {}) {
+    viewer = { list, index, editable };
+    const el = document.getElementById('viewer');
+    el.hidden = false;
+    renderViewer();
+    requestAnimationFrame(() => el.classList.add('open'));
+}
+function closeViewer() {
+    const el = document.getElementById('viewer');
+    el.classList.remove('open');
+    setTimeout(() => { el.hidden = true; }, 150);
+    viewer = null;
+}
+function renderViewer() {
+    const a = viewer.list[viewer.index];
+    const url = appUrl(`/attachments/${a.id}`);
+    const el = document.getElementById('viewer');
+    const many = viewer.list.length > 1;
+    const entries = (dayState?.events || []);
+    el.querySelector('.viewer-stage').innerHTML = a.is_image
+        ? `<img src="${url}" alt="${escapeHtml(a.caption || a.filename)}">`
+        : `<div class="viewer-doc"><i class="fas fa-file-pdf" aria-hidden="true"></i><div>${escapeHtml(a.filename)}</div>
+              <a class="btn btn-primary" href="${url}" target="_blank" rel="noopener">Open PDF</a></div>`;
+    el.querySelector('.viewer-count').textContent = many ? `${viewer.index + 1} of ${viewer.list.length}` : '';
+    el.querySelectorAll('.viewer-nav').forEach((b) => { b.hidden = !many; });
+    el.querySelector('.viewer-open').href = url;
+    const meta = el.querySelector('.viewer-meta');
+    meta.innerHTML = viewer.editable ? `
+        <input class="input viewer-caption" placeholder="Add a caption" value="${escapeHtml(a.caption || '')}" aria-label="Caption" maxlength="500">
+        ${entries.length ? `<select class="input viewer-entry" aria-label="Belongs to">
+            <option value="">Belongs to the whole day</option>
+            ${entries.map((e) => `<option value="${e.id}" ${a.event_id === e.id ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('')}
+        </select>` : ''}` : (a.caption ? `<div class="viewer-caption-text">${escapeHtml(a.caption)}</div>` : '');
+    el.querySelector('.viewer-delete').hidden = !viewer.editable;
+}
+async function saveViewerField(field, value) {
+    const a = viewer?.list[viewer.index];
+    if (!a) return;
+    try {
+        const res = await api(`/attachments/${a.id}`, { method: 'PATCH', json: { [field]: value } });
+        Object.assign(a, res.attachment);
+        toast('Saved');
+        if (dayState) { dayState.attachments = dayState.attachments.map((x) => (x.id === a.id ? a : x)); renderDay(); }
+    } catch (error) {
+        toast(error.message, { error: true });
+    }
+}
+function moveViewer(step) {
+    if (!viewer || viewer.list.length < 2) return;
+    viewer.index = (viewer.index + step + viewer.list.length) % viewer.list.length;
+    renderViewer();
+}
+(function wireViewer() {
+    const el = document.getElementById('viewer');
+    el.addEventListener('click', (e) => {
+        e.stopPropagation();   // never a tap outside the day panel
+        if (e.target === el || e.target.closest('.viewer-close')) closeViewer();
+        else if (e.target.closest('[data-step]')) moveViewer(Number(e.target.closest('[data-step]').dataset.step));
+        else if (e.target.closest('.viewer-delete')) {
+            const a = viewer.list[viewer.index];
+            closeViewer();
+            deleteAttachment(a.id);
+        }
+    });
+    el.addEventListener('change', (e) => {
+        if (e.target.classList.contains('viewer-caption')) saveViewerField('caption', e.target.value);
+        if (e.target.classList.contains('viewer-entry')) saveViewerField('event_id', e.target.value ? Number(e.target.value) : null);
+    });
+    el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.classList.contains('viewer-caption')) e.target.blur();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (!viewer) return;
+        if (e.key === 'Escape') { e.stopPropagation(); closeViewer(); }
+        if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+        if (e.key === 'ArrowLeft') moveViewer(-1);
+        if (e.key === 'ArrowRight') moveViewer(1);
+    }, true);
+    let x0 = null;
+    el.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+    el.addEventListener('touchend', (e) => {
+        if (x0 === null) return;
+        const dx = e.changedTouches[0].clientX - x0;
+        x0 = null;
+        if (Math.abs(dx) > 50) moveViewer(dx < 0 ? 1 : -1);
+    }, { passive: true });
+})();
 
 // ---------- action sheet (touch: the ⋯ on an entry) ----------
 
@@ -674,6 +784,12 @@ document.getElementById('sidebarContent').addEventListener('click', (e) => {
             e.preventDefault();
             deleteAttachment(Number(target.closest('.attachment-tile').dataset.attachmentId));
             break;
+        case 'view-attachment': {
+            const id = Number(target.closest('.attachment-tile').dataset.attachmentId);
+            const list = dayState.attachments;
+            openViewer(list, Math.max(0, list.findIndex((a) => a.id === id)));
+            break;
+        }
         case 'retry': showSidebar(currentOpenDay); break;
         case 'more': {
             const entry = findEntry(eventId);

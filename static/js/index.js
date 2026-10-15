@@ -189,7 +189,7 @@ function setupGlobalEventListeners() {
         // day (month/week/year cells, diary entries) or is on our own overlays.
         // Diary and Year are full views now: they close by switching mode.
         const keepsPanel = t.closest(
-            '#sidebar, #colorPicker, .day, .eye-icon, .week-grid, .year-day, .diary-day-head, .diary-event, #confirmModal, #toasts, #actionSheet'
+            '#sidebar, #colorPicker, .day, .eye-icon, .week-grid, .year-day, .diary-day-head, .diary-event, #confirmModal, #toasts, #actionSheet, #viewer'
         );
         if (!keepsPanel && sidebar.classList.contains('active')) {
             sidebar.classList.remove('active');
@@ -788,6 +788,7 @@ async function loadMonthEvents() {
     const moodColors = monthData.mood_colors || {};
     const markers = new Set(monthData.days_with_marker || []);
     const files = attachments.attachments || {};
+    diaryFiles = files;
     const days = [...new Set([
         ...Object.keys(entriesByDay), ...Object.keys(moodColors), ...Object.keys(files), ...markers,
     ].map(Number))].sort((a, b) => a - b);
@@ -821,12 +822,11 @@ async function loadMonthEvents() {
                     ${moments}
                 </div>`;
         }).join('');
-        const fileTiles = (files[day] || []).map((a) => {
-            const url = appUrl(`/attachments/${a.id}`);
-            const name = escapeHtml(a.filename);
-            return a.mime_type && a.mime_type.startsWith('image/')
-                ? `<a class="diary-file diary-file-img" href="${url}" target="_blank" rel="noopener" title="${name}"><img src="${url}" alt="${name}" loading="lazy"></a>`
-                : `<a class="diary-file" href="${url}" target="_blank" rel="noopener" title="${name}"><i class="fas fa-file" aria-hidden="true"></i><span>${name}</span></a>`;
+        const fileTiles = (files[day] || []).map((a, i) => {
+            const name = escapeHtml(a.caption || a.filename);
+            return a.is_image
+                ? `<button type="button" class="diary-file diary-file-img" data-file-day="${day}" data-file-index="${i}" title="${name}"><img src="${appUrl(`/attachments/${a.id}/thumb`)}" alt="${name}" loading="lazy"></button>`
+                : `<button type="button" class="diary-file" data-file-day="${day}" data-file-index="${i}" title="${name}"><i class="fas fa-file-pdf" aria-hidden="true"></i><span>${name}</span></button>`;
         }).join('');
         return `
             <section class="diary-day">
@@ -841,8 +841,13 @@ async function loadMonthEvents() {
     }).join('');
 }
 
+let diaryFiles = {};
 document.getElementById('diaryContent').addEventListener('click', (e) => {
-    if (e.target.closest('a')) return;                  // attachment links open themselves
+    const file = e.target.closest('[data-file-day]');
+    if (file) {
+        openViewer(diaryFiles[file.dataset.fileDay] || [], Number(file.dataset.fileIndex), { editable: false });
+        return;
+    }
     if (e.target.closest('[data-act="diary-retry"]')) { loadMonthEvents(); return; }
     const dayEl = e.target.closest('[data-day]');
     if (dayEl) showSidebar(Number(dayEl.dataset.day));

@@ -123,10 +123,19 @@ def test_mood_update_and_marker(authed_client):
     assert 11 in authed_client.get("/get_month?year=2026&month=5").get_json()["days_with_marker"]
 
 
+def _png(size=(40, 30)):
+    from PIL import Image
+    buf = BytesIO()
+    Image.new("RGB", size, (200, 180, 160)).save(buf, "PNG")
+    return buf.getvalue()
+
+
 def _upload(
     client, year, month, day,
-    *, filename="receipt.png", mime="image/png", content=b"PNGDATA",
+    *, filename="receipt.png", mime="image/png", content=None,
 ):
+    if content is None:
+        content = _png()
     return client.post(
         "/attachments",
         data={
@@ -143,7 +152,7 @@ def test_attachment_upload_and_list(authed_client):
     payload = response.get_json()["attachment"]
     assert payload["filename"] == "receipt.png"
     assert payload["mime_type"] == "image/png"
-    assert payload["size_bytes"] == len(b"PNGDATA")
+    assert payload["size_bytes"] == len(_png())
 
     listed = authed_client.get("/attachments?year=2026&month=5&day=11").get_json()
     assert len(listed["attachments"]) == 1
@@ -151,12 +160,13 @@ def test_attachment_upload_and_list(authed_client):
 
 
 def test_attachment_download_serves_bytes(authed_client):
-    upload = _upload(authed_client, 2026, 5, 11, content=b"hello-receipt")
+    content = _png((12, 9))
+    upload = _upload(authed_client, 2026, 5, 11, content=content)
     attachment_id = upload.get_json()["attachment"]["id"]
 
     response = authed_client.get(f"/attachments/{attachment_id}")
     assert response.status_code == 200
-    assert response.data == b"hello-receipt"
+    assert response.data == content
     assert response.headers["Content-Type"].startswith("image/png")
 
 
@@ -327,3 +337,49 @@ def test_month_attachments_by_day(authed_client):
     _upload(authed_client, 2026, 5, 20)
     got = authed_client.get("/attachments/month?year=2026&month=5").json["attachments"]
     assert sorted(got) == ["11", "20"] and got["11"][0]["filename"]
+
+
+
+def test_only_photos_and_pdfs_are_accepted(authed_client):
+    r = _upload(authed_client, 2026, 5, 11, filename="page.html", mime="text/html",
+                content=b"<script>alert(1)</script>")
+    assert r.status_code == 415 and "photos and PDFs" in r.json["message"]
+    r = _upload(authed_client, 2026, 5, 11, filename="fake.png", mime="image/png",
+                content=b"not really a png")
+    assert r.status_code == 400
+    r = _upload(authed_client, 2026, 5, 11, filename="ticket.pdf", mime="application/pdf",
+                content=b"%PDF-1.4 minimal")
+    assert r.status_code == 200 and r.json["attachment"]["is_image"] is False
+
+
+def test_heic_becomes_jpeg_with_a_thumbnail(authed_client):
+    import pillow_heif
+    from PIL import Image
+    pillow_heif.register_heif_opener()
+    buf = BytesIO()
+    Image.new("RGB", (900, 1200), (90, 120, 160)).save(buf, "HEIF")
+    r = _upload(authed_client, 2026, 5, 13, filename="IMG_4021.HEIC", mime="image/heic",
+                content=buf.getvalue())
+    att = r.json["attachment"]
+    assert att["filename"] == "IMG_4021.jpg" and att["mime_type"] == "image/jpeg"
+    full = authed_client.get(f"/attachments/{att['id']}")
+    assert full.headers["Content-Type"] == "image/jpeg"
+    assert full.headers["X-Content-Type-Options"] == "nosniff"
+    thumb = authed_client.get(f"/attachments/{att['id']}/thumb")
+    assert thumb.status_code == 200
+    assert max(Image.open(BytesIO(thumb.data)).size) <= 480
+
+
+def test_caption_and_link_to_entry(authed_client):
+    authed_client.post("/events/", json={"name": "Concert", "start_date": "2026-05-11",
+                                         "end_date": "2026-05-11"})
+    event_id = authed_client.get("/events/?year=2026&month=5&day=11").json["events"][0]["id"]
+    att_id = _upload(authed_client, 2026, 5, 11).json["attachment"]["id"]
+    r = authed_client.patch(f"/attachments/{att_id}",
+                            json={"caption": " Ticket ", "event_id": event_id})
+    updated = r.json["attachment"]
+    assert updated["caption"] == "Ticket" and updated["event_id"] == event_id
+    listed = authed_client.get("/attachments?year=2026&month=5&day=11").json["attachments"][0]
+    assert listed["caption"] == "Ticket" and listed["event_id"] == event_id
+    r = authed_client.patch(f"/attachments/{att_id}", json={"event_id": None})
+    assert r.json["attachment"]["event_id"] is None

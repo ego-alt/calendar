@@ -105,6 +105,16 @@ Tunables (optional env vars):
 - `FASTEMBED_CACHE_PATH` — where the embedding model is cached. The Docker image
   bakes it in at build time so the container needs no network at runtime.
 
+## Receipts and tickets
+
+Each day can hold photos and PDFs (receipts, tickets), attached in the day
+panel or sent from the phone scanner app (`POST /attachments` with `file`,
+`year`, `month`, `day`). Only images and PDFs are accepted (up to 10 MB each);
+iPhone HEIC photos are converted to JPEG on upload, and a small thumbnail is
+kept for each photo (`instance/attachments/thumbs/`). An attachment can have a
+caption and can be linked to one of the day's entries, which shows it in that
+entry's card.
+
 ## Deleting and undo
 
 Deleting an entry, a moment or an attachment marks it deleted (`deleted_at`) and
