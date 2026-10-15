@@ -9,8 +9,8 @@ tickets that go with it, and the trends over time.
 
 - **Calendar** — Month, Week, Year and Diary views (one switch on desktop, a
   bottom bar on phones). Tap any day to open it: set its **mood** (Great →
-  Rough), **mark** it (a red dot, shown on the calendar and the mood trend),
-  write **entries** with optional times, people, places and notes, add
+  Rough), toggle the **marker** (a small, unlabelled red dot, a private
+  tracker shown quietly on the calendar and the mood trend), write **entries** with optional times, people, places and notes, add
   **moments** inside an entry, and attach **photos and PDFs**.
 - **Never lose writing** — half-written entries are kept as drafts per day and
   come back when the day reopens; deletes (entries, moments, attachments) can
@@ -31,8 +31,8 @@ tickets that go with it, and the trends over time.
 - **Installable** — add it to a phone's home screen; days you've opened stay
   readable offline.
 - **Keyboard** — `←`/`→` (or `h`/`l`) month or week, `j`/`k` year, `t` today,
-  `m` `w` `y` `d` views, `n` write, `1`–`5` mood, `x` mark, `/` search, `?` for
-  the list.
+  `m` `w` `y` `d` views, `n` write, `1`–`5` mood, `x` marker, `/` search, `?`
+  for the list.
 
 ## Development Setup (uv)
 

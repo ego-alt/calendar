@@ -176,7 +176,6 @@
                 </div>
                 <p class="hint">Daily mood score</p>
                 <div id="trend"></div>
-                <div class="st-trend-legend"><span class="st-legend-line"></span>Mood <span class="st-legend-mark"></span>Marked day</div>
             </section>
 
             <section class="st-card">
@@ -276,7 +275,7 @@
                 <dt><kbd>m</kbd> <kbd>w</kbd> <kbd>y</kbd> <kbd>d</kbd></dt><dd>Month, Week, Year, Diary</dd>
                 <dt><kbd>n</kbd></dt><dd>Write about the open day (or today)</dd>
                 <dt><kbd>1</kbd>–<kbd>5</kbd></dt><dd>Mood for the open day, Great → Rough</dd>
-                <dt><kbd>x</kbd></dt><dd>Mark / unmark the open day</dd>
+                <dt><kbd>x</kbd></dt><dd>Toggle the marker on the open day</dd>
                 <dt><kbd>/</kbd></dt><dd>Search</dd>
                 <dt><kbd>Esc</kbd></dt><dd>Close (drafts are kept)</dd>
                 <dt><kbd>?</kbd></dt><dd>This list</dd>
@@ -305,7 +304,6 @@
         </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/app_root.js') }}"></script>
     <script>window.APP_ROOT = "{{ request.script_root }}";</script>
     <script>

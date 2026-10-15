@@ -6,9 +6,9 @@
 // files are stale-while-revalidate. Writes (POST/PUT/PATCH/DELETE) are never
 // touched: offline, they fail visibly and the entry form keeps its draft.
 
-const CACHE = 'calendar-v1';
+const CACHE = 'calendar-v2';
 const ROOT = new URL(self.registration.scope).pathname;   // ends in "/"
-const CDN = new Set(['cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'code.jquery.com']);
+const CDN = new Set(['cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com']);
 const PASSTHROUGH = ['auth/', 'export', 'sw.js', 'healthz', 'search/data'];
 const JSON_ROUTES = ['get_month', 'get_week', 'get_year', 'events', 'attachments', 'stats/data'];
 

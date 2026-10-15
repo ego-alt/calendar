@@ -293,21 +293,19 @@ h2 {
     text-transform: uppercase;
     color: var(--color-text-muted);
 }
+/* The quick mood picker opens beside a day (a desktop hover shortcut; on
+   touch, mood is set in the day sheet). */
 .color-picker {
-    display: none;  /* Hide by default */
-    position: fixed;
-    transform: translateX(-50%);
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: 300px;
-    width: 90%;
-    z-index: 1002;  /* Above the bottom-sheet sidebar (1000) on mobile */
+    display: none;
+    position: absolute;
+    flex-direction: column;
+    z-index: 1002;
 }
 .color-option {
     width: 30px;
     height: 30px;
     border-radius: var(--radius-pill);
-    margin: var(--space-1);
+    margin: 3px;
     cursor: pointer;
     border: 2px solid transparent;
     transition: transform 0.2s ease;
@@ -595,16 +593,6 @@ h2 {
         top: var(--shell-bar-h);
         height: calc(100dvh - var(--shell-bar-h));
     }
-    .color-picker {
-        position: absolute;  /* Position relative to clicked day */
-        display: none;
-        flex-direction: column;  /* Vertical layout */
-        width: auto;
-        transform: none;
-    }
-    .color-option {
-        margin: 3px;
-    }
 }
 /* Mobile styles */
 @media (max-width: 480px) {
@@ -624,17 +612,6 @@ h2 {
      * back out. Keep the visual scale but lift these to 16px on phones. */
     .date-input, .time-input {
         font-size: var(--text-base);
-    }
-    .color-picker {
-        position: fixed;
-        bottom: max(var(--space-5), env(safe-area-inset-bottom));
-        left: 50%;
-        flex-direction: row;  /* Horizontal layout */
-    }
-    .color-option {
-        width: 25px;
-        height: 25px;
-        margin: var(--space-1);
     }
     /* Bottom-sheet event drawer. Two states only: open at this default height,
      * or dismissed — tapping/swiping the handle slides it back down. */
@@ -1078,25 +1055,22 @@ h2 {
     gap: var(--space-3);
     margin-bottom: var(--space-4);
 }
+/* The marker: a small, unlabelled dot toggle (a private tracker, meant to
+   stay subtle): outlined when off, filled when on. */
 .marker-toggle {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-2);
-    min-height: 36px;
-    padding: var(--space-1) var(--space-3);
-    border: 1px dashed var(--color-border);
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
     border-radius: var(--radius-pill);
     background: none;
-    color: var(--color-text-muted);
-    font: inherit;
-    font-size: var(--text-sm);
     cursor: pointer;
+    opacity: 0.55;
 }
-.marker-toggle.active {
-    border-style: solid;
-    border-color: var(--color-danger);
-    color: var(--color-text-primary);
-}
+.marker-toggle:hover, .marker-toggle.active { opacity: 1; }
 .marker-dot {
     width: 8px;
     height: 8px;
@@ -1104,6 +1078,7 @@ h2 {
     border: 1.5px solid var(--color-danger);
 }
 .marker-toggle.active .marker-dot { background: var(--color-danger); }
+@media (hover: none) { .marker-toggle { width: 44px; height: 44px; } }
 .link-btn {
     background: none;
     border: 0;
@@ -1507,3 +1482,5 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 .first-run { box-sizing: border-box; }
 body.signed-out .login-button { display: none; }
 .first-run { margin-top: var(--space-3); }
+.day-tools { display: inline-flex; align-items: center; gap: 2px; }
+.day-flags { margin: calc(-1 * var(--space-1)) 0 var(--space-3); }

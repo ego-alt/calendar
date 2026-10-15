@@ -96,14 +96,6 @@
 /* ---- heatmap cells open their day ---- */
 .st-cell[data-date] { cursor: pointer; }
 
-/* ---- trend legend ---- */
-.st-trend-legend {
-    display: flex; align-items: center; gap: var(--space-2);
-    font-size: var(--text-xs); color: var(--color-text-muted); margin-top: var(--space-2);
-}
-.st-legend-line { width: 16px; height: 2px; background: var(--color-accent); display: inline-block; }
-.st-legend-mark { width: 7px; height: 7px; border-radius: var(--radius-pill); background: var(--color-danger); display: inline-block; margin-left: var(--space-3); }
-
 /* ---- tap details under the bar charts ---- */
 .st-detail { min-height: 1.4em; margin-top: var(--space-2); font-size: var(--text-sm); color: var(--color-text-secondary); }
 .st-detail .h { font-weight: 600; }

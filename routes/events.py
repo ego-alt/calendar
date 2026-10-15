@@ -249,7 +249,7 @@ def subevents(event_id):
     return jsonify({"status": "success", "message": "Subevent created successfully"})
 
 
-@event_blueprint.route("/subevents/<int:subevent_id>", methods=["PUT", "DELETE", "GET"])
+@event_blueprint.route("/subevents/<int:subevent_id>", methods=["PUT", "DELETE"])
 @json_login_required
 def manage_subevent(subevent_id):
     subevent = (
@@ -267,10 +267,7 @@ def manage_subevent(subevent_id):
         parent_event = db.session.get(Event, parent_id)
         if parent_event is not None:
             index_event_safe(parent_event)
-        return jsonify({"status": "success", "message": "Subevent deleted"})
-
-    if request.method == "GET":
-        return jsonify({"status": "success", "subevent": retrieve_event_data(subevent)})
+        return jsonify({"status": "success", "message": "Deleted"})
 
     parent_event = db.session.get(Event, subevent.event_id)
     try:

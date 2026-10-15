@@ -46,7 +46,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **Fix:**
   - Add a visible toggle in the day panel with your own label (a setting, default "Marked").
   - Add a legend entry in Stats, e.g. "● Marked day".
-- **Status:** Done (Stats legend in #10). A visible *Mark this day* / *Marked* toggle in the day panel (with a tooltip saying where the dot shows), working on touch; double-click on a day still works on desktop. Both go through one toggle with a toast.
+- **Status:** Done, revised. The marker is a private period tracker and is meant to stay subtle, so it is unlabelled everywhere: in the day panel it is a small dot toggle (outlined when off, filled when on, tooltip *Marker*) in the day header beside the paperclip, and it works on touch. Changing it shows no toast (a failure still says so). The red dots stay on the calendar, Year, Diary, phone Week cards and the trend line, as before; the Stats legend entry and the *marked* tooltips were removed. Desktop double-click and `x` still toggle it.
 
 **1.4 The "look back" views are cramped side panels** [confirmed]
 - **What:**
@@ -391,7 +391,7 @@ Time ranges are written with `--`, `-` and `–`.
 
 That turns 10 steps with three traps into about 4 steps: tap today, tap a mood, write, done.
 
-**Status: done.** Tapping today (anywhere on the cell) opens its sheet with the mood row and marker at the top; one tap sets the mood (with Undo). **Write about this day** opens a full-screen form with Save pinned above the keyboard. Nothing typed is lost by tapping away (drafts come back), and *Saved* confirms. Logging today is now: tap today → tap a mood → Write → Save.
+**Status: done.** Tapping today (anywhere on the cell) opens its sheet with the mood row at the top (the small marker dot sits in the header); one tap sets the mood (with Undo). **Write about this day** opens a full-screen form with Save pinned above the keyboard. Nothing typed is lost by tapping away (drafts come back), and *Saved* confirms. Logging today is now: tap today → tap a mood → Write → Save.
 
 ### Second task: attach a scanned receipt to a day
 - From the phone app, the upload lands on the day. Opening that day shows a narrow white strip, and the PDF's name broken mid-word (1.7).
@@ -443,7 +443,7 @@ That turns 10 steps with three traps into about 4 steps: tap today, tap a mood, 
 - Search labels read *Showing last month · with Sam* (plain phrases, not removable chips).
 - The upload limit message is *That file is over 10 MB.*
 
-The Diary and Year rows land with #8, and the trend legend with #10.
+The Diary and Year rows landed with #8. The *Marked day* trend legend was deliberately left out: the marker is a private tracker and stays unlabelled (see 1.3).
 
 ---
 
@@ -475,7 +475,7 @@ The problems are mostly the hover-era controls inside it.
 **7.3 The marker can't be set on a phone** [confirmed]
 - **What:** A double-tap on a day did nothing. There's no other way to set it.
 - **Fix:** A marker toggle in the day sheet (1.3).
-- **Status:** Done. *Mark this day* is a button in the day sheet, so it works on touch (see 1.3).
+- **Status:** Done. The marker's dot toggle is in the day sheet (44 px target on touch), so it can be set on a phone; it stays unlabelled (see 1.3).
 
 **7.4 The keyboard and the entry form** [confirmed]
 - **What:**
@@ -505,7 +505,7 @@ The problems are mostly the hover-era controls inside it.
   - Draw the trend at the card's real width (or show the last 3 months on phones).
   - Scroll the heatmap to the right end on load.
   - Make cells and bars tappable, showing a small caption under the chart; a heatmap cell should also open that day.
-- **Status:** Done. The trend is drawn at the card's real width (labels 12 px on a phone, every other month when narrow) and redrawn on resize. The heatmap opens scrolled to the most recent weeks. Tapping a mix column or an entries bar writes its breakdown under the chart (hover still shows the tip), and tapping a heatmap day opens that day in the calendar. A legend explains the line and the red *Marked day* dots.
+- **Status:** Done. The trend is drawn at the card's real width (labels 12 px on a phone, every other month when narrow) and redrawn on resize. The heatmap opens scrolled to the most recent weeks. Tapping a mix column or an entries bar writes its breakdown under the chart (hover still shows the tip), and tapping a heatmap day opens that day in the calendar. The red marker dots stay unlabelled (see 1.3).
 
 **7.7 Week view on a phone** [confirmed]
 - **What:** Entries are cut to "08:…", "10:…" with names hidden.

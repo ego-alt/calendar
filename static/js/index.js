@@ -36,14 +36,6 @@ function isAllDayEvent(event) {
     );
 }
 
-/** Parse a "YYYY-MM-DD HH:MM" string into form-ready {date: "DD-MM-YYYY", time: "HH:MM"}. */
-function parseDateTime(dateTimeStr) {
-    if (!dateTimeStr) return { date: '', time: '' };
-    const [datePart, timePart] = dateTimeStr.split(' ');
-    const [year, month, day] = datePart.split('-');
-    return { date: `${day}-${month}-${year}`, time: timePart };
-}
-
 /** Parse "YYYY-MM-DD HH:MM" as a local-time Date — explicit to dodge browser parsing differences. */
 function parseLocalDateTime(str) {
     const [datePart, timePart] = str.split(' ');
@@ -512,7 +504,6 @@ async function updateCalendarView() {
 }
 
 function toggleWeekView(show) {
-    const select = document.getElementById('viewSelect');
     const monthGrid = document.getElementById('viewMonth');
     const weekGrid = document.getElementById('viewWeek');
 
@@ -531,7 +522,6 @@ function toggleWeekView(show) {
         viewState.mode = 'week';
         monthGrid.style.display = 'none';
         weekGrid.style.display = '';
-        if (select) select.value = 'week';
         renderWeek();
     } else {
         viewState.mode = 'month';
@@ -539,7 +529,6 @@ function toggleWeekView(show) {
         viewState.month = viewState.weekAnchor.month;
         monthGrid.style.display = '';
         weekGrid.style.display = 'none';
-        if (select) select.value = 'month';
         updateCalendarView();
     }
     updateBottomBar();
@@ -724,7 +713,7 @@ function renderWeekCards(data, todayIso) {
                 <span class="wc-head">
                     <span class="wc-date">${escapeHtml(formatDate(date, { year: false }))}</span>
                     ${moodName ? `<span class="wc-mood"><span class="mood-dot" aria-hidden="true"></span>${escapeHtml(moodName)}</span>` : ''}
-                    ${data.markers.includes(d.date) ? '<span class="diary-marker" title="Marked"></span>' : ''}
+                    ${data.markers.includes(d.date) ? '<span class="diary-marker" aria-hidden="true"></span>' : ''}
                 </span>
                 ${list ? `<ul class="wc-entries">${list}</ul>` : '<span class="wc-empty">Nothing written</span>'}
             </button>`;
@@ -739,14 +728,20 @@ function openDayFromWeek(year, month, day) {
 }
 
 function showLoginDialog() {
-    $('#loginOverlay').css('display', 'flex').fadeIn();
-    $('#username').focus();
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('username').focus();
 }
 
 function closeLoginDialog() {
-    $('#loginOverlay').fadeOut();
-    $('#loginForm')[0].reset();
-    $('#loginError').hide();
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('loginForm').reset();
+    document.getElementById('loginError').style.display = 'none';
+}
+
+function showLoginError(message) {
+    const el = document.getElementById('loginError');
+    el.textContent = message;
+    el.style.display = 'block';
 }
 
 async function handleLogin(event) {
@@ -765,11 +760,11 @@ async function handleLogin(event) {
         if (response.ok) {
             location.reload();
         } else {
-            $('#loginError').text(data.error).show();
+            showLoginError(data.error);
         }
     } catch (error) {
         console.error('Login error:', error);
-        $('#loginError').text("Couldn't reach the calendar. Check your connection.").show();
+        showLoginError("Couldn't reach the calendar. Check your connection.");
     }
 }
 
@@ -919,7 +914,7 @@ async function loadMonthEvents() {
                 <button type="button" class="diary-day-head" data-day="${day}" title="Open this day">
                     <span class="diary-date">${escapeHtml(formatDayShort(date))}</span>
                     ${color ? `<span class="diary-mood" style="--mood: ${color}"><span class="mood-dot" aria-hidden="true"></span>${escapeHtml(moodName(color))}</span>` : ''}
-                    ${markers.has(day) ? '<span class="diary-marker" title="Marked"></span>' : ''}
+                    ${markers.has(day) ? '<span class="diary-marker" aria-hidden="true"></span>' : ''}
                 </button>
                 ${entries ? `<div class="diary-events">${entries}</div>` : ''}
                 ${fileTiles ? `<div class="diary-files">${fileTiles}</div>` : ''}

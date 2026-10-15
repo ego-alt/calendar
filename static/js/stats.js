@@ -221,12 +221,12 @@ function renderStats(data) {
                 `<circle cx="${s[0][0].toFixed(1)}" cy="${s[0][1].toFixed(1)}" r="1.8" class="st-tdot"/>`
             ).join("");
 
-            // Marked days (double-tapped on the calendar): red dot on the line,
+            // Marker days: a small red dot on the line (unlabelled, as on the calendar),
             // or at the baseline when the day has no value in this view.
             const marks = trend.map((d, i) => {
                 if (!d.m) return "";
                 const y = d.v != null ? yAt(d.v) : pad.top + h;
-                return `<circle cx="${xAt(i).toFixed(1)}" cy="${y.toFixed(1)}" r="3" class="st-tmark"><title>${fmt(d.d)} · marked</title></circle>`;
+                return `<circle cx="${xAt(i).toFixed(1)}" cy="${y.toFixed(1)}" r="2.5" class="st-tmark"></circle>`;
             }).join("");
 
             const grids = labels.map(s => {

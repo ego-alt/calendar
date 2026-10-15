@@ -216,8 +216,7 @@ async function toggleDayMarker(year, month, day) {
     }
     window.statsStale = true;
     if (dayState && currentOpenDay === day) { dayState.hasMarker = result.has_marker; renderMoodRow(); }
-    paintDay(year, month, day, { marker: result.has_marker });
-    toast(result.has_marker ? 'Day marked' : 'Marker removed');
+    paintDay(year, month, day, { marker: result.has_marker });   // quietly: no toast
 }
 
 function renderMoodRow() {
@@ -230,13 +229,13 @@ function renderMoodRow() {
         </button>`).join('');
     slot.innerHTML = `
         <div class="day-mood" role="group" aria-label="How did the day feel?">${chips}</div>
-        <div class="day-flags">
-            <button type="button" class="marker-toggle${dayState.hasMarker ? ' active' : ''}" data-act="marker"
-                    aria-pressed="${dayState.hasMarker}" title="Shows as a red dot on the calendar and the mood trend">
-                <span class="marker-dot" aria-hidden="true"></span>${dayState.hasMarker ? 'Marked' : 'Mark this day'}
-            </button>
-            ${dayState.mood ? '<button type="button" class="link-btn" data-act="clear-mood">Clear mood</button>' : ''}
-        </div>`;
+        ${dayState.mood ? '<div class="day-flags"><button type="button" class="link-btn" data-act="clear-mood">Clear mood</button></div>' : ''}`;
+    // The marker sits quietly in the header, beside the paperclip.
+    const marker = document.querySelector('#sidebarContent [data-act="marker"]');
+    if (marker) {
+        marker.classList.toggle('active', !!dayState.hasMarker);
+        marker.setAttribute('aria-pressed', String(!!dayState.hasMarker));
+    }
 }
 
 // ---------- panel state ----------
@@ -372,10 +371,15 @@ function renderDay() {
     content.innerHTML = `
         <div class="sidebar-header">
             <span class="day-title">${escapeHtml(formatDayLong(date))}</span>
+            <span class="day-tools">
+            <button type="button" class="marker-toggle" data-act="marker" aria-pressed="false" aria-label="Marker" title="Marker">
+                <span class="marker-dot" aria-hidden="true"></span>
+            </button>
             <label class="attachment-upload-btn" title="Attach photos or PDFs (up to 10 MB each)">
                 <input type="file" multiple hidden accept="image/*,.heic,.heif,application/pdf" onchange="handleAttachmentUpload(event)">
                 <i class="fas fa-paperclip" aria-hidden="true"></i><span class="sr-only">Attach</span>
             </label>
+            </span>
         </div>
         <div id="dayMoodSlot"></div>
         <button class="add-event-btn btn btn-primary" type="button" data-act="new">Write about this day</button>
