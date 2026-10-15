@@ -13,6 +13,7 @@ from routes import (
     attachment_blueprint,
     auth_blueprint,
     event_blueprint,
+    export_blueprint,
     index_blueprint,
     mood_blueprint,
     search_blueprint,
@@ -77,6 +78,7 @@ def create_app(config=None):
     app.register_blueprint(attachment_blueprint)
     app.register_blueprint(auth_blueprint)
     app.register_blueprint(event_blueprint)
+    app.register_blueprint(export_blueprint)
     app.register_blueprint(index_blueprint)
     app.register_blueprint(mood_blueprint)
     app.register_blueprint(search_blueprint)

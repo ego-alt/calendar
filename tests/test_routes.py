@@ -432,3 +432,23 @@ def test_stats_for_a_past_year(authed_client):
     assert data["range_start"] == "2024-01-01" and data["range_end"] == "2024-12-31"
     assert data["tiles"]["logged"] == 1 and data["tiles"]["current_streak"] is None
     assert 2024 in data["years"] and [m["label"] for m in data["month_mix"]][0] == "Jan"
+
+
+def test_export_everything(authed_client):
+    import json
+    import zipfile
+    authed_client.post("/events/", json={"name": "Concert", "start_date": "2026-05-11",
+                                         "end_date": "2026-05-11", "with_who": "Sam",
+                                         "notes": "Loud."})
+    authed_client.post("/mood/update", json={"year": 2026, "month": 5, "day": 11, "mood": "great"})
+    _upload(authed_client, 2026, 5, 11, filename="ticket.png")
+    _upload(authed_client, 2026, 5, 11, filename="ticket.png")   # same name twice
+    r = authed_client.get("/export")
+    assert r.status_code == 200 and r.headers["Content-Type"] == "application/zip"
+    z = zipfile.ZipFile(BytesIO(r.data))
+    names = set(z.namelist())
+    assert {"entries.json", "diary.md", "attachments/2026-05-11/ticket.png",
+            "attachments/2026-05-11/ticket (2).png"} <= names
+    day = json.loads(z.read("entries.json"))["days"][0]
+    assert day["mood"] == "Great" and day["entries"][0]["name"] == "Concert"
+    assert "## Mon 11 May 2026 · Great" in z.read("diary.md").decode()

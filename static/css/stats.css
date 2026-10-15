@@ -131,3 +131,6 @@
 .st-with-val { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .st-with-days { color: var(--color-text-muted); font-size: var(--text-xs); }
 #statsView.st-nothing .st-card, #statsView.st-nothing .st-tiles { display: none; }
+.st-footer { display: grid; gap: 4px; justify-items: center; margin: var(--space-5) 0 var(--space-8); text-align: center; }
+.st-footer .link-btn { text-decoration: none; color: var(--color-text-secondary); }
+.st-footer-note { font-size: var(--text-xs); color: var(--color-text-muted); }

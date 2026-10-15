@@ -353,6 +353,7 @@ Time ranges are written with `--`, `-` and `–`.
 **4.11 No export** [code]
 - **What:** Years of diary live in one SQLite file, with no way to export them.
 - **Fix:** Add an **Export** (JSON plus a Markdown diary, attachments zipped). Trust in a life log includes knowing you can take it with you.
+- **Status:** Done. *Download your whole diary (.zip)* at the foot of Stats (`GET /export`). It holds `entries.json` (every day's mood and marker, every entry with its moments), `diary.md` (a readable diary, oldest first) and the original attachments in a folder per day (same-named files get *(2)*). Covered by a test; the throwaway diary (355 entries, 300+ days) exports in well under a second.
 
 ---
 
