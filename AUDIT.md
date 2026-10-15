@@ -533,6 +533,7 @@ The problems are mostly the hover-era controls inside it.
   - `/` search;
   - `←`/`→` alongside `h`/`l`;
   - `?` for a shortcut sheet.
+- **Status:** Done. A full set, listed on a **?** sheet (also a keyboard button in the desktop bar): `←`/`→` or `h`/`l` month or week, `j`/`k` year, `t` today, `m` `w` `y` `d` views, `n` write about the open day (or today), `1`–`5` mood for the open day, `x` mark/unmark, `/` search, `Esc` close (drafts kept). Shortcuts ignore typing, open dialogs and Cmd/Ctrl/Alt combinations. All checked in the browser.
 
   Make Escape close without discarding a draft.
 

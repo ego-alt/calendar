@@ -79,6 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', handleKeyPress);
     setupModeBar();
     document.getElementById('todayBtn').addEventListener('click', goToToday);
+    const keysModal = document.getElementById('keysModal');
+    keysModal.addEventListener('click', (e) => { if (e.target === keysModal) keysModal.hidden = true; });
+    document.getElementById('keysBtn')?.addEventListener('click', () => { keysModal.hidden = false; });
     document.querySelector('#diaryView .view-nav').addEventListener('click', (e) => {
         const b = e.target.closest('[data-nav]');
         if (b) updateMonth(b.dataset.nav);
@@ -197,7 +200,7 @@ function setupGlobalEventListeners() {
         // day (month/week/year cells, diary entries) or is on our own overlays.
         // Diary and Year are full views now: they close by switching mode.
         const keepsPanel = t.closest(
-            '#sidebar, #colorPicker, .day, .eye-icon, .week-grid, .year-day, .diary-day-head, .diary-event, #confirmModal, #toasts, #actionSheet, #viewer'
+            '#sidebar, #colorPicker, .day, .eye-icon, .week-grid, .year-day, .diary-day-head, .diary-event, #confirmModal, #toasts, #actionSheet, #viewer, #keysModal, #keysBtn'
         );
         if (!keepsPanel && sidebar.classList.contains('active')) {
             sidebar.classList.remove('active');
@@ -287,13 +290,19 @@ function setupMonthGridListeners() {
 }
 
 function handleKeyPress(event) {
-    const inInput = event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA';
+    const tag = event.target.tagName;
+    const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target.isContentEditable;
+    if (event.metaKey || event.ctrlKey || event.altKey) return;   // leave browser shortcuts alone
+    const keysSheet = document.getElementById('keysModal');
 
     if (event.key === 'Escape') {
+        if (!keysSheet.hidden) { keysSheet.hidden = true; event.preventDefault(); return; }
         // Close the entry form but keep what was typed (it's restored next time).
         if (entryForm) {
             closeEntryForm();
             toast('Draft kept');
+        } else if (document.getElementById('sidebar').classList.contains('active')) {
+            dismissSidebar();
         } else if (!inInput) {
             toggleDiaryView(false);
             toggleYearView(false);
@@ -301,17 +310,46 @@ function handleKeyPress(event) {
         event.preventDefault();
         return;
     }
-
     if (inInput) return;
+    if (!document.getElementById('confirmModal').hidden || !document.getElementById('viewer').hidden) return;
 
+    if (event.key === '?') { keysSheet.hidden = !keysSheet.hidden; event.preventDefault(); return; }
+    if (event.key === '/') {
+        event.preventDefault();
+        document.querySelector('.shell-tab[data-view="search"]')?.click();
+        document.getElementById('searchInput').focus();
+        return;
+    }
+    if (!document.body.classList.contains('view-calendar')) return;
+
+    const panelOpen = document.getElementById('sidebar').classList.contains('active') && currentOpenDay != null;
+    const moods = window.MOODS || [];
+    if (/^[1-9]$/.test(event.key) && Number(event.key) <= moods.length) {
+        if (!panelOpen) return;
+        setDayMood(viewState.year, viewState.month, currentOpenDay, moods[Number(event.key) - 1].key);
+        return;
+    }
     switch (event.key) {
-        case 'h': updateMonth('prev'); break;
-        case 'l': updateMonth('next'); break;
+        case 'h': case 'ArrowLeft': updateMonth('prev'); break;
+        case 'l': case 'ArrowRight': updateMonth('next'); break;
         case 'k': updateYear('prev'); break;
         case 'j': updateYear('next'); break;
-        case 'd': toggleDiaryView(); break;
-        case 'y': toggleYearView(); break;
+        case 'm': setCalendarMode('month'); break;
+        case 'w': setCalendarMode('week'); break;
+        case 'd': setCalendarMode('diary'); break;
+        case 'y': setCalendarMode('year'); break;
         case 't': goToToday(); break;
+        case 'x': if (panelOpen) toggleDayMarker(viewState.year, viewState.month, currentOpenDay); break;
+        case 'n':
+            event.preventDefault();
+            if (panelOpen) { openEntryForm('new'); break; }
+            // No day open: write about today.
+            goToToday().then(async () => {
+                await showSidebar(CURRENT_DAY);
+                if (!entryForm) openEntryForm('new');
+            });
+            break;
+        default: return;
     }
 }
 

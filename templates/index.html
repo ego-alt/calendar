@@ -38,6 +38,7 @@
         </nav>
         <div class="shell-spacer"></div>
         <div class="shell-actions">
+            <button type="button" class="btn btn-ghost keys-btn" id="keysBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><i class="fas fa-keyboard" aria-hidden="true"></i></button>
             <nav class="mode-seg shell-cal-only" aria-label="Calendar view">
                 <button type="button" class="mode-seg-btn" data-mode="month" title="Month (m)">Month</button>
                 <button type="button" class="mode-seg-btn" data-mode="week" title="Week (w)">Week</button>
@@ -240,6 +241,24 @@
                 <button class="btn btn-secondary" id="confirmCancel" type="button">Cancel</button>
                 <button class="btn btn-primary" id="confirmOk" type="button">OK</button>
             </div>
+        </div>
+    </div>
+    <div class="modal-scrim" id="keysModal" hidden>
+        <div class="modal-card keys-card" role="dialog" aria-modal="true" aria-labelledby="keysTitle">
+            <div class="modal-head" id="keysTitle">Keyboard shortcuts</div>
+            <dl class="keys-list">
+                <dt><kbd>←</kbd> <kbd>→</kbd> or <kbd>h</kbd> <kbd>l</kbd></dt><dd>Previous / next month or week</dd>
+                <dt><kbd>j</kbd> <kbd>k</kbd></dt><dd>Next / previous year</dd>
+                <dt><kbd>t</kbd></dt><dd>Today</dd>
+                <dt><kbd>m</kbd> <kbd>w</kbd> <kbd>y</kbd> <kbd>d</kbd></dt><dd>Month, Week, Year, Diary</dd>
+                <dt><kbd>n</kbd></dt><dd>Write about the open day (or today)</dd>
+                <dt><kbd>1</kbd>–<kbd>5</kbd></dt><dd>Mood for the open day, Great → Rough</dd>
+                <dt><kbd>x</kbd></dt><dd>Mark / unmark the open day</dd>
+                <dt><kbd>/</kbd></dt><dd>Search</dd>
+                <dt><kbd>Esc</kbd></dt><dd>Close (drafts are kept)</dd>
+                <dt><kbd>?</kbd></dt><dd>This list</dd>
+            </dl>
+            <div class="modal-actions"><button type="button" class="btn btn-secondary" onclick="document.getElementById('keysModal').hidden = true">Close</button></div>
         </div>
     </div>
     <div class="toasts" id="toasts" aria-live="polite"></div>

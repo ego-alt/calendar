@@ -1508,3 +1508,17 @@ button.diary-file { border: 0; cursor: zoom-in; font: inherit; }
 .viewer-delete[hidden] { display: none; }
 .viewer { background: #161514; transition-duration: 0.1s; }
 .viewer-doc a, .viewer-open { text-decoration: none; }
+
+/* ---- shortcut sheet ---- */
+.keys-card { width: min(440px, 100%); }
+.keys-list { display: grid; grid-template-columns: auto 1fr; gap: var(--space-2) var(--space-4); margin: var(--space-4) 0; align-items: center; }
+.keys-list dt { white-space: nowrap; color: var(--color-text-muted); font-size: var(--text-sm); }
+.keys-list dd { margin: 0; font-size: var(--text-sm); }
+kbd {
+    font: 0.78rem var(--font-mono);
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-inset);
+    color: var(--color-text-primary);
+}

@@ -345,3 +345,4 @@ body.view-search #calendarView {
     margin-top: calc(-1 * var(--space-2));
 }
 .year-month { scroll-margin-top: 72px; }   /* land below the sticky ‹ 2026 › */
+@media (max-width: 480px), (hover: none) { .keys-btn { display: none; } }   /* no keyboard there */
