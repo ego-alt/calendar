@@ -1,0 +1,513 @@
+/* The day panel: one day's entries and attachments, plus the one entry form
+ * (new entry, edit entry, add/edit a moment).
+ *
+ * Drafts are never thrown away by closing the panel, tapping outside it or
+ * pressing Escape: every keystroke is kept per day and form in localStorage,
+ * and the form comes back with its text when that day is opened again. Only
+ * Cancel (after asking, if anything changed) or a successful save clears one.
+ *
+ * Loaded after index.js and shares its globals: viewState, currentOpenDay,
+ * appUrl, escapeHtml, parseLocalDateTime, isAllDayEvent, isoFromDate,
+ * updateCalendarView, dismissSidebar. */
+
+// ---------- feedback: toasts and an in-app confirm ----------
+
+/** toast("Saved") or toast("Deleted “X”", { action: "Undo", onAction }). */
+function toast(message, { action, onAction, error = false } = {}) {
+    const el = document.createElement('div');
+    el.className = 'toast' + (error ? ' toast-error' : '');
+    el.setAttribute('role', error ? 'alert' : 'status');
+    const text = document.createElement('span');
+    text.textContent = message;
+    el.appendChild(text);
+    const dismiss = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 250); };
+    if (action) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'toast-action';
+        b.textContent = action;
+        b.addEventListener('click', (e) => { e.stopPropagation(); dismiss(); onAction(); });
+        el.appendChild(b);
+    }
+    document.getElementById('toasts').appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(dismiss, action ? 8000 : error ? 6000 : 3000);
+}
+
+/** In-app confirm; resolves true/false. */
+function askConfirm(text, { detail = '', ok = 'OK', danger = false } = {}) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        document.getElementById('confirmText').textContent = text;
+        document.getElementById('confirmDetail').textContent = detail;
+        const okBtn = document.getElementById('confirmOk');
+        okBtn.textContent = ok;
+        okBtn.classList.toggle('btn-danger', danger);
+        modal.hidden = false;
+        okBtn.focus();
+        const done = (value) => {
+            modal.hidden = true;
+            okBtn.onclick = document.getElementById('confirmCancel').onclick = modal.onclick = null;
+            document.removeEventListener('keydown', onKey, true);
+            resolve(value);
+        };
+        const onKey = (e) => {
+            if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); done(false); }
+        };
+        okBtn.onclick = () => done(true);
+        document.getElementById('confirmCancel').onclick = () => done(false);
+        modal.onclick = (e) => { if (e.target === modal) done(false); };
+        document.addEventListener('keydown', onKey, true);
+    });
+}
+
+/** fetch → JSON, throwing an Error whose message can be shown to the user. */
+async function api(path, { method = 'GET', json, form } = {}) {
+    let response;
+    try {
+        response = await fetch(appUrl(path), {
+            method,
+            headers: json ? { 'Content-Type': 'application/json' } : {},
+            body: json ? JSON.stringify(json) : form,
+        });
+    } catch (_) {
+        throw new Error("Couldn't reach the calendar. Check your connection.");
+    }
+    let data = {};
+    try { data = await response.json(); } catch (_) { /* not JSON */ }
+    if (!response.ok || data.status === 'error') {
+        throw new Error(data.message || `Something went wrong (${response.status}). Try again.`);
+    }
+    return data;
+}
+
+// ---------- dates ----------
+
+/** "Tue 6 Oct 2026" — the one long date format (see AUDIT 3.1). */
+function formatDayLong(date) {
+    return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+}
+/** "Tue 6 Oct" */
+function formatDayShort(date) {
+    return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+/** "09:00–10:00", "All day", or for a multi-day entry the span seen from `onIso`. */
+function entryTimeLabel(entry, onIso) {
+    const start = parseLocalDateTime(entry.start_time);
+    const end = entry.end_time ? parseLocalDateTime(entry.end_time) : null;
+    const time = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    if (end && isoFromDate(start) !== isoFromDate(end)) {
+        const allDay = isAllDayEvent(entry);
+        const from = formatDayShort(start) + (allDay ? '' : `, ${time(start)}`);
+        const to = formatDayShort(end) + (allDay ? '' : `, ${time(end)}`);
+        return `${from} – ${to}`;
+    }
+    if (isAllDayEvent(entry)) return 'All day';
+    return end ? `${time(start)}–${time(end)}` : time(start);
+}
+
+// ---------- drafts ----------
+
+const DRAFTS_KEY = 'calendar-drafts';
+function readDrafts() {
+    try { return JSON.parse(localStorage.getItem(DRAFTS_KEY)) || {}; } catch (_) { return {}; }
+}
+function writeDrafts(drafts) {
+    try { localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts)); } catch (_) { /* private mode: memory only */ }
+}
+function saveDraft(key, values) {
+    const drafts = readDrafts();
+    drafts[key] = { values, at: Date.now() };
+    writeDrafts(drafts);
+}
+function clearDraft(key) {
+    const drafts = readDrafts();
+    delete drafts[key];
+    writeDrafts(drafts);
+}
+/** The most recent draft for a day, if any: [key, draft]. */
+function latestDraftFor(iso) {
+    return Object.entries(readDrafts())
+        .filter(([key]) => key.startsWith(iso + '|'))
+        .sort((a, b) => b[1].at - a[1].at)[0] || null;
+}
+
+// ---------- panel state ----------
+
+let dayState = null;     // { day, iso, events, attachments }
+let entryForm = null;    // { key, mode, eventId, subId, initial }
+let draftTimer = null;   // pending draft save (debounced keystrokes)
+
+function dayIso(day) {
+    return isoFromDate(new Date(viewState.year, viewState.month - 1, day));
+}
+function findEntry(eventId, subId) {
+    const event = (dayState?.events || []).find((e) => e.id === eventId);
+    if (!event || subId == null) return event;
+    return (event.subevents || []).find((s) => s.id === subId);
+}
+
+async function showSidebar(day) {
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('sidebarContent');
+    if (window.innerWidth <= 480) sidebar.style.height = '';
+    requestAnimationFrame(() => sidebar.classList.add('active'));
+    currentOpenDay = day;
+    entryForm = null;
+
+    const iso = dayIso(day);
+    // Show the right day straight away, never the previous day's content.
+    content.innerHTML = `
+        <div class="sidebar-header"><span class="day-title">${escapeHtml(formatDayLong(new Date(viewState.year, viewState.month - 1, day)))}</span></div>
+        <div class="loading-indicator">Loading…</div>`;
+    try {
+        const query = `year=${viewState.year}&month=${viewState.month}&day=${day}`;
+        const [events, attachments] = await Promise.all([
+            api(`/events?${query}`),
+            api(`/attachments?${query}`),
+        ]);
+        if (currentOpenDay !== day) return;   // another day was opened meanwhile
+        dayState = { day, iso, events: events.events, attachments: attachments.attachments };
+        renderDay();
+        const draft = latestDraftFor(iso);
+        if (draft) restoreDraft(draft[0], draft[1].values);
+    } catch (error) {
+        content.innerHTML = `
+            <div class="sidebar-header"><span class="day-title">${escapeHtml(formatDayLong(new Date(viewState.year, viewState.month - 1, day)))}</span></div>
+            <div class="error-message">${escapeHtml(error.message)}<br>
+                <button class="btn btn-secondary retry-btn" type="button" data-act="retry">Try again</button></div>`;
+    }
+}
+
+/** Re-fetch the open day and the visible calendar after a change. */
+async function refreshAfterChange() {
+    if (currentOpenDay != null) await showSidebar(currentOpenDay);
+    await updateCalendarView();
+}
+
+function renderDetail(icon, text, extraClass = '') {
+    return text ? `<div class="event-detail-item ${extraClass}"><i class="fas ${icon}" aria-hidden="true"></i> ${escapeHtml(text)}</div>` : '';
+}
+
+function renderEntryCard(event) {
+    const subs = (event.subevents || []).map((s) => `
+        <div class="subevent-card" data-event-id="${event.id}" data-subevent-id="${s.id}">
+            <div class="subevent-actions">
+                <button type="button" class="icon-btn" data-act="edit-sub" title="Edit moment" aria-label="Edit moment"><i class="fas fa-edit"></i></button>
+                <button type="button" class="icon-btn" data-act="delete-sub" title="Delete moment" aria-label="Delete moment"><i class="fas fa-trash"></i></button>
+            </div>
+            <div class="subevent-time">${escapeHtml(entryTimeLabel(s, dayState.iso))}</div>
+            <div class="subevent-name">${escapeHtml(s.name)}</div>
+            <div class="subevent-details">
+                ${renderDetail('fa-user', s.with_who)}
+                ${renderDetail('fa-map-marker-alt', s.where)}
+                ${renderDetail('fa-sticky-note', s.notes, 'entry-notes')}
+            </div>
+        </div>`).join('');
+    return `
+        <div class="event-card" data-event-id="${event.id}">
+            <div class="event-actions">
+                <button type="button" class="icon-btn" data-act="edit" title="Edit entry" aria-label="Edit entry"><i class="fas fa-edit"></i></button>
+                <button type="button" class="icon-btn" data-act="add-sub" title="Add a moment" aria-label="Add a moment"><i class="fas fa-plus-circle"></i></button>
+                <button type="button" class="icon-btn" data-act="delete" title="Delete entry" aria-label="Delete entry"><i class="fas fa-trash"></i></button>
+            </div>
+            <div class="event-time">${escapeHtml(entryTimeLabel(event, dayState.iso))}</div>
+            <div class="event-name">${escapeHtml(event.name)}</div>
+            <div class="event-details">
+                ${renderDetail('fa-user', event.with_who)}
+                ${renderDetail('fa-map-marker-alt', event.where)}
+                ${renderDetail('fa-sticky-note', event.notes, 'entry-notes')}
+            </div>
+            ${subs ? `<div class="subevents-container"><div class="subevents-list">${subs}</div></div>` : ''}
+        </div>`;
+}
+
+function renderAttachments() {
+    const items = dayState.attachments.map((a) => {
+        const name = escapeHtml(a.filename);
+        const url = appUrl(`/attachments/${a.id}`);
+        const isImage = a.mime_type && a.mime_type.startsWith('image/');
+        const preview = isImage
+            ? `<img src="${url}" alt="${name}" loading="lazy">`
+            : `<div class="attachment-icon"><i class="fas fa-file"></i><span>${name}</span></div>`;
+        return `
+            <div class="attachment-tile" data-attachment-id="${a.id}">
+                <a class="attachment-link" href="${url}" target="_blank" rel="noopener" title="${name}">${preview}</a>
+                <button type="button" class="attachment-delete" data-act="delete-attachment" title="Delete" aria-label="Delete ${name}"><i class="fas fa-times"></i></button>
+            </div>`;
+    }).join('');
+    return items ? `<div class="attachments-section"><div class="attachments-grid">${items}</div></div>` : '';
+}
+
+function renderDay() {
+    const content = document.getElementById('sidebarContent');
+    const date = new Date(viewState.year, viewState.month - 1, dayState.day);
+    const cards = dayState.events.map(renderEntryCard).join('');
+    content.innerHTML = `
+        <div class="sidebar-header">
+            <span class="day-title">${escapeHtml(formatDayLong(date))}</span>
+            <label class="attachment-upload-btn" title="Attach a photo or file">
+                <input type="file" multiple hidden onchange="handleAttachmentUpload(event)">
+                <i class="fas fa-paperclip" aria-hidden="true"></i><span class="sr-only">Attach</span>
+            </label>
+        </div>
+        <button class="add-event-btn btn btn-primary" type="button" data-act="new">Write about this day</button>
+        <div id="entryFormSlot"></div>
+        <div class="event-list">${cards || '<div class="no-events">Nothing written for this day yet.</div>'}</div>
+        ${renderAttachments()}`;
+}
+
+// ---------- the entry form ----------
+
+const FORM_TITLES = { 'new': 'New entry', 'edit': 'Edit entry', 'sub-new': 'Add a moment', 'sub-edit': 'Edit moment' };
+
+function formKey(mode, eventId, subId) {
+    return `${dayState.iso}|${mode}|${eventId ?? ''}|${subId ?? ''}`;
+}
+
+/** Form values from an entry ("YYYY-MM-DD HH:MM" strings) or blank for a new one. */
+function valuesFromEntry(entry) {
+    if (!entry) {
+        return { name: '', start_date: dayState.iso, start_time: '', end_date: dayState.iso, end_time: '', with_who: '', where: '', notes: '' };
+    }
+    const [sd, st] = entry.start_time.split(' ');
+    const [ed, et] = (entry.end_time || entry.start_time).split(' ');
+    const allDay = isAllDayEvent(entry);
+    return {
+        name: entry.name || '',
+        start_date: sd, start_time: allDay ? '' : st,
+        end_date: ed, end_time: allDay || !entry.end_time ? '' : et,
+        with_who: entry.with_who || '', where: entry.where || '', notes: entry.notes || '',
+    };
+}
+
+function readForm(form) {
+    const values = {};
+    ['name', 'start_date', 'start_time', 'end_date', 'end_time', 'with_who', 'where', 'notes']
+        .forEach((f) => { values[f] = form.elements[f].value; });
+    return values;
+}
+function isDirty(values, initial) {
+    return Object.keys(values).some((k) => (values[k] || '').trim() !== (initial[k] || '').trim());
+}
+
+function openEntryForm(mode, { eventId = null, subId = null, draftValues = null } = {}) {
+    const slot = document.getElementById('entryFormSlot');
+    if (!slot) return;
+    const entry = mode === 'edit' ? findEntry(eventId)
+        : mode === 'sub-edit' ? findEntry(eventId, subId) : null;
+    const initial = valuesFromEntry(entry);
+    const parent = mode.startsWith('sub') ? findEntry(eventId) : null;
+    const key = formKey(mode, eventId, subId);
+    const draft = draftValues || readDrafts()[key]?.values;
+    const values = draft || initial;
+    entryForm = { key, mode, eventId, subId, initial };
+
+    slot.innerHTML = `
+        <form class="entry-form" id="entryForm" novalidate>
+            <div class="form-header">${FORM_TITLES[mode]}</div>
+            ${parent ? `<div class="form-context">Part of “${escapeHtml(parent.name)}”</div>` : ''}
+            ${draft ? `<div class="form-note">Restored your unsaved text.</div>` : ''}
+            <input class="input" name="name" placeholder="What happened?" aria-label="What happened?" autocomplete="off">
+            <div class="field-row">
+                <span class="field-label">From</span>
+                <input class="input date-input" type="date" name="start_date" aria-label="From date">
+                <input class="input time-input" type="time" name="start_time" aria-label="From time (optional)">
+            </div>
+            <div class="field-row">
+                <span class="field-label">To</span>
+                <input class="input date-input" type="date" name="end_date" aria-label="To date">
+                <input class="input time-input" type="time" name="end_time" aria-label="To time (optional)">
+            </div>
+            <div class="field-hint">Times are optional.</div>
+            <input class="input" name="with_who" placeholder="Who was there?" aria-label="Who was there?" autocomplete="off">
+            <input class="input" name="where" placeholder="Where?" aria-label="Where?" autocomplete="off">
+            <textarea class="input" name="notes" placeholder="Notes" aria-label="Notes"></textarea>
+            <div class="form-error" role="alert" hidden></div>
+            <div class="form-buttons">
+                <button type="button" class="btn btn-secondary cancel-btn" data-act="cancel-form">Cancel</button>
+                <button type="submit" class="btn btn-primary save-btn">Save</button>
+            </div>
+        </form>`;
+    const form = document.getElementById('entryForm');
+    Object.entries(values).forEach(([k, v]) => { if (form.elements[k]) form.elements[k].value = v || ''; });
+
+    // Keep the end date in step with the start date until it's changed by hand.
+    let endTouched = values.end_date !== values.start_date;
+    form.elements.end_date.addEventListener('input', () => { endTouched = true; });
+    form.elements.start_date.addEventListener('input', () => {
+        if (!endTouched) form.elements.end_date.value = form.elements.start_date.value;
+    });
+
+    form.addEventListener('input', () => {
+        clearTimeout(draftTimer);
+        draftTimer = setTimeout(() => {
+            if (!entryForm || entryForm.key !== key) return;   // saved or closed meanwhile
+            const now = readForm(form);
+            if (isDirty(now, initial)) saveDraft(key, now); else clearDraft(key);
+        }, 250);
+    });
+    form.addEventListener('submit', (e) => { e.preventDefault(); submitEntryForm(); });
+
+    document.getElementById('sidebar').classList.add('form-open');
+    form.elements.name.focus({ preventScroll: true });
+    slot.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+
+function restoreDraft(key, values) {
+    const [, mode, eventId, subId] = key.split('|');
+    const eid = eventId ? Number(eventId) : null;
+    const sid = subId ? Number(subId) : null;
+    // A draft for an entry that's gone (deleted elsewhere) can't be restored in place.
+    if ((mode === 'edit' || mode.startsWith('sub')) && !findEntry(eid)) { clearDraft(key); return; }
+    if (mode === 'sub-edit' && !findEntry(eid, sid)) { clearDraft(key); return; }
+    openEntryForm(mode, { eventId: eid, subId: sid, draftValues: values });
+}
+
+/** Close the form. The draft stays unless `discard` is set. */
+function closeEntryForm({ discard = false } = {}) {
+    clearTimeout(draftTimer);
+    // Closing without discarding: make sure the very latest keystrokes are kept.
+    const form = document.getElementById('entryForm');
+    if (entryForm && !discard && form && isDirty(readForm(form), entryForm.initial)) {
+        saveDraft(entryForm.key, readForm(form));
+    }
+    if (entryForm && discard) clearDraft(entryForm.key);
+    entryForm = null;
+    const slot = document.getElementById('entryFormSlot');
+    if (slot) slot.innerHTML = '';
+    document.getElementById('sidebar').classList.remove('form-open');
+}
+
+async function cancelEntryForm() {
+    const form = document.getElementById('entryForm');
+    if (form && entryForm && isDirty(readForm(form), entryForm.initial)) {
+        const ok = await askConfirm('Discard this entry?', {
+            detail: 'What you typed here will be lost.', ok: 'Discard', danger: true,
+        });
+        if (!ok) return;
+    }
+    closeEntryForm({ discard: true });
+}
+
+async function submitEntryForm() {
+    const form = document.getElementById('entryForm');
+    if (!form || !entryForm) return;
+    const values = readForm(form);
+    const errorEl = form.querySelector('.form-error');
+    const showError = (msg) => { errorEl.textContent = msg; errorEl.hidden = false; };
+    if (!values.name.trim()) { showError('Give this entry a name.'); form.elements.name.focus(); return; }
+    if (!values.start_date) { showError('Pick a date.'); return; }
+
+    clearTimeout(draftTimer);
+    const { mode, eventId, subId, key } = entryForm;
+    const payload = {
+        name: values.name.trim(),
+        start_date: values.start_date,
+        start_time: values.start_time || null,
+        end_date: values.end_date || values.start_date,
+        end_time: values.end_time || null,
+        with_who: values.with_who.trim() || null,
+        where: values.where.trim() || null,
+        notes: values.notes.trim() || null,
+    };
+    const request = {
+        'new': ['/events/', 'POST'],
+        'edit': [`/events/${eventId}`, 'PUT'],
+        'sub-new': [`/events/${eventId}/subevents`, 'POST'],
+        'sub-edit': [`/events/subevents/${subId}`, 'PUT'],
+    }[mode];
+    const saveBtn = form.querySelector('.save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
+    try {
+        await api(request[0], { method: request[1], json: payload });
+    } catch (error) {
+        // Keep the form and its text; say what went wrong.
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+        saveDraft(key, values);
+        showError(error.message);
+        return;
+    }
+    clearDraft(key);
+    closeEntryForm({ discard: true });
+    toast('Saved');
+    await refreshAfterChange();
+}
+
+// ---------- deleting ----------
+
+async function deleteEntry(eventId, subId = null) {
+    const entry = findEntry(eventId, subId);
+    if (!entry) return;
+    try {
+        await api(subId ? `/events/subevents/${subId}` : `/events/${eventId}`, { method: 'DELETE' });
+    } catch (error) {
+        toast(error.message, { error: true });
+        return;
+    }
+    toast(`Deleted “${entry.name}”`);
+    await refreshAfterChange();
+}
+
+// ---------- attachments ----------
+
+async function handleAttachmentUpload(event) {
+    const files = Array.from(event.target.files);
+    event.target.value = '';
+    if (!files.length || currentOpenDay == null) return;
+    let added = 0;
+    for (const file of files) {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('year', viewState.year);
+        form.append('month', viewState.month);
+        form.append('day', currentOpenDay);
+        try {
+            await api('/attachments', { method: 'POST', form });
+            added += 1;
+        } catch (error) {
+            toast(`${file.name}: ${error.message}`, { error: true });
+        }
+    }
+    if (added) toast(added === 1 ? 'Attached' : `Attached ${added} files`);
+    await showSidebar(currentOpenDay);
+}
+
+async function deleteAttachment(attachmentId) {
+    const attachment = dayState.attachments.find((a) => a.id === attachmentId);
+    try {
+        await api(`/attachments/${attachmentId}`, { method: 'DELETE' });
+    } catch (error) {
+        toast(error.message, { error: true });
+        return;
+    }
+    toast(`Deleted “${attachment ? attachment.filename : 'attachment'}”`);
+    await showSidebar(currentOpenDay);
+}
+
+// ---------- one click handler for the whole panel ----------
+
+document.getElementById('sidebarContent').addEventListener('click', (e) => {
+    const target = e.target.closest('[data-act]');
+    if (!target) return;
+    const act = target.dataset.act;
+    const card = target.closest('[data-event-id]');
+    const eventId = card ? Number(card.dataset.eventId) : null;
+    const subId = card && card.dataset.subeventId ? Number(card.dataset.subeventId) : null;
+    switch (act) {
+        case 'new': openEntryForm('new'); break;
+        case 'edit': openEntryForm('edit', { eventId }); break;
+        case 'add-sub': openEntryForm('sub-new', { eventId }); break;
+        case 'edit-sub': openEntryForm('sub-edit', { eventId, subId }); break;
+        case 'delete': deleteEntry(eventId); break;
+        case 'delete-sub': deleteEntry(eventId, subId); break;
+        case 'cancel-form': cancelEntryForm(); break;
+        case 'delete-attachment':
+            e.preventDefault();
+            deleteAttachment(Number(target.closest('.attachment-tile').dataset.attachmentId));
+            break;
+        case 'retry': showSidebar(currentOpenDay); break;
+    }
+});

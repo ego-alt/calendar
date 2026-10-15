@@ -201,3 +201,40 @@ def test_clearing_mood_keeps_daily_log_when_attachment_present(authed_client, ap
     assert cleared.status_code == 200
     listed = authed_client.get("/attachments?year=2026&month=5&day=11").get_json()
     assert len(listed["attachments"]) == 1
+
+
+def test_entry_validation_messages(authed_client):
+    """Bad entries get a 400 with a message fit to show the user."""
+    base = {"name": "Walk", "start_date": "2026-10-10", "end_date": "2026-10-10"}
+    r = authed_client.post("/events/", json={**base, "name": "  "})
+    assert r.status_code == 400 and r.json["message"] == "Give this entry a name."
+    r = authed_client.post("/events/", json={**base, "start_time": "18:00", "end_time": "09:00"})
+    assert r.status_code == 400 and r.json["message"] == "The end is before the start."
+    r = authed_client.post("/events/", json={**base, "start_date": "10/10/2026"})
+    assert r.status_code == 400 and "doesn't look right" in r.json["message"]
+    # ISO (native date inputs) and the older DD-MM-YYYY both work
+    assert authed_client.post("/events/", json=base).status_code == 200
+    legacy = {**base, "start_date": "10-10-2026", "end_date": "10-10-2026"}
+    assert authed_client.post("/events/", json=legacy).status_code == 200
+
+
+def test_editing_an_entry_cannot_strand_its_moments(authed_client):
+    trip = {"name": "Trip", "start_date": "2026-10-03", "end_date": "2026-10-05"}
+    authed_client.post("/events/", json=trip)
+    event = authed_client.get("/events/?year=2026&month=10&day=3").json["events"][0]
+    authed_client.post(f"/events/{event['id']}/subevents", json={
+        "name": "Hike", "start_date": "2026-10-04", "start_time": "10:00",
+        "end_date": "2026-10-04", "end_time": "12:00"})
+    shorter = {**trip, "end_date": "2026-10-03"}
+    r = authed_client.put(f"/events/{event['id']}", json=shorter)
+    assert r.status_code == 400 and "Hike" in r.json["message"]
+
+
+def test_oversized_upload_says_so(authed_client, app):
+    app.config["MAX_CONTENT_LENGTH"] = 1024
+    import io
+    form = {"year": "2026", "month": "10", "day": "6",
+            "file": (io.BytesIO(b"0" * 4096), "big.jpg")}
+    r = authed_client.post("/attachments", data=form, content_type="multipart/form-data")
+    assert r.status_code == 413
+    assert r.json["message"].startswith("That file is over")

@@ -41,6 +41,11 @@ def create_app(config=None):
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_prefix=1)
 
+    @app.errorhandler(413)
+    def too_large(_e):
+        mb = app.config["MAX_CONTENT_LENGTH"] // (1024 * 1024)
+        return {"status": "error", "message": f"That file is over {mb} MB."}, 413
+
     @app.get("/healthz")
     def healthz():
         return "", 200

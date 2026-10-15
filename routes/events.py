@@ -49,15 +49,54 @@ def is_within_parent_date(parent: Event, start_datetime, end_datetime) -> bool:
     )
 
 
+class EntryError(ValueError):
+    """An entry the user sent that can't be saved; the message is shown as is."""
+
+
+def _fmt_span(start, end):
+    fmt = lambda d: d.strftime("%-d %b %H:%M")  # noqa: E731
+    return f"{fmt(start)}–{fmt(end)}" if end else fmt(start)
+
+
+def read_entry(data: dict, parent: Event | None = None):
+    """Validate an entry payload → (name, start, end). Raises EntryError with a
+    message fit for the user."""
+    data = data or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        raise EntryError("Give this entry a name.")
+    try:
+        start = parse_event_datetime(data.get("start_date"), data.get("start_time"))
+        end = parse_event_datetime(
+            data.get("end_date") or data.get("start_date"), data.get("end_time"), is_end=True
+        )
+    except ValueError:
+        raise EntryError("That date or time doesn't look right.") from None
+    if end < start:
+        raise EntryError("The end is before the start.")
+    if parent and not is_within_parent_date(parent, start, end):
+        span = _fmt_span(parent.start_time, parent.end_time)
+        raise EntryError(f"This moment falls outside its entry ({span}).")
+    return name, start, end
+
+
 def edit_event_data(event: Event | SubEvent, data: dict, parent: Event | None = None):
-    """Edit the event or subevent details."""
-    start_datetime = parse_event_datetime(data["start_date"], data.get("start_time"))
-    end_datetime = parse_event_datetime(data["end_date"], data.get("end_time"), is_end=True)
+    """Edit the event or subevent details (raises EntryError on bad input)."""
+    name, start_datetime, end_datetime = read_entry(data, parent)
+    if isinstance(event, Event):
+        outside = [
+            s for s in event.subevents
+            if not (
+                start_datetime <= s.start_time
+                and (s.end_time or s.start_time) <= end_datetime
+            )
+        ]
+        if outside:
+            raise EntryError(
+                f"“{outside[0].name}” would fall outside the new time. Move or remove it first."
+            )
 
-    if parent and not is_within_parent_date(parent, start_datetime, end_datetime):
-        return False
-
-    event.name = data["name"]
+    event.name = name
     event.start_time = start_datetime
     event.end_time = end_datetime
     event.notes = data.get("notes")
@@ -69,16 +108,12 @@ def edit_event_data(event: Event | SubEvent, data: dict, parent: Event | None = 
 
 
 def create_event(event_class, data: dict, parent: Event | None = None, **kwargs):
-    """Create a new event or subevent."""
-    start_datetime = parse_event_datetime(data["start_date"], data.get("start_time"))
-    end_datetime = parse_event_datetime(data["end_date"], data.get("end_time"), is_end=True)
-
-    if parent and not is_within_parent_date(parent, start_datetime, end_datetime):
-        return False
+    """Create a new event or subevent (raises EntryError on bad input)."""
+    name, start_datetime, end_datetime = read_entry(data, parent)
 
     event_attrs = {
         **kwargs,
-        "name": data["name"],
+        "name": name,
         "start_time": start_datetime,
         "end_time": end_datetime,
         "notes": data.get("notes"),
@@ -122,9 +157,12 @@ def events():
 
         return jsonify({"status": "success", "events": events_data})
 
-    event = create_event(Event, request.json, user_id=current_user.id)
+    try:
+        event = create_event(Event, request.json, user_id=current_user.id)
+    except EntryError as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
     index_event_safe(event)
-    return jsonify({"status": "success", "message": "Event created successfully"})
+    return jsonify({"status": "success", "message": "Saved", "id": event.id})
 
 
 @event_blueprint.route("/<int:event_id>", methods=["PUT", "DELETE"])
@@ -133,16 +171,20 @@ def manage_event(event_id):
     event = Event.query.filter_by(id=event_id, user_id=current_user.id).first()
 
     if not event:
-        return jsonify({"status": "error", "message": "Event not found"}), 404
+        return jsonify({"status": "error", "message": "That entry no longer exists."}), 404
 
     if request.method == "DELETE":
         remove_event_safe(event.id)
         delete_event(event)
         return jsonify({"status": "success", "message": "Event deleted"})
 
-    edit_event_data(event, request.json)
+    try:
+        edit_event_data(event, request.json)
+    except EntryError as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 400
     index_event_safe(event)
-    return jsonify({"status": "success", "message": "Event updated"})
+    return jsonify({"status": "success", "message": "Saved"})
 
 
 @event_blueprint.route("/<int:event_id>/subevents", methods=["POST"])
@@ -152,11 +194,10 @@ def subevents(event_id):
     if not parent_event:
         return jsonify({"status": "error", "message": "Event not found"}), 404
 
-    if not create_event(SubEvent, request.json, parent=parent_event, event_id=event_id):
-        return jsonify({
-            "status": "error",
-            "message": "Subevent must occur within the parent event's timeframe",
-        }), 400
+    try:
+        create_event(SubEvent, request.json, parent=parent_event, event_id=event_id)
+    except EntryError as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
     index_event_safe(parent_event)  # reindex parent with the new subevent folded in
     return jsonify({"status": "success", "message": "Subevent created successfully"})
 
@@ -184,12 +225,12 @@ def manage_subevent(subevent_id):
     if request.method == "GET":
         return jsonify({"status": "success", "subevent": retrieve_event_data(subevent)})
 
-    parent_event = Event.query.get(subevent.event_id)
-    if not edit_event_data(subevent, request.json, parent_event):
-        return jsonify({
-            "status": "error",
-            "message": "Subevent must occur within the parent event's timeframe",
-        }), 400
+    parent_event = db.session.get(Event, subevent.event_id)
+    try:
+        edit_event_data(subevent, request.json, parent_event)
+    except EntryError as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 400
     index_event_safe(parent_event)  # reindex parent with the edited subevent text
     return jsonify({"status": "success", "message": "Subevent updated"})
 

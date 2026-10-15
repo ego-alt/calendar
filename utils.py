@@ -9,9 +9,20 @@ from moods import MOOD_BY_KEY, MOODS
 
 
 def parse_event_datetime(date_str, time_str=None, is_end: bool = False):
-    date = datetime.strptime(date_str, "%d-%m-%Y")
+    """Date as ISO "YYYY-MM-DD" (native date inputs) or the older "DD-MM-YYYY";
+    time as "HH:MM". A missing time means the start or end of the day.
+    Raises ValueError on anything else."""
+    date = None
+    for fmt in ("%Y-%m-%d", "%d-%m-%Y"):
+        try:
+            date = datetime.strptime((date_str or "").strip(), fmt)
+            break
+        except ValueError:
+            continue
+    if date is None:
+        raise ValueError(f"unreadable date: {date_str!r}")
     if time_str:
-        time_obj = datetime.strptime(time_str, "%H:%M").time()
+        time_obj = datetime.strptime(time_str.strip(), "%H:%M").time()
     else:
         time_obj = time(23, 59) if is_end else time(0, 0)
     return datetime.combine(date, time_obj)

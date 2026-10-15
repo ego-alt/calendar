@@ -146,6 +146,7 @@ I walked through it in Chrome at 1280×800 with a mouse, and at 375×667 with to
 - **Where:** `index.js` `showSidebar` and `loadMonthEvents` insert `event.name`, `with_who`, `where` and `notes` unescaped. `escapeHtml` exists, and search uses its own escaping.
 - **Why:** Diaries are full of `<3`, `->` and pasted text. This is also a stored-script hole, worth closing since attachments come from a second app.
 - **Fix:** Escape every user field at render time with the existing `escapeHtml`.
+- **Status:** Done. Every user field is escaped in the day panel and diary (search already was). `<b>bold</b>` and `a < b` now display as typed.
 
 **2.7 Dates may break on iPhone** [confirmed in Safari's JS engine, iOS untested]
 - **What:**
@@ -208,6 +209,7 @@ Time ranges are written with `--`, `-` and `–`.
   - A new entry uses the form at the bottom of the panel (submit via `<form>`).
   - Editing an entry opens a different inline form inside the card (button handler, different IDs and labels).
   - Sub-entries use a third inline form.
+- **Status:** Done. One entry form for new entry, edit entry, add moment and edit moment, always opening at the top of the day panel, with the same fields, validation and keyboard behaviour (Enter saves, Escape closes and keeps the draft).
 
   Validation, error handling and keyboard behaviour differ between them (e.g. Enter submits only the first).
 - **Where:** `index.js` `toggleEventForm`, `editEvent`, `toggleSubEventForm`
@@ -235,6 +237,7 @@ Time ranges are written with `--`, `-` and `–`.
 - Inline red text for login.
 - Nothing at all for most actions.
 - **Fix:** One toast style (see 2.3).
+- **Status:** Done. `alert()` is gone. Saves, deletes and failures use one toast style, and discarding asks through an in-app confirm.
 
 **3.8 The README describes an older app** [code]
 - It lists "Monthly view" and "h/l keys" only: no moods by name, Stats, search, attachments, the phone app, markers or other shortcuts.
@@ -250,6 +253,7 @@ Time ranges are written with `--`, `-` and `–`.
 - **Fix:**
   - Never discard a form with text in it. Keep the draft per day in memory and local storage, and restore it when the day reopens.
   - Closing a form with changes asks *"Discard this entry?"*.
+- **Status:** Done. Every keystroke in the entry form is kept per day and form (localStorage). Closing the panel, tapping outside, swiping it away or pressing Escape keeps the text, and the form comes back with *Restored your unsaved text* when that day is opened again. Only Cancel clears it, after asking *Discard this entry?* if anything changed; a successful save clears it too. A failed save keeps the form and its text open with the reason. Verified on desktop and at 375px touch.
 
 **4.2 Deleting an entry is instant and permanent** [confirmed]
 - **What:** One tap on the bin icon deletes the entry and all its sub-entries. No confirmation, no undo. The same goes for sub-entries.
@@ -276,6 +280,7 @@ Time ranges are written with `--`, `-` and `–`.
 - **Fix:**
   - Validate on the server with plain messages (*"The end is before the start."*).
   - Use native date and time pickers (`type="date"`, `type="time"`), or keep the typed format but flag it instead of erasing it.
+- **Status:** Done. The server checks every entry and answers with a plain message: *Give this entry a name.*, *The end is before the start.*, *That date or time doesn't look right.* An entry can't be edited so its moments fall outside it (it names the moment). The form uses native date and time pickers labelled From/To, so nothing typed is silently erased; the old DD-MM-YYYY format is still accepted. Covered by tests.
 
 **4.6 After an edit, the calendar doesn't update** [code]
 - **What:** Saving an edit refreshes only the day panel. If you moved the entry to another date, the month grid's dots and week view stay stale until you navigate.
@@ -289,6 +294,7 @@ Time ranges are written with `--`, `-` and `–`.
   - Let 413 through (or handle it as JSON).
   - Say the limit up front.
   - Downscale big photos client-side in the scanner app.
+- **Status:** Done. Oversized uploads answer 413 with *That file is over 10 MB.*, shown as is (the error wrapper no longer turns HTTP errors into 500s). Covered by a test.
 
 **4.8 Uploaded files are served as the app** [code]
 - **What:** Attachments are served inline under their uploaded type, from the app's own origin. Any type is accepted, so an `.html` or `.svg` "receipt" would run as the calendar.
