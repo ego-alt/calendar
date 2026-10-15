@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from models import DailyLog, Event, SubEvent, db
 from search_index import index_event_safe, remove_event_safe
+from trash import now, purge_deleted
 from utils import parse_event_datetime
 
 from ._helpers import json_login_required
@@ -127,9 +128,10 @@ def create_event(event_class, data: dict, parent: Event | None = None, **kwargs)
 
 
 def delete_event(event: Event | SubEvent):
-    """Delete an event or subevent."""
-    db.session.delete(event)
+    """Soft-delete an event or subevent (undoable; purged after 30 days)."""
+    event.deleted_at = now()
     db.session.commit()
+    purge_deleted()
 
 
 @event_blueprint.route("/", methods=["GET", "POST"])
@@ -184,7 +186,7 @@ def manage_event(event_id):
     if request.method == "DELETE":
         remove_event_safe(event.id)
         delete_event(event)
-        return jsonify({"status": "success", "message": "Event deleted"})
+        return jsonify({"status": "success", "message": "Deleted"})
 
     try:
         edit_event_data(event, request.json)
@@ -193,6 +195,43 @@ def manage_event(event_id):
         return jsonify({"status": "error", "message": str(e)}), 400
     index_event_safe(event)
     return jsonify({"status": "success", "message": "Saved"})
+
+
+@event_blueprint.route("/<int:event_id>/restore", methods=["POST"])
+@json_login_required
+def restore_event(event_id):
+    """Undo a delete."""
+    event = (
+        Event.query.filter_by(id=event_id, user_id=current_user.id)
+        .execution_options(include_deleted=True)
+        .first()
+    )
+    if not event:
+        return jsonify({"status": "error", "message": "That entry can't be brought back."}), 404
+    event.deleted_at = None
+    db.session.commit()
+    index_event_safe(event)
+    return jsonify({"status": "success"})
+
+
+@event_blueprint.route("/subevents/<int:subevent_id>/restore", methods=["POST"])
+@json_login_required
+def restore_subevent(subevent_id):
+    """Undo a delete of a moment."""
+    subevent = (
+        SubEvent.query.join(Event)
+        .filter(SubEvent.id == subevent_id, Event.user_id == current_user.id)
+        .execution_options(include_deleted=True)
+        .first()
+    )
+    if not subevent:
+        return jsonify({"status": "error", "message": "That moment can't be brought back."}), 404
+    subevent.deleted_at = None
+    db.session.commit()
+    parent = db.session.get(Event, subevent.event_id)
+    if parent is not None:
+        index_event_safe(parent)
+    return jsonify({"status": "success"})
 
 
 @event_blueprint.route("/<int:event_id>/subevents", methods=["POST"])

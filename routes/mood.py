@@ -5,6 +5,7 @@ from flask_login import current_user
 
 from models import DailyLog, db
 from moods import MOOD_BY_KEY
+from trash import log_has_attachments
 
 from ._helpers import json_login_required
 
@@ -23,7 +24,7 @@ def update_mood():
     if key is None:
         if daily_log:
             daily_log.mood_key = None
-            if not daily_log.has_marker and not daily_log.attachments:
+            if not daily_log.has_marker and not log_has_attachments(daily_log):
                 db.session.delete(daily_log)
     else:
         if key not in MOOD_BY_KEY:
@@ -48,7 +49,11 @@ def toggle_marker():
     if daily_log:
         has_marker = not daily_log.has_marker
         daily_log.has_marker = has_marker
-        if not daily_log.has_marker and daily_log.mood_key is None and not daily_log.attachments:
+        if (
+            not daily_log.has_marker
+            and daily_log.mood_key is None
+            and not log_has_attachments(daily_log)
+        ):
             db.session.delete(daily_log)
     else:
         has_marker = True

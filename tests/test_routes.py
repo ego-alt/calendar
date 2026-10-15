@@ -160,7 +160,7 @@ def test_attachment_download_serves_bytes(authed_client):
     assert response.headers["Content-Type"].startswith("image/png")
 
 
-def test_attachment_delete_removes_row_and_file(authed_client, app):
+def test_attachment_delete_is_undoable_then_purged(authed_client, app):
     upload = _upload(authed_client, 2026, 5, 11)
     attachment_id = upload.get_json()["attachment"]["id"]
 
@@ -173,6 +173,18 @@ def test_attachment_delete_removes_row_and_file(authed_client, app):
     assert deleted.status_code == 200
     after = authed_client.get("/attachments?year=2026&month=5&day=11").get_json()
     assert after["attachments"] == []
+    assert file_path.exists()                      # kept so Undo can restore it
+
+    assert authed_client.post(f"/attachments/{attachment_id}/restore").status_code == 200
+    back = authed_client.get("/attachments?year=2026&month=5&day=11").get_json()
+    assert [a["id"] for a in back["attachments"]] == [attachment_id]
+
+    authed_client.delete(f"/attachments/{attachment_id}")
+    with app.app_context():
+        from datetime import timedelta
+
+        from trash import purge_deleted
+        assert purge_deleted(older_than=timedelta(0)) == 1
     assert not file_path.exists()
 
 
@@ -251,3 +263,45 @@ def test_day_carries_mood_and_marker_and_undo_info(authed_client):
     assert got["mood"] == "low" and got["has_marker"] is True
     r = authed_client.post("/mood/update", json={**day, "mood": "meh"})
     assert r.status_code == 400 and "five" in r.json["message"]
+
+
+
+def test_delete_entry_is_undoable_and_hidden_everywhere(authed_client, app):
+    authed_client.post("/events/", json={"name": "Trip", "start_date": "2026-10-03",
+                                         "end_date": "2026-10-05", "notes": "midges"})
+    event = authed_client.get("/events/?year=2026&month=10&day=3").json["events"][0]
+    authed_client.post(f"/events/{event['id']}/subevents", json={
+        "name": "Hike", "start_date": "2026-10-04", "end_date": "2026-10-04"})
+    assert authed_client.delete(f"/events/{event['id']}").status_code == 200
+    assert authed_client.get("/events/?year=2026&month=10&day=3").json["events"] == []
+    assert authed_client.get("/get_month?year=2026&month=10").json["days_with_events"] == []
+    assert authed_client.get("/events/month?year=2026&month=10").json["events"] == []
+
+    assert authed_client.post(f"/events/{event['id']}/restore").status_code == 200
+    back = authed_client.get("/events/?year=2026&month=10&day=4").json["events"]
+    assert [e["name"] for e in back] == ["Trip"] and back[0]["subevents"][0]["name"] == "Hike"
+
+
+def test_delete_moment_is_undoable(authed_client):
+    authed_client.post("/events/", json={"name": "Day", "start_date": "2026-10-03",
+                                         "end_date": "2026-10-03"})
+    event = authed_client.get("/events/?year=2026&month=10&day=3").json["events"][0]
+    authed_client.post(f"/events/{event['id']}/subevents", json={
+        "name": "Lunch", "start_date": "2026-10-03", "end_date": "2026-10-03"})
+    sub = authed_client.get("/events/?year=2026&month=10&day=3").json["events"][0]["subevents"][0]
+    authed_client.delete(f"/events/subevents/{sub['id']}")
+    day = authed_client.get("/events/?year=2026&month=10&day=3").json
+    assert day["events"][0]["subevents"] == []
+    authed_client.post(f"/events/subevents/{sub['id']}/restore")
+    subs = authed_client.get("/events/?year=2026&month=10&day=3").json["events"][0]["subevents"]
+    assert [s["name"] for s in subs] == ["Lunch"]
+
+
+def test_clearing_mood_keeps_a_day_with_only_deleted_attachments(authed_client, app):
+    """The day record must survive so a deleted attachment can still be restored."""
+    upload = _upload(authed_client, 2026, 5, 12)
+    attachment_id = upload.get_json()["attachment"]["id"]
+    authed_client.post("/mood/update", json={"year": 2026, "month": 5, "day": 12, "mood": "good"})
+    authed_client.delete(f"/attachments/{attachment_id}")
+    authed_client.post("/mood/update", json={"year": 2026, "month": 5, "day": 12, "mood": None})
+    assert authed_client.post(f"/attachments/{attachment_id}/restore").status_code == 200

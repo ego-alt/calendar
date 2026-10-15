@@ -1,5 +1,7 @@
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import event as sa_event
+from sqlalchemy.orm import Session, with_loader_criteria
 from sqlalchemy.sql import func
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -58,6 +60,7 @@ class Attachment(db.Model):
     mime_type = db.Column(db.String, nullable=False)
     size_bytes = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, server_default=func.now())
+    deleted_at = db.Column(db.DateTime, nullable=True, index=True)  # soft delete (undo)
 
     __table_args__ = (db.Index("ix_attachments_daily_log", "daily_log_id"),)
 
@@ -79,6 +82,7 @@ class Event(db.Model):
 
     created_at = db.Column(db.DateTime, server_default=func.now())
     last_modified = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+    deleted_at = db.Column(db.DateTime, nullable=True, index=True)  # soft delete (undo)
 
     __table_args__ = (db.Index("ix_events_user_start", "user_id", "start_time"),)
 
@@ -125,7 +129,25 @@ class SubEvent(db.Model):
 
     created_at = db.Column(db.DateTime, server_default=func.now())
     last_modified = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+    deleted_at = db.Column(db.DateTime, nullable=True, index=True)  # soft delete (undo)
 
     __table_args__ = (db.Index("ix_subevents_event_start", "event_id", "start_time"),)
 
     parent_event = db.relationship("Event", back_populates="subevents")
+
+
+# Soft-deleted rows are invisible everywhere (calendar, stats, search, and
+# relationships such as event.subevents), unless a query opts in with
+# .execution_options(include_deleted=True): restore and purge do.
+@sa_event.listens_for(Session, "do_orm_execute")
+def _hide_deleted(state):
+    if (
+        state.is_select
+        and not state.is_column_load
+        and not state.is_relationship_load
+        and not state.execution_options.get("include_deleted", False)
+    ):
+        state.statement = state.statement.options(*(
+            with_loader_criteria(model, lambda cls: cls.deleted_at.is_(None), include_aliases=True)
+            for model in (Event, SubEvent, Attachment)
+        ))

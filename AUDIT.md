@@ -261,11 +261,13 @@ Time ranges are written with `--`, `-` and `–`.
 - **What:** One tap on the bin icon deletes the entry and all its sub-entries. No confirmation, no undo. The same goes for sub-entries.
 - **Where:** `index.js` `deleteEvent`, `deleteSubEvent`; `routes/events.py`
 - **Fix:** Delete with an **Undo** toast, backed by a soft delete (`deleted_at`) that's purged later. Library and tapes now work this way.
+- **Status:** Done. Deleting an entry or a moment stamps `deleted_at` (new migration) instead of removing it. A global query rule hides deleted rows everywhere: calendar dots, day panel, diary, stats, search (the entry also leaves the search index). The toast offers **Undo**, which restores the entry with its moments and re-indexes it. Rows deleted over 30 days ago are purged on the next delete or by `flask purge-deleted`. Verified in the browser (deleted trip gone from day and search, back after Undo) and by tests.
 
 **4.3 Deleting an attachment deletes the file immediately** [confirmed]
 - **What:** One tap on the × removes the database row and unlinks the file from disk. That × is also invisible on touch (7.2), so a tap near a thumbnail's corner can hit it.
 - **Where:** `routes/attachments.py` `delete_attachment`
 - **Fix:** Undo toast plus a trash folder, as in 4.2.
+- **Status:** Done. Deleting an attachment is a soft delete with Undo; the file stays on disk until it's purged after 30 days. A day record holding only deleted attachments is no longer auto-removed when its mood is cleared, so Undo always works. Covered by tests.
 
 **4.4 Clearing a mood is a hidden gesture** [code]
 - **What:** With the picker open, clicking the eye icon again clears that day's mood. It isn't shown anywhere and can't be undone.
@@ -510,7 +512,7 @@ The problems are mostly the hover-era controls inside it.
 | 1 | **Never lose writing:** keep drafts when the panel closes or Escape is pressed; confirm before discarding; keep text when a save fails | 4.1, 2.3 | **Small** | Done |
 | 2 | **Mood where you write:** a labelled mood row at the top of the day panel/sheet; tapping a day always opens it; hide the eye icon on touch | 1.2, 7.1, 5 | **Medium** | Done |
 | 3 | **Touch-ready day sheet:** one visible ⋯ per entry (Edit · Add moment · Delete), a marker toggle, attachments with a visible ×, the entry form at the top as a full-height sheet with a sticky Save | 7.2, 7.3, 7.4, 7.5, 1.3 | **Medium** | Done |
-| 4 | **Undo instead of loss:** Undo toasts for entry, moment, attachment and mood-clear; soft delete and a trash | 4.2, 4.3, 4.4 | **Medium** | To do |
+| 4 | **Undo instead of loss:** Undo toasts for entry, moment, attachment and mood-clear; soft delete and a trash | 4.2, 4.3, 4.4 | **Medium** | Done |
 | 5 | **Correctness fixes:** escape user text (2.6); move the desktop panel below the top bar so the attachment + works (2.5); use the local date parser everywhere for iPhone (2.7) | 2.5, 2.6, 2.7 | **Small** | To do |
 | 6 | **Feedback and fresh numbers:** one toast style for saves and failures; refetch Stats after changes; streak counts from yesterday; refresh the grid after edits | 2.3, 4.9, 4.10, 4.6, 8.1 | **Small** | To do |
 | 7 | **Diary language and one entry form:** entries, not events; "Nothing written for this day yet"; one form component; plain error copy; native date and time pickers | 1.1, 3.2, 3.3, 4.5, 6 | **Medium** | To do |

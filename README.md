@@ -105,6 +105,17 @@ Tunables (optional env vars):
 - `FASTEMBED_CACHE_PATH` — where the embedding model is cached. The Docker image
   bakes it in at build time so the container needs no network at runtime.
 
+## Deleting and undo
+
+Deleting an entry, a moment or an attachment marks it deleted (`deleted_at`) and
+offers **Undo**; nothing deleted shows anywhere (calendar, diary, stats,
+search). Items deleted more than 30 days ago are removed for good, attachment
+files included, on the next delete or with:
+
+```bash
+uv run flask --app app:create_app purge-deleted
+```
+
 ## Schema changes
 
 After editing `models.py`:

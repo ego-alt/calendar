@@ -545,7 +545,21 @@ async function deleteEntry(eventId, subId = null) {
         toast(error.message, { error: true });
         return;
     }
-    toast(`Deleted “${entry.name}”`);
+    const restorePath = subId ? `/events/subevents/${subId}/restore` : `/events/${eventId}/restore`;
+    toast(`Deleted “${entry.name}”`, {
+        action: 'Undo',
+        onAction: async () => {
+            try {
+                await api(restorePath, { method: 'POST' });
+            } catch (error) {
+                toast(error.message, { error: true });
+                return;
+            }
+            toast('Restored');
+            await refreshAfterChange();
+        },
+    });
+    window.statsStale = true;
     await refreshAfterChange();
 }
 
@@ -581,7 +595,20 @@ async function deleteAttachment(attachmentId) {
         toast(error.message, { error: true });
         return;
     }
-    toast(`Deleted “${attachment ? attachment.filename : 'attachment'}”`);
+    const day = currentOpenDay;
+    toast(`Deleted “${attachment ? attachment.filename : 'attachment'}”`, {
+        action: 'Undo',
+        onAction: async () => {
+            try {
+                await api(`/attachments/${attachmentId}/restore`, { method: 'POST' });
+            } catch (error) {
+                toast(error.message, { error: true });
+                return;
+            }
+            toast('Restored');
+            if (currentOpenDay === day) await showSidebar(day);
+        },
+    });
     await showSidebar(currentOpenDay);
 }
 

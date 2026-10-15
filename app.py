@@ -90,6 +90,13 @@ def create_app(config=None):
         count = reindex_all()
         print(f"Reindexed {count} events.")
 
+    @app.cli.command("purge-deleted")
+    def purge_deleted_command():
+        """Permanently remove entries and attachments deleted over 30 days ago."""
+        from trash import purge_deleted
+
+        print(f"Purged {purge_deleted()} deleted items.")
+
     db.init_app(app)
     Migrate(app, db)
     return app

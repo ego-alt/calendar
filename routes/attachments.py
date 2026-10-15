@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
 from models import Attachment, DailyLog, db
+from trash import now, purge_deleted
 
 from ._helpers import json_login_required
 
@@ -110,23 +111,27 @@ def download_attachment(attachment_id):
 @attachment_blueprint.route("/<int:attachment_id>", methods=["DELETE"])
 @json_login_required
 def delete_attachment(attachment_id):
+    """Soft delete (undoable); the file is removed when it's purged after 30 days."""
     attachment = _get_owned_attachment(attachment_id)
     if not attachment:
-        return jsonify({"status": "error", "message": "Attachment not found"}), 404
+        return jsonify({"status": "error", "message": "That file is already gone."}), 404
+    attachment.deleted_at = now()
+    db.session.commit()
+    purge_deleted()
+    return jsonify({"status": "success"})
 
-    storage_path = pathlib.Path(current_app.config["ATTACHMENT_DIR"]) / attachment.stored_name
-    try:
-        storage_path.unlink()
-    except FileNotFoundError:
-        pass
-    except OSError:
-        current_app.logger.exception("Failed to remove attachment file %s", storage_path)
 
-    daily_log = attachment.daily_log
-    db.session.delete(attachment)
-
-    if not daily_log.has_marker and daily_log.mood_key is None and len(daily_log.attachments) <= 1:
-        db.session.delete(daily_log)
-
+@attachment_blueprint.route("/<int:attachment_id>/restore", methods=["POST"])
+@json_login_required
+def restore_attachment(attachment_id):
+    attachment = (
+        Attachment.query.join(DailyLog)
+        .filter(Attachment.id == attachment_id, DailyLog.user_id == current_user.id)
+        .execution_options(include_deleted=True)
+        .first()
+    )
+    if not attachment:
+        return jsonify({"status": "error", "message": "That file can't be brought back."}), 404
+    attachment.deleted_at = None
     db.session.commit()
     return jsonify({"status": "success"})
