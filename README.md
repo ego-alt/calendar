@@ -1,179 +1,55 @@
-# Personal Calendar & Mood Tracker
+# Calendar
 
-![Calendar Image](images/calendar.png)
+A personal life log: how each day felt, what happened, and the receipts and tickets that go with it. A mood mosaic in a gruvbox terminal logbook.
+
+![Calendar](images/calendar.png)
 
 ## Features
 
-A retrospective life log: how each day felt, what happened, the receipts and
-tickets that go with it, and the trends over time.
+- **The month** is the centrepiece. Each day is a tile tinted by its mood; its corner folds further the more you wrote, a notch marks a photo or ticket, and a caret marks today.
+- **Day panel** (left, tap a day): the day's mood, a private marker, entries with optional times, people, places and notes, moments inside an entry, and photos or PDFs. Half-written entries are kept as drafts.
+- **Year / Diary drawer** (right, `y` / `d`): the year as a navigator, or the month on screen written out day by day.
+- **Stats**: streaks, mood over time and by weekday, and your mood with each person and place.
+- **Search** by meaning, words or filters ("dinner with Sam last month"), entirely on-device.
+- **Safe to use**: deletes go to a 30-day trash with Undo, and the whole diary exports as a zip (from the Stats page).
+- **Installable** on a phone, and days you've opened stay readable offline.
+- **Keyboard-first**: `?` lists every shortcut.
 
-- **Calendar** — the month is the centrepiece, with a context drawer on the
-  right for the Year or the Diary (closed until you open it with `y` or `d`),
-  mirroring the day panel on the left. A
-  tmux-style bar along the bottom switches to Stats and Search. Tap any day to open it: set its **mood** (Great →
-  Rough), toggle the **marker** (a small, unlabelled red dot, a private
-  tracker shown quietly on the calendar and the mood trend), write **entries** with optional times, people, places and notes, add
-  **moments** inside an entry, and attach **photos and PDFs**.
-- **The look** — a mood mosaic in a terminal logbook: each day a tile tinted
-  by its mood, its corner folding further the more you wrote, a small notch
-  when it holds a photo or ticket, today marked by a caret; dates,
-  times, counts and the chrome in monospace, square corners on everything but
-  the mood tiles, entries as log lines with a time gutter, and a live status
-  line in the bottom bar on desktop. The side drawers are panes of the same
-  terminal: `+ who`, `@ where` and `> notes` as text marks in gruvbox's colours
-  (dates yellow, people aqua, places blue), `── date ── mood ──` rules between
-  diary days, and buttons written as commands with their keys
-  (`[n] new entry`, `[esc] cancel`, `[↵] save`).
-- **Never lose writing** — half-written entries are kept as drafts per day and
-  come back when the day reopens; deletes (entries, moments, attachments) can
-  be undone, and are purged after 30 days.
-- **Context drawer** — **Year**: twelve small months as a navigator (tap a
-  month or a day to go there). **Diary**: the month on screen to read back,
-  day by day, with moods, entries, moments and attachments (a multi-day entry
-  in full on its first day, one line after). It slides over the page from the
-  right with the same header as the day panel, so the month never moves; on
-  phones it fills the screen.
-- **Stats** — logged days, streak, mood calendar (tap a day to open it), mood
-  over time (actual / 7-day / 28-day), mood mix by month or weekday, days with
-  entries, and **Mood with…**: average mood with each person and at each place
-  against your overall average. Last 12 months or any year.
-- **Search** — by meaning, words and filters (date, mood, who, where); typed
-  phrases like "dinner with Sam last month" are understood.
-- **Receipts & tickets** — from the day panel or the phone scanner app; HEIC
-  photos become JPEGs, every photo gets a thumbnail, and each attachment can
-  have a caption and belong to one of the day's entries.
-- **Export** — the whole diary as a zip (JSON, a Markdown diary, the original
-  files), from the foot of the Stats page.
-- **Installable** — add it to a phone's home screen; days you've opened stay
-  readable offline.
-- **Keyboard** — `←`/`→` (or `h`/`l`) month, `[`/`]` day in the day panel,
-  `j`/`k` year, `t` today,
-  `y` / `d` year or diary pane, `m` back to the month, `n` new entry, `1`–`5` mood, `x` marker, `/` search, `?`
-  for the list.
-
-## Development Setup (uv)
-
-1. Install [`uv`](https://docs.astral.sh/uv/).
-2. Create the project environment and install dependencies:
+## Run it
 
 ```bash
 uv sync
-```
-
-   On an Intel Mac this fails: the locked `onnxruntime` (used by search) only
-   ships wheels for Apple-silicon Macs, Linux and Windows. Either develop on one
-   of those, or install the dependencies into a separate environment with an
-   older `onnxruntime<1.20`.
-
-3. Initialize the database (fresh clones):
-
-```bash
 uv run flask --app app:create_app db upgrade
+uv run flask --app app:create_app run --port 8001   # http://127.0.0.1:8001
 ```
 
-   If you already have an `instance/events.db` from before migrations were introduced,
-   stamp it once instead of upgrading:
+On an Intel Mac `uv sync` fails: the locked `onnxruntime` (used by search) has no wheel for it. Use another machine, or a separate environment with `onnxruntime<1.20`.
 
-```bash
-uv run flask --app app:create_app db stamp head
-```
+Tests and lint: `uv run pytest` and `uv run ruff check .`
 
-4. Run the app:
+## Home stack
 
-```bash
-uv run flask --app app:create_app run --port 8001
-```
-
-5. Run linting:
-
-```bash
-uv run ruff check .
-```
-
-6. Run tests:
-
-```bash
-uv run pytest
-```
-
-## Home stack (with dashboard)
-
-Served at `/calendar/` behind the [dashboard](../dashboard) nginx proxy, gated by
-its `auth_request` and wired into `../dashboard/docker-compose.yml` (internal
-port `5002`). Set:
+Served at `/calendar/` behind the [dashboard](../dashboard)'s nginx, which signs people in and passes the user on. Set:
 
 ```bash
 AUTH_PROXY_HEADER=X-Forwarded-User
 APPLICATION_ROOT=/calendar
 ```
 
-Dashboard handles login; this app trusts `X-Forwarded-User` and stores events and
-mood data against local `users` rows. Omit both variables for standalone dev.
+Leave both unset for standalone development. After adding a user in the dashboard, run `uv run python scripts/sync_household_users.py` there.
 
-After adding a user in dashboard:
+Commits merged to `master` that pass CI deploy to the Pi on their own (see the dashboard README). The database is `instance/events.db`; the container applies migrations when it starts.
 
-```bash
-cd ../dashboard && uv run python scripts/sync_household_users.py
-```
-
-> On the Pi, merged commits that pass CI deploy themselves within about five
-> minutes (see the dashboard README, "Deploying"). To deploy by hand: code is
-> baked into the image at build time, so after pulling run
-> `docker compose build calendar && docker compose up -d calendar`. A bare `up -d`
-> reuses the old image.
-
-The DB lives at `instance/events.db` (bind-mounted in compose). The container
-runs `flask db upgrade` on start, so migrations apply automatically.
-
-## Search
-
-Hybrid semantic + keyword search over diary entries (events and their
-subevents), entirely on-device — no external services or API keys. Retrieval
-combines local embeddings (`fastembed` / ONNX), SQLite FTS5 lexical matching,
-and metadata filters (date range, mood, who, where), fused with Reciprocal Rank
-Fusion. Search is its own top-level view (the **Search** tab, at `/search`);
-clicking a result jumps to that day on the calendar.
-
-Entries are indexed automatically on create/edit/delete. Build (or rebuild) the
-index for existing data:
+## Commands
 
 ```bash
-uv run flask --app app:create_app reindex
+uv run flask --app app:create_app reindex         # rebuild the search index
+uv run flask --app app:create_app purge-deleted   # empty the trash (> 30 days)
+uv run flask --app app:create_app db migrate -m "what changed"   # after editing models.py
 ```
 
-Tunables (optional env vars):
+Search settings (optional): `SEARCH_DENSE_MIN_SCORE` (default `0.6`; lower for more matches) and `FASTEMBED_CACHE_PATH` (where the embedding model lives; the Docker image bakes it in).
 
-- `SEARCH_DENSE_MIN_SCORE` — cosine floor for semantic matches (default `0.6`).
-  Lower for more recall, raise to cut weak matches.
-- `FASTEMBED_CACHE_PATH` — where the embedding model is cached. The Docker image
-  bakes it in at build time so the container needs no network at runtime.
+## For other apps
 
-## Receipts and tickets
-
-Each day can hold photos and PDFs (receipts, tickets), attached in the day
-panel or sent from the phone scanner app (`POST /attachments` with `file`,
-`year`, `month`, `day`). Only images and PDFs are accepted (up to 10 MB each);
-iPhone HEIC photos are converted to JPEG on upload, and a small thumbnail is
-kept for each photo (`instance/attachments/thumbs/`). An attachment can have a
-caption and can be linked to one of the day's entries, which shows it in that
-entry's card.
-
-## Deleting and undo
-
-Deleting an entry, a moment or an attachment marks it deleted (`deleted_at`) and
-offers **Undo**; nothing deleted shows anywhere (calendar, diary, stats,
-search). Items deleted more than 30 days ago are removed for good, attachment
-files included, on the next delete or with:
-
-```bash
-uv run flask --app app:create_app purge-deleted
-```
-
-## Schema changes
-
-After editing `models.py`:
-
-```bash
-uv run flask --app app:create_app db migrate -m "describe the change"
-uv run flask --app app:create_app db upgrade
-```
+The phone scanner app posts receipts to `POST /attachments` (`file`, `year`, `month`, `day`): images and PDFs up to 10 MB, HEIC converted to JPEG. The home stack's MCP server uses the JSON endpoints under `/events`, `/mood`, `/search/data` and `/stats/data`.

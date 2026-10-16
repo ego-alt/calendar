@@ -598,3 +598,16 @@ Endpoints for programmatic clients; the UI doesn't use them. See
 - `GET /events/range?from=YYYY-MM-DD&to=YYYY-MM-DD`: entries overlapping a range, both ends inclusive, at most 366 days.
 - `POST /events/<id>/subevents` now returns the new moment's `id`.
 - `PUT /events/<id>` accepts `move_moments: true`, which shifts the moments with the entry's start. Without it, an entry with moments couldn't be moved by an API client.
+
+---
+
+## Redesign since this audit (2026-10-16)
+
+The layout and look changed after the findings above were closed. Where a finding describes the old layout, this is what replaced it:
+
+- **Top bar, mode switch, phone mode bar (1.5, 2.5):** one tmux-style bar along the bottom (`month │ year diary │ stats search` and a status line). Nothing sits over the top of the page any more.
+- **Week view (1.6, 7.7, and its mentions elsewhere):** removed, along with `/get_week`. The month is the centrepiece; the day panel and the diary cover what Week was for.
+- **Year and Diary:** a drawer on the right (`y` / `d`) that mirrors the day panel: same 340px width, header, surface and slide. Year is a navigator that opens at January; the diary writes a multi-day entry out once, then one line.
+- **Day panel:** a shared header with `‹ date ›` (and `[` `]`) to step days, the marker, attach and ×; the date row in the entry form no longer clips.
+- **Look:** gruvbox's darkest grey for the page, near-black (`#151515`) for the drawers and the bar, square corners except the mood tiles, no stripe texture. Inter for headings and what you wrote, monospace for small facts and controls. In the drawers: `+ who` / `@ where` / `> notes`, green dates, `date ──── mood ──` rules, and `[n] new entry`-style command buttons.
+- **Shortcuts (8.3):** `m` is now back to the month; `w` is gone; `y` / `d` toggle the drawer; `[` `]` step days.
