@@ -2,12 +2,12 @@
  * fonts, motion) live in structural.css, shared byte-identical across the home
  * stack; role names follow dashboard/docs/ui-spec.md. Only colours diverge here. */
 :root {
-    --color-bg-base: #282828;
+    --color-bg-base: #242424;     /* a shade under Gruvbox's #282828 */
     --color-bg-elevated: #3c3836;
-    --color-bg-chrome: #1d2021;   /* window title bar and the bottom bar: Gruvbox "hard", darker than the page */
-    --color-bg-inset: rgba(40, 40, 40, 0.5);
-    --color-bg-inset-soft: rgba(40, 40, 40, 0.3);
-    --color-bg-overlay: rgba(40, 40, 40, 0.85);
+    --color-bg-chrome: #191a1b;   /* the bottom bar: the same step darker than the page as Gruvbox "hard" (#1d2021) is to #282828 */
+    --color-bg-inset: rgba(36, 36, 36, 0.5);
+    --color-bg-inset-soft: rgba(36, 36, 36, 0.3);
+    --color-bg-overlay: rgba(36, 36, 36, 0.85);
     --color-bg-overlay-strong: rgba(60, 56, 54, 0.95);
     --color-border: #504945;
     --color-border-soft: rgba(80, 73, 69, 0.5);
