@@ -2,7 +2,7 @@
 
 A personal life log: how each day felt, what happened, and the receipts and tickets that go with it. A mood mosaic in a gruvbox terminal logbook.
 
-![Calendar](images/calendar.png)
+![Calendar](images/calendar-2026-10.png)
 
 ## Features
 
