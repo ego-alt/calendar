@@ -1400,5 +1400,6 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
     color: var(--color-accent-hover);
 }
 .entry-form .cancel-btn { color: var(--color-text-muted); }
+.add-event-btn, .entry-form .cancel-btn, .entry-form .save-btn { font-size: var(--text-sm); }   /* the header's size */
 .key-hint { opacity: 0.6; }
 @media (hover: none) { .key-hint { display: none; } }   /* no keyboard there */
