@@ -43,13 +43,11 @@
             <button type="button" class="btn btn-primary" id="firstRunBtn">Log today</button>
         </div>
         {% endif %}
-        <!-- The centerpiece: the calendar as one terminal window. The diary is a
-             split pane inside it, closed until asked for (d). -->
+        <!-- The centerpiece is the month. Beside it, one context pane (Year or
+             Diary), closed until asked for (y / d). -->
         <section class="term" id="termWindow">
-            <header class="term-bar view-nav">
-                <button type="button" class="btn btn-ghost view-nav-btn" data-nav="prev" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>
+            <header class="term-bar">
                 <h1 id="calTitle">{{ date_label }}</h1>
-                <button type="button" class="btn btn-ghost view-nav-btn" data-nav="next" aria-label="Next"><i class="fas fa-chevron-right"></i></button>
             </header>
             <div class="term-body">
                 <div class="term-main">
@@ -85,18 +83,23 @@
                                 <div class="day next-month" data-day="{{ day }}"></div>
                             {% endfor %}
                         </div>
-                        <div class="week-grid" id="viewWeek" style="display: none;"></div>
-                    </div>
-                    <div class="year-view" id="yearView">
-                        <div class="year-content" id="yearContent"></div>
                     </div>
                 </div>
-                <aside class="term-pane" id="diaryView" aria-label="Diary">
+                <aside class="term-pane" id="contextPane" aria-label="Year and diary">
                     <div class="pane-bar">
-                        <span class="pane-title" id="diaryTitle">diary</span>
-                        <button type="button" class="btn btn-ghost pane-close" id="diaryClose" aria-label="Close the diary"><i class="fas fa-times"></i></button>
+                        <nav class="pane-tabs" role="tablist">
+                            <button type="button" class="pane-tab" data-pane="year" role="tab">year</button>
+                            <button type="button" class="pane-tab" data-pane="diary" role="tab">diary</button>
+                        </nav>
+                        <span class="pane-title" id="paneTitle"></span>
+                        <button type="button" class="btn btn-ghost pane-close" id="paneClose" aria-label="Close"><i class="fas fa-times"></i></button>
                     </div>
-                    <div class="diary-content" id="diaryContent"></div>
+                    <div class="pane-body" id="yearView">
+                        <div class="year-content" id="yearContent"></div>
+                    </div>
+                    <div class="pane-body" id="diaryView">
+                        <div class="diary-content" id="diaryContent"></div>
+                    </div>
                 </aside>
             </div>
         </section>
@@ -226,10 +229,10 @@
     <footer class="tmux" id="tmux">
         <span class="tmux-session">cal</span>
         <nav class="tmux-windows" aria-label="Views">
-            <button type="button" class="tmux-win" data-view="calendar" data-mode="month" title="Month (m)">month</button>
-            <button type="button" class="tmux-win" data-view="calendar" data-mode="week" title="Week (w)">week</button>
-            <button type="button" class="tmux-win" data-view="calendar" data-mode="year" title="Year (y)">year</button>
-            <button type="button" class="tmux-win tmux-toggle" id="diaryToggle" aria-pressed="false" title="Diary (d)">diary</button>
+            <button type="button" class="tmux-win" data-view="calendar" title="Month (m)">month</button>
+            <span class="tmux-sep" aria-hidden="true">│</span>
+            <button type="button" class="tmux-win" data-pane="year" aria-pressed="false" title="Year (y)">year</button>
+            <button type="button" class="tmux-win" data-pane="diary" aria-pressed="false" title="Diary (d)">diary</button>
             <span class="tmux-sep" aria-hidden="true">│</span>
             <button type="button" class="tmux-win" data-view="stats">stats</button>
             <button type="button" class="tmux-win" data-view="search" title="Search (/)">search</button>
@@ -253,11 +256,11 @@
         <div class="modal-card keys-card" role="dialog" aria-modal="true" aria-labelledby="keysTitle">
             <div class="modal-head" id="keysTitle">Keyboard shortcuts</div>
             <dl class="keys-list">
-                <dt><kbd>←</kbd> <kbd>→</kbd> or <kbd>h</kbd> <kbd>l</kbd></dt><dd>Previous / next month or week</dd>
+                <dt><kbd>←</kbd> <kbd>→</kbd> or <kbd>h</kbd> <kbd>l</kbd></dt><dd>Previous / next month</dd>
                 <dt><kbd>j</kbd> <kbd>k</kbd></dt><dd>Next / previous year</dd>
                 <dt><kbd>t</kbd></dt><dd>Today</dd>
-                <dt><kbd>m</kbd> <kbd>w</kbd> <kbd>y</kbd></dt><dd>Month, Week, Year</dd>
-                <dt><kbd>d</kbd></dt><dd>Show or hide the diary</dd>
+                <dt><kbd>m</kbd></dt><dd>Back to the month</dd>
+                <dt><kbd>y</kbd> <kbd>d</kbd></dt><dd>Show or hide the year or the diary beside it</dd>
                 <dt><kbd>n</kbd></dt><dd>New entry on the open day (or today)</dd>
                 <dt><kbd>1</kbd>–<kbd>5</kbd></dt><dd>Mood for the open day, Great → Rough</dd>
                 <dt><kbd>x</kbd></dt><dd>Toggle the marker on the open day</dd>

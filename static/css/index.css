@@ -297,8 +297,7 @@ h2 {
 .prev-month, .next-month, .prev-month::after, .next-month::after, .year-prev-month {
     opacity: 0.3;
 }
-/* Month-view weekday labels — kept in sync with .week-day-weekday so the two
- * views read as the same header. Both: uppercase, text-sm, muted, no spacing. */
+/* Month-view weekday labels: uppercase, text-sm, muted, no spacing. */
 .weekday {
     text-align: center;
     padding: var(--space-1);
@@ -634,207 +633,6 @@ h2 {
     color: var(--color-text-muted);
 }
 
-/* Week view */
-.week-grid {
-    --hour-h: 40px;
-    --block-h: var(--hour-h);  /* grid-line/label spacing; mobile uses 2h blocks */
-    --gutter-w: 44px;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 100%;
-    margin-bottom: var(--space-8);
-}
-.week-grid-header {
-    display: grid;
-    grid-template-columns: var(--gutter-w) repeat(7, 1fr);
-    gap: 0;
-    border-bottom: 1px solid var(--color-border);
-}
-.week-corner {
-    border-right: 1px solid var(--color-border);
-}
-.week-day-header {
-    text-align: center;
-    padding: var(--space-1) 2px;
-    cursor: pointer;
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    border-right: 1px solid var(--color-border-soft);
-    transition: background-color 0.2s ease;
-}
-.week-day-header:hover {
-    background-color: var(--color-highlight-soft);
-}
-.week-day-header.today .week-day-date {
-    color: var(--color-text-primary);
-    background: var(--color-accent-hover);
-    border-radius: var(--radius-pill);
-    width: 24px;
-    height: 24px;
-    line-height: 24px;
-    display: inline-block;
-}
-.week-day-weekday {
-    font-size: var(--text-sm);
-    text-transform: uppercase;
-}
-.week-day-date {
-    font-size: var(--text-lg);
-    color: var(--color-text-primary);
-    margin-top: 2px;
-}
-.week-allday-row {
-    display: grid;
-    grid-template-columns: var(--gutter-w) repeat(7, 1fr);
-    grid-auto-rows: minmax(22px, auto);
-    border-bottom: 1px solid var(--color-border);
-    padding: var(--space-1) 0;
-    gap: 2px;
-}
-.week-allday-label {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    text-align: right;
-    padding-right: var(--space-1);
-    align-self: center;
-}
-.week-allday-block {
-    background: var(--color-accent-hover);
-    color: var(--color-text-primary);
-    border-radius: var(--radius-sm);
-    padding: 2px var(--space-1);
-    font-size: var(--text-sm);
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    cursor: pointer;
-    margin: 1px 2px;
-    border-left: 2px solid var(--color-text-primary);
-}
-.week-allday-block:hover {
-    background: var(--color-accent-soft-hover);
-}
-.week-grid-body {
-    display: grid;
-    grid-template-columns: var(--gutter-w) repeat(7, 1fr);
-    max-height: 70vh;
-    overflow-y: auto;
-    position: relative;
-}
-.week-time-gutter {
-    display: flex;
-    flex-direction: column;
-}
-.week-hour-label {
-    height: var(--block-h);
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    text-align: right;
-    padding-right: var(--space-1);
-    line-height: 1;
-    position: relative;
-    top: calc(-1 * var(--space-1));
-}
-.week-day-column {
-    position: relative;
-    height: calc(24 * var(--hour-h));
-    border-right: 1px solid var(--color-border-soft);
-    background:
-        repeating-linear-gradient(
-            to bottom,
-            transparent 0,
-            transparent calc(var(--block-h) - 1px),
-            var(--color-border-soft) calc(var(--block-h) - 1px),
-            var(--color-border-soft) var(--block-h)
-        );
-    cursor: pointer;
-}
-.week-day-column.today {
-    background-color: var(--color-highlight-soft);
-    background-blend-mode: lighten;
-}
-/* Background fill + accent stripe carry the depth — no shadow needed. */
-.week-event-block {
-    position: absolute;
-    left: 3px;
-    right: 3px;
-    background: var(--color-bg-overlay);
-    border-left: 3px solid var(--color-text-primary);
-    border-radius: var(--radius-sm);
-    padding: 3px var(--space-1);
-    overflow: hidden;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    box-sizing: border-box;
-}
-.week-event-block:hover {
-    background: var(--color-bg-overlay-strong);
-}
-.week-event-time {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    margin-bottom: 1px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.week-event-name {
-    font-size: var(--text-sm);
-    color: var(--color-text-primary);
-    font-weight: bold;
-    line-height: 1.1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-}
-.week-marker {
-    bottom: var(--space-1);
-    left: var(--space-1);
-}
-.week-day-column .event-indicator {
-    bottom: var(--space-1);
-    right: var(--space-1);
-}
-
-@media (max-width: 480px) {
-    /* The 7 columns are squeezed to fit the screen (no horizontal scroll) and
-     * renderWeek() draws the time axis in 2h blocks, sizing --hour-h so the
-     * whole day fits in one fixed view. Fallback values below apply until JS
-     * sets them. */
-    .week-grid {
-        --hour-h: 18px;
-        --block-h: 36px;  /* 2h blocks */
-        --gutter-w: 30px;
-        margin-bottom: var(--space-4);
-    }
-    /* Safety cap only — the day is normally sized to fit inside this. */
-    .week-grid-body {
-        max-height: calc(100dvh - 120px);
-    }
-    .week-day-header {
-        padding: var(--space-1) 1px;
-    }
-    .week-day-weekday {
-        font-size: 0.625rem;  /* 10px — narrow columns */
-    }
-    .week-day-date {
-        font-size: var(--text-sm);
-    }
-    .week-hour-label {
-        font-size: 0.625rem;  /* 10px */
-    }
-    .week-event-time {
-        font-size: 0.625rem;
-    }
-    .week-event-name {
-        font-size: 0.6875rem;
-        -webkit-line-clamp: 1;
-    }
-}
-
 /* ---- day panel: the one entry form ---- */
 .entry-form {
     display: flex;
@@ -1164,7 +962,7 @@ h2 {
     body.entry-form-open .form-buttons-title { display: block; }
 }
 
-/* month/week loading: dim the grid instead of looking stuck */
+/* month loading: dim the grid instead of looking stuck */
 #calendarContainer { transition: opacity 0.15s ease; }
 #calendarContainer.loading { opacity: 0.5; }
 
@@ -1386,32 +1184,6 @@ kbd {
     color: var(--color-text-primary);
 }
 
-/* ---- week on a phone: seven day cards ---- */
-.week-grid.week-cards { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; }
-.week-card {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: var(--space-3);
-    border: 1px solid var(--color-border);
-    border-left: 6px solid var(--mood, var(--color-border));
-    border-radius: var(--radius-md);
-    background: var(--color-bg-inset);
-    color: inherit;
-    font: inherit;
-    cursor: pointer;
-}
-.week-card.today { box-shadow: inset 0 0 0 1px var(--color-text-primary); }
-.wc-head { display: flex; align-items: center; gap: var(--space-3); }
-.wc-date { font-weight: 600; }
-.wc-mood { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--color-text-secondary); }
-.wc-mood .mood-dot { width: 10px; height: 10px; border-radius: var(--radius-pill); background: var(--mood); }
-.wc-entries { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: grid; gap: 2px; }
-.wc-entries li { display: flex; gap: var(--space-2); font-size: var(--text-sm); }
-.wc-time { color: var(--color-text-muted); min-width: 5.5em; flex-shrink: 0; }
-.wc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wc-empty { display: block; margin-top: var(--space-1); font-size: var(--text-sm); color: var(--color-text-muted); }
-
 /* ---- signed out: the sign-in card is the page ---- */
 body.signed-out main, body.signed-out .tmux { display: none !important; }
 body.signed-out .login-overlay { background: var(--color-bg-base); }
@@ -1488,8 +1260,8 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 
 
 /* ---- facts in monospace, words in Inter (the logbook voice) ---- */
-.day::after, .year-day::after, .week-day-date, .week-hour-label, .week-event-time,
-.day-title, .diary-date, .search-result-date, .wc-date, .wc-time,
+.day::after, .year-day::after,
+.day-title, .diary-date, .search-result-date,
 .st-tile .n, .st-range, .shelf-count,
 .attachment-caption, .search-footer, .upload-progress {
     font-family: var(--font-mono);

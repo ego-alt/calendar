@@ -89,7 +89,8 @@ def test_move_moments_shifts_them_with_the_entry(authed_client):
     # Without the flag the moment would be stranded, so the move is refused.
     assert authed_client.put(f"/events/{eid}", json=moved).status_code == 400
 
-    assert authed_client.put(f"/events/{eid}", json={**moved, "move_moments": True}).status_code == 200
+    res = authed_client.put(f"/events/{eid}", json={**moved, "move_moments": True})
+    assert res.status_code == 200
     event = authed_client.get(f"/events/{eid}").get_json()["event"]
     assert event["start_time"] == "2026-03-12 19:00"
     assert event["subevents"][0]["start_time"] == "2026-03-12 20:30"

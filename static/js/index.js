@@ -8,11 +8,9 @@ const CURRENT_DAY = TODAY.getDate();
 let viewState = {
     year: CURRENT_YEAR,
     month: CURRENT_MONTH,
-    mode: 'month',
-    weekAnchor: { year: CURRENT_YEAR, month: CURRENT_MONTH, day: CURRENT_DAY },
 };
 
-let viewToken = 0;   // latest month/week load; older responses are ignored
+let viewToken = 0;   // latest month load; older responses are ignored
 let currentOpenDay = null;
 
 /** Shared by color picker UI (eye icon, options, document dismiss). */
@@ -20,13 +18,6 @@ let moodPickerSelectedDay = null;
 let moodPickerMenuOpen = false;
 
 let globalListenersAttached = false;
-
-/** Format a Date or "YYYY-MM-DD HH:MM" string as "HH:MM" (24h). */
-function formatTimeOfDay(input) {
-    // Parse "YYYY-MM-DD HH:MM" by hand: Safari can't parse it (Invalid Date).
-    const date = input instanceof Date ? input : parseLocalDateTime(input);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-}
 
 /** True when start ends at 00:00 and end ends at 23:59 (legacy all-day encoding). */
 function isAllDayEvent(event) {
@@ -130,73 +121,91 @@ document.addEventListener('DOMContentLoaded', () => {
     const keysModal = document.getElementById('keysModal');
     keysModal.addEventListener('click', (e) => { if (e.target === keysModal) keysModal.hidden = true; });
     document.getElementById('keysBtn')?.addEventListener('click', () => { keysModal.hidden = false; });
-    // ‹ › in the window's title bar step by whatever the window shows.
-    document.querySelector('#termWindow .view-nav').addEventListener('click', (e) => {
+    document.getElementById('paneClose').addEventListener('click', () => closePane());
+    document.querySelectorAll('.pane-tab').forEach((t) => t.addEventListener('click', () => openPane(t.dataset.pane)));
+    // ‹ 2026 › in the year tab's title steps the year (the month follows).
+    document.getElementById('paneTitle').addEventListener('click', (e) => {
         const b = e.target.closest('[data-nav]');
-        if (!b) return;
-        if (isYearMode()) updateYear(b.dataset.nav);
-        else updateMonth(b.dataset.nav);
+        if (b) updateYear(b.dataset.nav);
     });
-    document.getElementById('diaryClose').addEventListener('click', () => toggleDiaryView(false));
 });
 
-/** The bottom bar's calendar windows (month / week / year) and diary toggle.
- *  Switching views (calendar / stats / search) is shell.js's job. */
+/** The bottom bar's year / diary toggles open the context pane beside the
+ *  month. Switching views (calendar / stats / search) is shell.js's job. */
 function setupTmux() {
-    document.querySelectorAll('.tmux-win[data-mode]').forEach((b) => {
-        b.addEventListener('click', () => setCalendarMode(b.dataset.mode));
-    });
-    document.getElementById('diaryToggle').addEventListener('click', () => {
-        document.querySelector('.tmux-win[data-view="calendar"]').click();   // from stats/search too
-        toggleDiaryView(true);
+    document.querySelectorAll('.tmux-win[data-pane]').forEach((b) => {
+        b.addEventListener('click', () => {
+            const fromElsewhere = !document.body.classList.contains('view-calendar');
+            if (fromElsewhere) document.querySelector('.tmux-win[data-view="calendar"]').click();
+            if (fromElsewhere) openPane(b.dataset.pane);
+            else togglePane(b.dataset.pane);
+        });
     });
     updateTmux();
 }
 
-/** What the window shows: the month or week grid, or the year. */
-function setCalendarMode(mode) {
-    if (mode === 'year') {
-        toggleYearView(true);
+/* ---- the context pane: closed, or showing the year or the diary ---- */
+
+/** Which tab the pane shows ('year' / 'diary'), or '' when closed. */
+const paneTab = () => document.getElementById('termWindow').dataset.pane || '';
+const isPaneOpen = (tab) => paneTab() === tab;
+
+function openPane(tab) {
+    const win = document.getElementById('termWindow');
+    win.dataset.pane = tab;
+    win.classList.add('pane-open');
+    document.querySelectorAll('.pane-tab').forEach((t) => {
+        t.classList.toggle('active', t.dataset.pane === tab);
+        t.setAttribute('aria-selected', String(t.dataset.pane === tab));
+    });
+    document.getElementById('yearView').hidden = tab !== 'year';
+    document.getElementById('diaryView').hidden = tab !== 'diary';
+    if (tab === 'year') loadYearView(viewState.year);
+    else loadMonthEvents();
+    updateTmux();
+}
+
+function closePane() {
+    const win = document.getElementById('termWindow');
+    delete win.dataset.pane;
+    win.classList.remove('pane-open');
+    updateTmux();
+}
+
+/** y / d: open that tab, switch to it, or close it if it's the one showing. */
+function togglePane(tab) {
+    if (isPaneOpen(tab)) closePane();
+    else openPane(tab);
+}
+
+/** The pane's own title: ‹ 2026 › for the year, the month for the diary. */
+function renderPaneTitle() {
+    const title = document.getElementById('paneTitle');
+    if (isPaneOpen('year')) {
+        title.innerHTML = `<button type="button" class="pane-nav" data-nav="prev" aria-label="Previous year">‹</button>${viewState.year}<button type="button" class="pane-nav" data-nav="next" aria-label="Next year">›</button>`;
+    } else if (isPaneOpen('diary')) {
+        title.textContent = `${MONTH_ABBR[viewState.month - 1]} ${viewState.year}`;
     } else {
-        toggleYearView(false);
-        toggleWeekView(mode === 'week');
+        title.textContent = '';
     }
-    updateTmux();
 }
 
-const isYearMode = () => document.getElementById('termWindow').classList.contains('year-mode');
-const isDiaryOpen = () => document.getElementById('termWindow').classList.contains('diary-open');
-
-/** Light up the active window in the bottom bar, and the diary toggle. */
+/** Light up the bottom bar's year / diary toggles for the open tab. */
 function updateTmux() {
     const calendar = document.body.classList.contains('view-calendar');
-    const mode = isYearMode() ? 'year' : viewState.mode;
-    document.querySelectorAll('.tmux-win[data-mode]').forEach((b) => {
-        const on = calendar && b.dataset.mode === mode;
+    document.querySelectorAll('.tmux-win[data-pane]').forEach((b) => {
+        const on = calendar && isPaneOpen(b.dataset.pane);
         b.classList.toggle('active', on);
         b.setAttribute('aria-pressed', String(on));
     });
-    const diary = document.getElementById('diaryToggle');
-    diary.classList.toggle('active', calendar && isDiaryOpen());
-    diary.setAttribute('aria-pressed', String(calendar && isDiaryOpen()));
 }
 window.updateTmux = updateTmux;
-
-/** The window title: the year in year mode, else the month or week label. */
-let periodLabel = document.getElementById('calTitle').textContent;
-function setWindowTitle(label) {
-    if (label !== undefined) periodLabel = label;
-    document.getElementById('calTitle').textContent = isYearMode() ? String(viewState.year) : periodLabel;
-}
 
 /** Jump every view back to today. */
 async function goToToday() {
     viewState.year = CURRENT_YEAR;
     viewState.month = CURRENT_MONTH;
-    viewState.weekAnchor = { year: CURRENT_YEAR, month: CURRENT_MONTH, day: CURRENT_DAY };
     await updateCalendarView();
-    if (isYearMode()) loadYearView(CURRENT_YEAR);
-    updateTmux();
 }
 
 /** Document-level and static-DOM listeners — call once. */
@@ -233,9 +242,9 @@ function setupGlobalEventListeners() {
             moodPickerSelectedDay = null;
         }
         // The day panel closes on a tap outside it, unless that tap opens a
-        // day (month/week/year cells, diary entries) or is on our own overlays.
+        // day (month or year cells, diary entries) or is on our own overlays.
         const keepsPanel = t.closest(
-            '#sidebar, #colorPicker, .day, .eye-icon, .week-grid, .year-day, .diary-day-head, .diary-event, #confirmModal, #toasts, #actionSheet, #viewer, #keysModal, #keysBtn'
+            '#sidebar, #colorPicker, .day, .eye-icon, .year-day, .diary-day-head, .diary-event, #confirmModal, #toasts, #actionSheet, #viewer, #keysModal, #keysBtn'
         );
         if (!keepsPanel && sidebar.classList.contains('active')) {
             sidebar.classList.remove('active');
@@ -336,10 +345,8 @@ function handleKeyPress(event) {
             toast('Draft kept');
         } else if (document.getElementById('sidebar').classList.contains('active')) {
             dismissSidebar();
-        } else if (!inInput && isDiaryOpen()) {
-            toggleDiaryView(false);
-        } else if (!inInput && isYearMode()) {
-            setCalendarMode('month');
+        } else if (!inInput && paneTab()) {
+            closePane();
         }
         event.preventDefault();
         return;
@@ -352,6 +359,10 @@ function handleKeyPress(event) {
         event.preventDefault();
         document.querySelector('.tmux-win[data-view="search"]')?.click();
         document.getElementById('searchInput').focus();
+        return;
+    }
+    if (event.key === 'm') {
+        document.querySelector('.tmux-win[data-view="calendar"]')?.click();
         return;
     }
     if (!document.body.classList.contains('view-calendar')) return;
@@ -368,10 +379,8 @@ function handleKeyPress(event) {
         case 'l': case 'ArrowRight': updateMonth('next'); break;
         case 'k': updateYear('prev'); break;
         case 'j': updateYear('next'); break;
-        case 'm': setCalendarMode('month'); break;
-        case 'w': setCalendarMode('week'); break;
-        case 'd': toggleDiaryView(); break;
-        case 'y': setCalendarMode('year'); break;
+        case 'y': togglePane('year'); break;
+        case 'd': togglePane('diary'); break;
         case 't': goToToday(); break;
         case 'x': if (panelOpen) toggleDayMarker(viewState.year, viewState.month, currentOpenDay); break;
         case 'n':
@@ -387,10 +396,9 @@ function handleKeyPress(event) {
     }
 }
 
-/** Horizontal swipes on the calendar mirror the h/l keys: left = next, right
- *  = prev (works in both month and week mode, since updateMonth routes by
- *  view). A detected swipe suppresses the trailing click so it doesn't also
- *  open a day. Vertical-dominant gestures are left alone so week-grid/sidebar
+/** Horizontal swipes on the month mirror the h/l keys: left = next, right =
+ *  prev. A detected swipe suppresses the trailing click so it doesn't also
+ *  open a day. Vertical-dominant gestures are left alone so page and panel
  *  scrolling still works. */
 let suppressClickUntil = 0;
 function setupSwipeNavigation() {
@@ -429,12 +437,6 @@ function setupSwipeNavigation() {
 }
 
 async function updateMonth(direction) {
-
-    if (viewState.mode === 'week') {
-        await shiftWeek(direction);
-        return;
-    }
-
     if (direction === 'next') {
         viewState.month++;
         if (viewState.month > 12) {
@@ -453,32 +455,10 @@ async function updateMonth(direction) {
 
 async function updateYear(direction) {
     viewState.year += direction === 'next' ? 1 : -1;
-    if (viewState.mode === 'week') {
-        const a = viewState.weekAnchor;
-        viewState.weekAnchor = { year: a.year + (direction === 'next' ? 1 : -1), month: a.month, day: a.day };
-    }
     await updateCalendarView();
-    if (isYearMode()) loadYearView(viewState.year);
-    updateTmux();
-}
-
-async function shiftWeek(direction) {
-    const a = viewState.weekAnchor;
-    const d = new Date(a.year, a.month - 1, a.day);
-    d.setDate(d.getDate() + (direction === 'next' ? 7 : -7));
-    viewState.weekAnchor = { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
-    const monthBefore = viewState.month;
-    viewState.year = viewState.weekAnchor.year;
-    viewState.month = viewState.weekAnchor.month;
-    await renderWeek();
-    if (isDiaryOpen() && viewState.month !== monthBefore) loadMonthEvents();   // the diary shows the week's month
 }
 
 async function updateCalendarView() {
-    if (viewState.mode === 'week') {
-        await renderWeek();
-        return;
-    }
     // Every navigation starts a load; only the newest one is drawn, so quick
     // key presses or swipes are never dropped. The grid dims if it's slow.
     const token = ++viewToken;
@@ -493,10 +473,10 @@ async function updateCalendarView() {
         if (token !== viewToken) return;
         
         // Update main header
-        setWindowTitle(data.month_label);
+        document.getElementById('calTitle').textContent = data.month_label;
         const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         
-        // Generate the new month HTML (inside #viewMonth so the sibling #viewWeek survives)
+        // Generate the new month HTML
         const monthInner = `
             ${weekdays.map(day => `
                 <div class="weekday">${day}</div>
@@ -525,8 +505,7 @@ async function updateCalendarView() {
         window.monthData = { year, month, ...data };
         renderStatusLine();
         setupMonthGridListeners();
-        updateTmux();
-        if (isDiaryOpen()) loadMonthEvents();
+        syncPane();
 
     } catch (error) {
         if (token !== viewToken) return;
@@ -538,230 +517,6 @@ async function updateCalendarView() {
         clearTimeout(dim);
         if (token === viewToken) container.classList.remove('loading');
     }
-}
-
-function toggleWeekView(show) {
-    const monthGrid = document.getElementById('viewMonth');
-    const weekGrid = document.getElementById('viewWeek');
-
-    if (show === undefined) show = viewState.mode !== 'week';
-
-    if (show) {
-        if (viewState.mode !== 'week') {
-            const inDisplayedMonth =
-                viewState.year === CURRENT_YEAR && viewState.month === CURRENT_MONTH;
-            viewState.weekAnchor = {
-                year: viewState.year,
-                month: viewState.month,
-                day: inDisplayedMonth ? CURRENT_DAY : 1,
-            };
-        }
-        viewState.mode = 'week';
-        monthGrid.style.display = 'none';
-        weekGrid.style.display = '';
-        renderWeek();
-    } else {
-        viewState.mode = 'month';
-        viewState.year = viewState.weekAnchor.year;
-        viewState.month = viewState.weekAnchor.month;
-        monthGrid.style.display = '';
-        weekGrid.style.display = 'none';
-        updateCalendarView();
-    }
-    updateTmux();
-}
-
-async function renderWeek() {
-    const token = ++viewToken;
-    const container = document.getElementById('calendarContainer');
-    const dim = setTimeout(() => container.classList.add('loading'), 150);
-    try {
-        const a = viewState.weekAnchor;
-        const response = await fetch(appUrl(`/get_week?year=${a.year}&month=${a.month}&day=${a.day}`));
-        const data = await response.json();
-        if (token !== viewToken) return;
-        if (data.status !== 'success') throw new Error('week');
-
-        setWindowTitle(data.week_label);
-        updateTmux();
-
-        const weekRoot = document.getElementById('viewWeek');
-        const isMobile = window.innerWidth <= 480;
-        const STEP = isMobile ? 2 : 1;  // hours per time-axis block/label
-        const todayIsoForCards = isoFromDate(TODAY);
-        if (isMobile) {   // phones: seven readable day cards instead of a time grid
-            weekRoot.classList.add('week-cards');
-            weekRoot.innerHTML = renderWeekCards(data, todayIsoForCards);
-            return;
-        }
-        weekRoot.classList.remove('week-cards');
-
-        const todayISO = `${CURRENT_YEAR}-${String(CURRENT_MONTH).padStart(2, '0')}-${String(CURRENT_DAY).padStart(2, '0')}`;
-        const isoByIndex = data.days.map(d => d.date);
-
-        const dayHeaders = data.days.map(d => `
-            <div class="week-day-header ${d.date === todayISO ? 'today' : ''}"
-                 onclick="openDayFromWeek(${d.year}, ${d.month}, ${d.day})">
-                <div class="week-day-weekday">${d.weekday}</div>
-                <div class="week-day-date">${d.day}</div>
-            </div>
-        `).join('');
-
-        const allDayEvents = [];
-        const timedEventsByISO = {};
-        data.events.forEach(e => {
-            const start = parseLocalDateTime(e.start_time);
-            const end = e.end_time ? parseLocalDateTime(e.end_time) : new Date(start);
-            const startISO = isoFromDate(start);
-            const endISO = isoFromDate(end);
-            const isAllDay = isAllDayEvent(e);
-            const isMultiDay = startISO !== endISO;
-            const enriched = { ...e, _start: start, _end: end, _startISO: startISO, _endISO: endISO };
-            if (isAllDay || isMultiDay) {
-                allDayEvents.push(enriched);
-            } else {
-                (timedEventsByISO[startISO] ||= []).push(enriched);
-            }
-        });
-
-        const allDayBars = allDayEvents.map(e => {
-            const startIdxRaw = isoByIndex.indexOf(e._startISO);
-            const endIdxRaw = isoByIndex.indexOf(e._endISO);
-            const startIdx = startIdxRaw === -1 ? 0 : startIdxRaw;
-            const endIdx = endIdxRaw === -1 ? 6 : endIdxRaw;
-            const colStart = startIdx + 2;
-            const span = Math.max(1, endIdx - startIdx + 1);
-            const anchorDay = data.days[startIdx];
-            return `
-                <div class="week-allday-block"
-                     style="grid-column: ${colStart} / span ${span};"
-                     onclick="openDayFromWeek(${anchorDay.year}, ${anchorDay.month}, ${anchorDay.day})"
-                     title="${escapeHtml(e.name)}">
-                    ${escapeHtml(e.name)}
-                </div>
-            `;
-        }).join('');
-
-        // Hour height: desktop uses the CSS token; mobile shrinks it so the
-        // whole 24h day fits the (vertically-centered) viewport in one fixed
-        // view, drawn in 2h blocks. Clamped to stay legible — below the floor
-        // it falls back to scrolling. `reserved` is the title + day-header +
-        // margins plus top/bottom breathing room that clears the fixed header.
-        let HOUR_H;
-        if (isMobile) {
-            const reserved = 210 + (allDayEvents.length ? 34 : 0);
-            HOUR_H = Math.max(13, Math.min(30, (window.innerHeight - reserved) / 24));
-            weekRoot.style.setProperty('--hour-h', `${HOUR_H}px`);
-            weekRoot.style.setProperty('--block-h', `${HOUR_H * STEP}px`);
-        } else {
-            weekRoot.style.removeProperty('--hour-h');
-            weekRoot.style.removeProperty('--block-h');
-            HOUR_H = parseFloat(getComputedStyle(weekRoot).getPropertyValue('--hour-h')) || 40;
-        }
-
-        const dayColumns = data.days.map(d => {
-            const iso = d.date;
-            const events = timedEventsByISO[iso] || [];
-            const moodColor = data.mood_colors[iso];
-            const hasMarker = data.markers.includes(iso);
-            const isToday = iso === todayISO;
-            const blocks = events.map(e => {
-                const startMins = e._start.getHours() * 60 + e._start.getMinutes();
-                const endMins = e.end_time
-                    ? (e._end.getHours() * 60 + e._end.getMinutes())
-                    : startMins + 30;
-                const durMins = Math.max(20, endMins - startMins);
-                const top = (startMins / 60) * HOUR_H;
-                const height = (durMins / 60) * HOUR_H;
-                const timeLabel = e.end_time
-                    ? `${formatTimeOfDay(e._start)}–${formatTimeOfDay(e._end)}`
-                    : formatTimeOfDay(e._start);
-                return `
-                    <div class="week-event-block" style="top: ${top}px; height: ${height}px;"
-                         onclick="event.stopPropagation(); openDayFromWeek(${d.year}, ${d.month}, ${d.day})"
-                         title="${escapeHtml(e.name)}">
-                        <div class="week-event-time">${timeLabel}</div>
-                        <div class="week-event-name">${escapeHtml(e.name)}</div>
-                    </div>
-                `;
-            }).join('');
-            return `
-                <div class="week-day-column ${isToday ? 'today' : ''}"
-                     data-iso="${iso}"
-                     ${moodColor ? `style="background-color: ${moodColor};"` : ''}
-                     onclick="openDayFromWeek(${d.year}, ${d.month}, ${d.day})">
-                    ${blocks}
-                    ${hasMarker ? '<div class="marker-indicator week-marker"></div>' : ''}
-                </div>
-            `;
-        }).join('');
-
-        const hourLabels = Array.from({ length: Math.ceil(24 / STEP) }, (_, i) =>
-            `<div class="week-hour-label">${String(i * STEP).padStart(2, '0')}:00</div>`
-        ).join('');
-
-        weekRoot.innerHTML = `
-            <div class="week-grid-header">
-                <div class="week-corner"></div>
-                ${dayHeaders}
-            </div>
-            ${allDayEvents.length > 0 ? `
-                <div class="week-allday-row">
-                    <div class="week-allday-label">All day</div>
-                    ${allDayBars}
-                </div>
-            ` : ''}
-            <div class="week-grid-body">
-                <div class="week-time-gutter">${hourLabels}</div>
-                ${dayColumns}
-            </div>
-        `;
-
-        const body = weekRoot.querySelector('.week-grid-body');
-        if (body) body.scrollTop = 7 * HOUR_H;
-    } catch (error) {
-        if (token !== viewToken) return;
-        console.error('Error loading week:', error);
-        toast("Couldn't load that week.", { error: true, action: 'Retry', onAction: () => renderWeek() });
-    } finally {
-        clearTimeout(dim);
-        if (token === viewToken) container.classList.remove('loading');
-    }
-}
-
-/** Week on a phone: one card per day with its mood, marker and entries. */
-function renderWeekCards(data, todayIso) {
-    return data.days.map((d) => {
-        const date = new Date(d.year, d.month - 1, d.day);
-        const color = data.mood_colors[d.date];
-        const moodName = color ? ((window.MOODS || []).find((m) => m.color === color)?.name || '') : '';
-        const entries = data.events.filter((e) => {
-            const start = e.start_time.slice(0, 10);
-            const end = (e.end_time || e.start_time).slice(0, 10);
-            return start <= d.date && d.date <= end;
-        });
-        const list = entries.map((e) => `
-            <li><span class="wc-time">${escapeHtml(entryTimeLabel(e, d.date))}</span>
-                <span class="wc-name">${escapeHtml(e.name)}</span></li>`).join('');
-        return `
-            <button type="button" class="week-card${d.date === todayIso ? ' today' : ''}"
-                    onclick="openDayFromWeek(${d.year}, ${d.month}, ${d.day})"
-                    ${color ? `style="--mood: ${color}"` : ''}>
-                <span class="wc-head">
-                    <span class="wc-date">${escapeHtml(formatDate(date, { year: false }))}</span>
-                    ${moodName ? `<span class="wc-mood"><span class="mood-dot" aria-hidden="true"></span>${escapeHtml(moodName)}</span>` : ''}
-                    ${data.markers.includes(d.date) ? '<span class="diary-marker" aria-hidden="true"></span>' : ''}
-                </span>
-                ${list ? `<ul class="wc-entries">${list}</ul>` : '<span class="wc-empty">No entries</span>'}
-            </button>`;
-    }).join('');
-}
-
-function openDayFromWeek(year, month, day) {
-    viewState.year = year;
-    viewState.month = month;
-    viewState.weekAnchor = { year, month, day };
-    showSidebar(day);
 }
 
 function showLoginError(message) {
@@ -795,26 +550,6 @@ async function handleLogin(event) {
 }
 
 
-/** Year mode: the window shows twelve month grids instead of one. */
-function toggleYearView(show) {
-    const win = document.getElementById('termWindow');
-    if (show === undefined) show = !isYearMode();
-    win.classList.toggle('year-mode', show);
-    document.getElementById('yearView').classList.toggle('active', show);
-    if (show) loadYearView(viewState.year);
-    setWindowTitle();
-    updateTmux();
-}
-
-/** The diary: a split pane in the window, closed until asked for. */
-function toggleDiaryView(show) {
-    const win = document.getElementById('termWindow');
-    if (show === undefined) show = !isDiaryOpen();
-    win.classList.toggle('diary-open', show);
-    if (show) loadMonthEvents();
-    updateTmux();
-}
-
 /** The Diary: one month to read back, day by day, with each day's mood,
  *  marker, entries (with their moments) and attachments. Days that only have
  *  a mood are listed too. */
@@ -822,7 +557,7 @@ async function loadMonthEvents() {
     const content = document.getElementById('diaryContent');
     const { year, month } = viewState;
     const monthLong = new Date(year, month - 1, 1).toLocaleDateString('en-GB', { month: 'long' });
-    document.getElementById('diaryTitle').textContent = `diary · ${MONTH_ABBR[month - 1]} ${year}`;
+    renderPaneTitle();
     content.innerHTML = '<div class="loading-indicator">Loading…</div>';
     let events, monthData, attachments;
     try {
@@ -917,10 +652,13 @@ document.getElementById('diaryContent').addEventListener('click', (e) => {
     if (dayEl) showSidebar(Number(dayEl.dataset.day));
 });
 
-/** Year: twelve tappable month grids with moods, markers and entry dots. */
+/** Year: twelve small month grids with moods, markers and entry dots, as a
+ *  navigator beside the month: the month on screen is outlined, and tapping a
+ *  month (or a day in it) takes the calendar there. */
+let yearShown = null;   // the year the pane last drew
 async function loadYearView(year, { keepScroll = false } = {}) {
     const yearContent = document.getElementById('yearContent');
-    setWindowTitle();
+    renderPaneTitle();
     if (!keepScroll) yearContent.innerHTML = '<div class="loading-indicator">Loading…</div>';
     let data;
     try {
@@ -946,23 +684,39 @@ async function loadYearView(year, { keepScroll = false } = {}) {
                     </button>`;
         }).join('');
         return `
-            <section class="year-month" id="year-month-${m.month}">
-                <div class="year-month-title">${escapeHtml(name)}</div>
+            <section class="year-month" id="year-month-${m.month}" data-month="${m.month}">
+                <button type="button" class="year-month-title" data-month="${m.month}">${escapeHtml(name)}</button>
                 <div class="year-month-grid">${weekdays}${blanks}${days}</div>
             </section>`;
     }).join('');
-    if (year === CURRENT_YEAR && !keepScroll) {
-        document.getElementById(`year-month-${CURRENT_MONTH}`)?.scrollIntoView({ block: 'start' });
+    yearShown = year;
+    markShownMonth({ scroll: !keepScroll });
+}
+
+/** Outline the month the calendar shows, and bring it into view in the pane. */
+function markShownMonth({ scroll = true } = {}) {
+    document.querySelectorAll('#yearContent .year-month').forEach((m) => {
+        m.classList.toggle('shown', Number(m.dataset.month) === viewState.month);
+    });
+    if (scroll) document.getElementById(`year-month-${viewState.month}`)?.scrollIntoView({ block: 'nearest' });
+}
+
+/** After the month changes, bring the open pane along. */
+function syncPane() {
+    renderPaneTitle();
+    if (isPaneOpen('diary')) loadMonthEvents();
+    if (isPaneOpen('year')) {
+        if (yearShown !== viewState.year) loadYearView(viewState.year);
+        else markShownMonth();
     }
 }
 
 document.getElementById('yearContent').addEventListener('click', (e) => {
     if (e.target.closest('[data-act="year-retry"]')) { loadYearView(viewState.year); return; }
-    const cell = e.target.closest('.year-day[data-day]');
-    if (!cell) return;
-    // Open that day over the year view; the month view underneath follows.
-    viewState.month = Number(cell.dataset.month);
-    viewState.weekAnchor = { year: viewState.year, month: viewState.month, day: Number(cell.dataset.day) };
+    const target = e.target.closest('.year-day[data-day], .year-month-title');
+    if (!target) return;
+    // The calendar goes to that month; a day also opens in the day panel.
+    viewState.month = Number(target.dataset.month);
     updateCalendarView();
-    showSidebar(Number(cell.dataset.day));
+    if (target.dataset.day) showSidebar(Number(target.dataset.day));
 });

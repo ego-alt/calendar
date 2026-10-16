@@ -1,7 +1,7 @@
 // Offline support for the calendar.
 //
 // One cache: the page, our static files, fonts/icons from the CDN, and the
-// JSON the views read (months, weeks, years, days, diary, stats, thumbnails).
+// JSON the views read (months, years, days, diary, stats, thumbnails).
 // Pages and JSON are network-first (fresh online, last copy offline); static
 // files are stale-while-revalidate. Writes (POST/PUT/PATCH/DELETE) are never
 // touched: offline, they fail visibly and the entry form keeps its draft.
@@ -10,7 +10,7 @@ const CACHE = 'calendar-v2';
 const ROOT = new URL(self.registration.scope).pathname;   // ends in "/"
 const CDN = new Set(['cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com']);
 const PASSTHROUGH = ['auth/', 'export', 'sw.js', 'healthz', 'search/data'];
-const JSON_ROUTES = ['get_month', 'get_week', 'get_year', 'events', 'attachments', 'stats/data'];
+const JSON_ROUTES = ['get_month', 'get_year', 'events', 'attachments', 'stats/data'];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(

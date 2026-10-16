@@ -139,9 +139,9 @@
         const day = Number(card.dataset.day);
         viewState.year = year;
         viewState.month = month;
-        viewState.weekAnchor = { year, month, day };
-        // Leave Search for the calendar's month grid at that month, open the day.
-        document.querySelector('.tmux-win[data-mode="month"]')?.click();
+        // Leave Search for the calendar at that month, open the day.
+        document.querySelector('.tmux-win[data-view="calendar"]')?.click();
+        await updateCalendarView();
         showSidebar(day);
     }
 

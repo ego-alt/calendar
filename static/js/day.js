@@ -193,8 +193,7 @@ function paintDay(year, month, day, { mood, marker } = {}) {
             if (!marker && dot) dot.remove();
         }
     }
-    if (document.getElementById('diaryView').classList.contains('active')) loadMonthEvents();
-    if (viewState.mode === 'week') { renderWeek(); return; }
+    if (isPaneOpen('diary')) loadMonthEvents();
     if (year !== viewState.year || month !== viewState.month) return;
     const cell = document.querySelector(`.day.current-month[data-day="${day}"]`);
     if (!cell) return;
@@ -321,7 +320,7 @@ async function showSidebar(day) {
 async function refreshAfterChange() {
     window.statsStale = true;
     document.getElementById('firstRun')?.remove();
-    if (document.getElementById('yearView').classList.contains('active')) loadYearView(viewState.year, { keepScroll: true });
+    if (isPaneOpen('year')) loadYearView(viewState.year, { keepScroll: true });
     if (currentOpenDay != null) await showSidebar(currentOpenDay);
     await updateCalendarView();
 }

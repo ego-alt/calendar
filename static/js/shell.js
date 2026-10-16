@@ -51,14 +51,14 @@
         if (view === current) return;
         current = view;
         // The day panel floats over the page, so it closes on leaving. The
-        // window's own state (year mode, diary pane) is kept for coming back.
+        // context pane (year / diary) stays as it was for coming back.
         document.getElementById("sidebar")?.classList.remove("active");
         document.body.classList.toggle("view-calendar", view === "calendar");
         document.body.classList.toggle("view-stats", view === "stats");
         document.body.classList.toggle("view-search", view === "search");
-        // Stats and Search light up here; the calendar's windows (month / week /
-        // year) and the diary toggle are lit by updateTmux.
-        tabs.filter((t) => !t.dataset.mode).forEach((t) => t.classList.toggle("active", t.dataset.view === view));
+        // month / stats / search light up here; the year and diary toggles are
+        // lit by updateTmux.
+        tabs.forEach((t) => t.classList.toggle("active", t.dataset.view === view));
         window.updateTmux?.();
         if (view === "stats") loadStats();
         if (push) {
@@ -75,9 +75,7 @@
         setView("calendar");
         viewState.year = y;
         viewState.month = m;
-        viewState.weekAnchor = { year: y, month: m, day: d };
-        if (viewState.mode === "week") toggleWeekView(false);   // shows that month
-        else await updateCalendarView();
+        await updateCalendarView();
         showSidebar(d);
     };
 

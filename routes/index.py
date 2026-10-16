@@ -1,9 +1,9 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime
 
 from flask import Blueprint, jsonify, render_template, request
 
 from models import DailyLog, Event
-from utils import get_month_data, get_month_details, get_week_data, get_year_data
+from utils import get_month_data, get_month_details, get_year_data
 
 from ._helpers import current_user_id, json_login_required
 
@@ -62,32 +62,6 @@ def get_month():
             "day_info": get_month_details(year, month, current_user_id()),
         }
     )
-
-
-@index_blueprint.route("/get_week", methods=["GET"])
-@json_login_required
-def get_week():
-    year = int(request.args.get("year"))
-    month = int(request.args.get("month"))
-    day = int(request.args.get("day"))
-
-    week_data = get_week_data(year, month, day, current_user_id())
-
-    week_start = date.fromisoformat(week_data["week_start"])
-    week_end = week_start + timedelta(days=6)
-    # Day-month order, like every other date in the app: "5–11 Oct 2026",
-    # "28 Sep – 4 Oct 2026", "28 Dec 2025 – 3 Jan 2026".
-    def d(x, *, month=True, year=False):
-        return f"{x.day}" + (f" {x:%b}" if month else "") + (f" {x.year}" if year else "")
-
-    if week_start.month == week_end.month:
-        label = f"{d(week_start, month=False)}–{d(week_end, year=True)}"
-    elif week_start.year == week_end.year:
-        label = f"{d(week_start)} – {d(week_end, year=True)}"
-    else:
-        label = f"{d(week_start, year=True)} – {d(week_end, year=True)}"
-
-    return jsonify({**week_data, "week_label": label, "status": "success"})
 
 
 @index_blueprint.route("/get_year", methods=["GET"])
