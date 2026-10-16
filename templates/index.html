@@ -87,14 +87,16 @@
                     </div>
                 </div>
                 <aside class="term-pane" id="contextPane" aria-label="Year and diary">
-                    <div class="pane-bar">
-                        <nav class="pane-tabs" role="tablist">
+                    <!-- Same header as the day panel's (day.js dayHeader): what it
+                         shows on the left, its controls, then ×. -->
+                    <header class="drawer-head">
+                        <nav class="drawer-title pane-tabs" role="tablist">
                             <button type="button" class="pane-tab" data-pane="year" role="tab">year</button>
                             <button type="button" class="pane-tab" data-pane="diary" role="tab">diary</button>
                         </nav>
-                        <span class="pane-title" id="paneTitle"></span>
-                        <button type="button" class="btn btn-ghost pane-close" id="paneClose" aria-label="Close"><i class="fas fa-times"></i></button>
-                    </div>
+                        <div class="drawer-tools" id="paneTitle"></div>
+                        <button type="button" class="btn btn-ghost drawer-close" id="paneClose" aria-label="Close"><i class="fas fa-times"></i></button>
+                    </header>
                     <div class="pane-body" id="yearView">
                         <div class="year-content" id="yearContent"></div>
                     </div>
@@ -262,6 +264,7 @@
                 <dt><kbd>t</kbd></dt><dd>Today</dd>
                 <dt><kbd>m</kbd></dt><dd>Back to the month</dd>
                 <dt><kbd>y</kbd> <kbd>d</kbd></dt><dd>Show or hide the year or the diary beside it</dd>
+                <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Previous / next day in the day panel</dd>
                 <dt><kbd>n</kbd></dt><dd>New entry on the open day (or today)</dd>
                 <dt><kbd>1</kbd>–<kbd>5</kbd></dt><dd>Mood for the open day, Great → Rough</dd>
                 <dt><kbd>x</kbd></dt><dd>Toggle the marker on the open day</dd>

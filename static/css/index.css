@@ -73,17 +73,6 @@ h1, h2, .form-header {
     margin-bottom: var(--space-5);
 }
 
-.sidebar-header, .diary-header h2, .year-header h2 {
-    color: var(--color-text-primary);
-    margin-bottom: var(--space-5);
-    font-size: var(--text-lg);
-    text-align: left;
-}
-.sidebar-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
 
 h1 {
     font-size: var(--text-xl);
@@ -105,9 +94,6 @@ h2 {
     text-align: left;
 }
 
-.sidebar-header, .diary-header, .year-header {
-    font-size: var(--text-lg);
-}
 
 /* Group all lists */
 .event-list, .diary-events, .subevents-list {
@@ -378,6 +364,51 @@ h2 {
     left: 0;
     opacity: 1;
 }
+@media (min-width: 481px) {
+    .sidebar { padding-top: 0; }   /* the header sits flush at the top */
+}
+
+/* ---- the drawers' shared header ----
+   Day panel: ‹ date ›, marker + attach, ×.  Year / Diary: the tabs, ‹ 2026 ›
+   or the month, ×. Same height, type and edge on both sides; it stays put
+   while the drawer scrolls. */
+.drawer-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 44px;
+    box-sizing: border-box;
+    padding: 0 var(--space-1) 0 var(--space-3);
+    background: var(--color-bg-elevated);
+    border-bottom: 1px solid var(--color-border);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+}
+.sidebar .drawer-head { margin: 0 calc(-1 * var(--space-5)) var(--space-4); }
+.drawer-title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 2px; }
+.drawer-title .day-title,
+.drawer-tools .pane-year,
+.drawer-tools .pane-month {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+}
+.drawer-tools { display: flex; align-items: center; gap: 2px; }
+.drawer-step {
+    background: none;
+    border: 0;
+    padding: var(--space-1) var(--space-2);
+    font: inherit;
+    font-size: var(--text-base);
+    line-height: 1;
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+.drawer-step:hover { color: var(--color-text-primary); }
+.drawer-close { font-size: var(--text-sm); }
 .event-card, .diary-event {
     background: var(--color-bg-inset);
     border-radius: var(--radius-md);
@@ -666,20 +697,23 @@ h2 {
 .form-note { color: var(--color-accent-hover); }
 .field-row {
     display: grid;
-    grid-template-columns: 3.2em minmax(0, 1.35fr) minmax(0, 1.15fr);
+    /* "From" / "To" sit above their row, so a full date (in monospace, with
+       its picker) fits beside the time even in a 340px drawer */
+    grid-template-columns: minmax(0, 1fr) 6.5em;
     gap: var(--space-2);
     align-items: center;
 }
-.field-label { font-size: var(--text-sm); color: var(--color-text-muted); }
+.field-label { grid-column: 1 / -1; margin-bottom: calc(-1 * var(--space-1)); font-size: var(--text-sm); color: var(--color-text-muted); }
 .field-hint { margin-top: calc(-1 * var(--space-1)); }
 .form-error {
     font-size: var(--text-sm);
     color: var(--color-danger-hover);
 }
 .form-error[hidden] { display: none; }
-.day-title { font-weight: 600; }
 .retry-btn { margin-top: var(--space-3); }
 .add-event-btn { margin: 0 0 var(--space-3); }
+.sidebar.form-open .add-event-btn { display: none; }   /* you're already writing one */
+#entryFormSlot { scroll-margin-top: 52px; }   /* opens below the sticky header */
 
 /* icon buttons on entry cards (were bare <i> elements) */
 .icon-btn {
@@ -1209,7 +1243,6 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 .first-run-body { color: var(--color-text-muted); font-size: var(--text-sm); margin: 0 0 var(--space-3); }
 .first-run { box-sizing: border-box; }
 .first-run { margin-top: var(--space-3); }
-.day-tools { display: inline-flex; align-items: center; gap: 2px; }
 .day-flags { margin: calc(-1 * var(--space-1)) 0 var(--space-3); }
 
 /* ---- entries as log lines: a monospace time gutter, the words beside it ---- */
@@ -1262,6 +1295,7 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 }
 .subevent-card > * { grid-column: 2; }
 .subevent-card > .log-gutter { font-size: var(--text-xs); border-right-style: dotted; }
+.diary-continued .diary-event-name { font-weight: 400; color: var(--color-text-muted); }
 .diary-subevent { border-top: 0; margin-top: 4px; padding-top: 0; padding-left: var(--space-3); border-left: 1px dotted var(--color-border); }
 
 

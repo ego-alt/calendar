@@ -23,11 +23,12 @@ tickets that go with it, and the trends over time.
 - **Never lose writing** — half-written entries are kept as drafts per day and
   come back when the day reopens; deletes (entries, moments, attachments) can
   be undone, and are purged after 30 days.
-- **Context drawer** — **Year**: twelve small months as a navigator (the
-  month on screen is outlined; tap a month or a day to go there). **Diary**:
-  the month on screen to read back, day by day, with moods, entries, moments
-  and attachments. It slides over the page from the right, so the month never
-  moves; on phones it fills the screen.
+- **Context drawer** — **Year**: twelve small months as a navigator (tap a
+  month or a day to go there). **Diary**: the month on screen to read back,
+  day by day, with moods, entries, moments and attachments (a multi-day entry
+  in full on its first day, one line after). It slides over the page from the
+  right with the same header as the day panel, so the month never moves; on
+  phones it fills the screen.
 - **Stats** — logged days, streak, mood calendar (tap a day to open it), mood
   over time (actual / 7-day / 28-day), mood mix by month or weekday, days with
   entries, and **Mood with…**: average mood with each person and at each place
@@ -41,7 +42,8 @@ tickets that go with it, and the trends over time.
   files), from the foot of the Stats page.
 - **Installable** — add it to a phone's home screen; days you've opened stay
   readable offline.
-- **Keyboard** — `←`/`→` (or `h`/`l`) month, `j`/`k` year, `t` today,
+- **Keyboard** — `←`/`→` (or `h`/`l`) month, `[`/`]` day in the day panel,
+  `j`/`k` year, `t` today,
   `y` / `d` year or diary pane, `m` back to the month, `n` new entry, `1`–`5` mood, `x` marker, `/` search, `?`
   for the list.
 

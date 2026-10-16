@@ -160,8 +160,12 @@ function openPane(tab) {
     });
     document.getElementById('yearView').hidden = tab !== 'year';
     document.getElementById('diaryView').hidden = tab !== 'diary';
-    if (tab === 'year') loadYearView(viewState.year);
-    else loadMonthEvents();
+    if (tab === 'year') {
+        loadYearView(viewState.year);
+        document.getElementById('yearView').scrollTop = 0;   // January first
+    } else {
+        loadMonthEvents();
+    }
     updateTmux();
 }
 
@@ -182,9 +186,9 @@ function togglePane(tab) {
 function renderPaneTitle() {
     const title = document.getElementById('paneTitle');
     if (isPaneOpen('year')) {
-        title.innerHTML = `<button type="button" class="pane-nav" data-nav="prev" aria-label="Previous year">‹</button>${viewState.year}<button type="button" class="pane-nav" data-nav="next" aria-label="Next year">›</button>`;
+        title.innerHTML = `<button type="button" class="drawer-step" data-nav="prev" aria-label="Previous year">‹</button><span class="pane-year">${viewState.year}</span><button type="button" class="drawer-step" data-nav="next" aria-label="Next year">›</button>`;
     } else if (isPaneOpen('diary')) {
-        title.textContent = `${MONTH_ABBR[viewState.month - 1]} ${viewState.year}`;
+        title.innerHTML = `<span class="pane-month">${MONTH_ABBR[viewState.month - 1]} ${viewState.year}</span>`;
     } else {
         title.textContent = '';
     }
@@ -244,8 +248,15 @@ function setupGlobalEventListeners() {
         // The day panel closes on a tap outside it, unless that tap opens a
         // day (a month cell), lands in the context drawer, or is on our own overlays.
         const keepsPanel = t.closest(
-            '#sidebar, #contextPane, #colorPicker, .day, .eye-icon, #confirmModal, #toasts, #actionSheet, #viewer, #keysModal, #keysBtn'
+            '#sidebar, #contextPane, #colorPicker, .day, .eye-icon, .tmux-win[data-pane], #confirmModal, #toasts, #actionSheet, #viewer, #keysModal, #keysBtn'
         );
+        // The Year / Diary drawer closes the same way, but stays while you open
+        // days on the month or work in the day panel.
+        const keepsPane = t.closest(
+            // (clicks on the Stats / Search pages don't count: it's hidden there)
+            '#contextPane, #sidebar, #colorPicker, .day, .eye-icon, .tmux, #statsView, #searchView, #confirmModal, #toasts, #actionSheet, #viewer, #keysModal'
+        );
+        if (!keepsPane && paneTab()) closePane();
         if (!keepsPanel && sidebar.classList.contains('active')) {
             sidebar.classList.remove('active');
             if (window.innerWidth <= 480) sidebar.style.height = '';
@@ -379,6 +390,8 @@ function handleKeyPress(event) {
         case 'l': case 'ArrowRight': updateMonth('next'); break;
         case 'k': updateYear('prev'); break;
         case 'j': updateYear('next'); break;
+        case '[': if (panelOpen) stepDay(-1); break;
+        case ']': if (panelOpen) stepDay(1); break;
         case 'y': togglePane('year'); break;
         case 'd': togglePane('diary'); break;
         case 't': goToToday(); break;
@@ -600,6 +613,9 @@ async function loadMonthEvents() {
     const detail = (icon, text, extra = '') =>
         text ? `<div class="diary-event-detail ${extra}"><i class="fas ${icon}" aria-hidden="true"></i> ${escapeHtml(text)}</div>` : '';
 
+    // A multi-day entry is written out in full the first time it appears; on
+    // its later days it's one line (with that day's moments, if any).
+    const shownInFull = new Set();
     content.innerHTML = days.map((day) => {
         const date = new Date(year, month - 1, day);
         const iso = isoFromDate(date);
@@ -610,6 +626,15 @@ async function loadMonthEvents() {
                     <div class="diary-subevent-title">${escapeHtml(s.name)}${s.where ? `<span class="diary-subevent-content"> · ${escapeHtml(s.where)}</span>` : ''}</div>
                     ${s.notes ? `<div class="diary-subevent-content">${escapeHtml(s.notes)}</div>` : ''}
                 </div>`).join('');
+            if (shownInFull.has(event.id)) {
+                return `
+                <div class="diary-event diary-continued" data-day="${day}" role="button" tabindex="0">
+                    <div class="diary-event-time log-gutter" title="${escapeHtml(entryTimeLabel(event, iso))}">${gutterTime(event, iso)}</div>
+                    <div class="diary-event-name">↳ ${escapeHtml(event.name)}</div>
+                    ${moments}
+                </div>`;
+            }
+            shownInFull.add(event.id);
             return `
                 <div class="diary-event" data-day="${day}" role="button" tabindex="0">
                     <div class="diary-event-time log-gutter" title="${escapeHtml(entryTimeLabel(event, iso))}">${gutterTime(event, iso)}</div>
@@ -653,13 +678,16 @@ document.getElementById('diaryContent').addEventListener('click', (e) => {
 });
 
 /** Year: twelve small month grids with moods, markers and entry dots, as a
- *  navigator beside the month: the month on screen is outlined, and tapping a
- *  month (or a day in it) takes the calendar there. */
+ *  navigator beside the month: tapping a month (or a day in it) takes the
+ *  calendar there. */
 let yearShown = null;   // the year the pane last drew
 async function loadYearView(year, { keepScroll = false } = {}) {
     const yearContent = document.getElementById('yearContent');
     renderPaneTitle();
-    if (!keepScroll) yearContent.innerHTML = '<div class="loading-indicator">Loading…</div>';
+    if (!keepScroll) {
+        yearContent.innerHTML = '<div class="loading-indicator">Loading…</div>';
+        document.getElementById('yearView').scrollTop = 0;   // a new year starts at January
+    }
     let data;
     try {
         data = await api(`/get_year?year=${year}`);
@@ -690,25 +718,13 @@ async function loadYearView(year, { keepScroll = false } = {}) {
             </section>`;
     }).join('');
     yearShown = year;
-    markShownMonth({ scroll: !keepScroll });
-}
-
-/** Outline the month the calendar shows, and bring it into view in the pane. */
-function markShownMonth({ scroll = true } = {}) {
-    document.querySelectorAll('#yearContent .year-month').forEach((m) => {
-        m.classList.toggle('shown', Number(m.dataset.month) === viewState.month);
-    });
-    if (scroll) document.getElementById(`year-month-${viewState.month}`)?.scrollIntoView({ block: 'nearest' });
 }
 
 /** After the month changes, bring the open pane along. */
 function syncPane() {
     renderPaneTitle();
     if (isPaneOpen('diary')) loadMonthEvents();
-    if (isPaneOpen('year')) {
-        if (yearShown !== viewState.year) loadYearView(viewState.year);
-        else markShownMonth();
-    }
+    if (isPaneOpen('year') && yearShown !== viewState.year) loadYearView(viewState.year);
 }
 
 document.getElementById('yearContent').addEventListener('click', (e) => {

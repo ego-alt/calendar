@@ -281,6 +281,49 @@ function findEntry(eventId, subId) {
     return (event.subevents || []).find((s) => s.id === subId);
 }
 
+/** The day panel's header, shared by every state (loading, error, the day):
+ *  ‹ date › to step a day, the marker and attach tools, and ×. The Year /
+ *  Diary drawer on the right has the same header (index.html .drawer-head). */
+function dayHeader(date, { tools = false } = {}) {
+    return `
+        <header class="drawer-head">
+            <div class="drawer-title">
+                <button type="button" class="drawer-step" data-act="prev-day" aria-label="Previous day" title="Previous day ([)">‹</button>
+                <span class="day-title">${escapeHtml(formatDayLong(date))}</span>
+                <button type="button" class="drawer-step" data-act="next-day" aria-label="Next day" title="Next day (])">›</button>
+            </div>
+            <div class="drawer-tools">${tools ? `
+                <button type="button" class="marker-toggle" data-act="marker" aria-pressed="false" aria-label="Marker" title="Marker">
+                    <span class="marker-dot" aria-hidden="true"></span>
+                </button>
+                <label class="attachment-upload-btn" title="Attach photos or PDFs (up to 10 MB each)">
+                    <input type="file" multiple hidden accept="image/*,.heic,.heif,application/pdf" onchange="handleAttachmentUpload(event)">
+                    <i class="fas fa-paperclip" aria-hidden="true"></i><span class="sr-only">Attach</span>
+                </label>` : ''}
+            </div>
+            <button type="button" class="btn btn-ghost drawer-close" data-act="close" aria-label="Close"><i class="fas fa-times"></i></button>
+        </header>`;
+}
+
+/** Close the day panel (any half-written entry is kept as a draft). */
+function closeDayPanel() {
+    closeEntryForm();
+    dismissSidebar();
+}
+
+/** Step the open day by ±1, across month ends (the month follows). */
+async function stepDay(delta) {
+    if (currentOpenDay == null) return;
+    const d = new Date(viewState.year, viewState.month - 1, currentOpenDay + delta);
+    closeEntryForm();   // keeps a draft
+    if (d.getFullYear() !== viewState.year || d.getMonth() + 1 !== viewState.month) {
+        viewState.year = d.getFullYear();
+        viewState.month = d.getMonth() + 1;
+        updateCalendarView();
+    }
+    showSidebar(d.getDate());
+}
+
 async function showSidebar(day) {
     const sidebar = document.getElementById('sidebar');
     const content = document.getElementById('sidebarContent');
@@ -292,7 +335,7 @@ async function showSidebar(day) {
     const iso = dayIso(day);
     // Show the right day straight away, never the previous day's content.
     content.innerHTML = `
-        <div class="sidebar-header"><span class="day-title">${escapeHtml(formatDayLong(new Date(viewState.year, viewState.month - 1, day)))}</span></div>
+        ${dayHeader(new Date(viewState.year, viewState.month - 1, day))}
         <div class="loading-indicator">Loading…</div>`;
     try {
         const query = `year=${viewState.year}&month=${viewState.month}&day=${day}`;
@@ -310,7 +353,7 @@ async function showSidebar(day) {
         if (draft) restoreDraft(draft[0], draft[1].values);
     } catch (error) {
         content.innerHTML = `
-            <div class="sidebar-header"><span class="day-title">${escapeHtml(formatDayLong(new Date(viewState.year, viewState.month - 1, day)))}</span></div>
+            ${dayHeader(new Date(viewState.year, viewState.month - 1, day))}
             <div class="error-message">${escapeHtml(error.message)}<br>
                 <button class="btn btn-secondary retry-btn" type="button" data-act="retry">Try again</button></div>`;
     }
@@ -398,18 +441,7 @@ function renderDay() {
     const date = new Date(viewState.year, viewState.month - 1, dayState.day);
     const cards = dayState.events.map(renderEntryCard).join('');
     content.innerHTML = `
-        <div class="sidebar-header">
-            <span class="day-title">${escapeHtml(formatDayLong(date))}</span>
-            <span class="day-tools">
-            <button type="button" class="marker-toggle" data-act="marker" aria-pressed="false" aria-label="Marker" title="Marker">
-                <span class="marker-dot" aria-hidden="true"></span>
-            </button>
-            <label class="attachment-upload-btn" title="Attach photos or PDFs (up to 10 MB each)">
-                <input type="file" multiple hidden accept="image/*,.heic,.heif,application/pdf" onchange="handleAttachmentUpload(event)">
-                <i class="fas fa-paperclip" aria-hidden="true"></i><span class="sr-only">Attach</span>
-            </label>
-            </span>
-        </div>
+        ${dayHeader(date, { tools: true })}
         <div id="dayMoodSlot"></div>
         <button class="add-event-btn btn btn-primary" type="button" data-act="new">New entry</button>
         <div id="entryFormSlot"></div>
@@ -644,7 +676,7 @@ async function handleAttachmentUpload(event) {
     let added = 0;
     const progress = document.createElement('div');
     progress.className = 'upload-progress';
-    document.querySelector('#sidebarContent .sidebar-header')?.after(progress);
+    document.querySelector('#sidebarContent .drawer-head')?.after(progress);
     for (const [index, file] of files.entries()) {
         progress.textContent = files.length > 1 ? `Uploading ${index + 1} of ${files.length}…` : `Uploading ${file.name}…`;
         const form = new FormData();
@@ -839,6 +871,9 @@ document.getElementById('sidebarContent').addEventListener('click', (e) => {
             break;
         }
         case 'retry': showSidebar(currentOpenDay); break;
+        case 'close': closeDayPanel(); break;
+        case 'prev-day': stepDay(-1); break;
+        case 'next-day': stepDay(1); break;
         case 'more': {
             const entry = findEntry(eventId);
             openActionSheet(entry.name, [
