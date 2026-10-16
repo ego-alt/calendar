@@ -99,6 +99,14 @@ function formatDate(d, { weekday = true, year = true } = {}) {
     return `${weekday ? WEEKDAY_ABBR[d.getDay()] + ' ' : ''}${d.getDate()} ${MONTH_ABBR[d.getMonth()]}${year ? ' ' + d.getFullYear() : ''}`;
 }
 
+/** A who / where / notes line in the logbook voice: a text mark (+ who,
+ *  @ where, > notes) instead of an icon; CSS colours each kind. `html` must
+ *  already be escaped. Shared by the day panel, the diary and search. */
+const DETAIL_MARK = { who: '+', where: '@', notes: '>' };
+function detailLine(kind, html, className) {
+    return `<div class="${className} detail-${kind}"><span class="mark" aria-hidden="true">${DETAIL_MARK[kind]}</span>${html}</div>`;
+}
+
 /** Escape user-controlled strings for safe insertion into HTML template literals. */
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, c => ({
@@ -610,8 +618,8 @@ async function loadMonthEvents() {
         return;
     }
     const moodName = (color) => (window.MOODS || []).find((m) => m.color === color)?.name || '';
-    const detail = (icon, text, extra = '') =>
-        text ? `<div class="diary-event-detail ${extra}"><i class="fas ${icon}" aria-hidden="true"></i> ${escapeHtml(text)}</div>` : '';
+    const detail = (kind, text, extra = '') =>
+        text ? detailLine(kind, escapeHtml(text), `diary-event-detail ${extra}`) : '';
 
     // A multi-day entry is written out in full the first time it appears; on
     // its later days it's one line (with that day's moments, if any).
@@ -640,9 +648,9 @@ async function loadMonthEvents() {
                     <div class="diary-event-time log-gutter" title="${escapeHtml(entryTimeLabel(event, iso))}">${gutterTime(event, iso)}</div>
                     ${spanLine(event)}
                     <div class="diary-event-name">${escapeHtml(event.name)}</div>
-                    ${detail('fa-user', event.with_who)}
-                    ${detail('fa-map-marker-alt', event.where)}
-                    ${detail('fa-sticky-note', event.notes, 'diary-event-notes')}
+                    ${detail('who', event.with_who)}
+                    ${detail('where', event.where)}
+                    ${detail('notes', event.notes, 'diary-event-notes')}
                     ${moments}
                 </div>`;
         }).join('');
@@ -656,6 +664,7 @@ async function loadMonthEvents() {
             <section class="diary-day">
                 <button type="button" class="diary-day-head" data-day="${day}" title="Open this day">
                     <span class="diary-date">${escapeHtml(formatDayShort(date))}</span>
+                    <span class="diary-rule" aria-hidden="true"></span>
                     ${color ? `<span class="diary-mood" style="--mood: ${color}"><span class="mood-dot" aria-hidden="true"></span>${escapeHtml(moodName(color))}</span>` : ''}
                     ${markers.has(day) ? '<span class="diary-marker" aria-hidden="true"></span>' : ''}
                 </button>

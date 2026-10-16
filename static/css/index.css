@@ -1350,3 +1350,55 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
     color: var(--color-text-muted);
     margin-bottom: 2px;
 }
+
+/* ---- the drawers in the logbook voice ----
+   Panes of the same terminal as the bottom bar: a gruvbox bg0 surface one
+   step up from the page (tmux splits share the background), text marks
+   instead of icons, gruvbox's own colours as light syntax highlighting, rule
+   lines between days, and buttons written as commands with their keys. */
+:root {
+    --color-bg-pane: #282828;    /* gruvbox bg0 */
+    --color-syn-date: #d79921;   /* gruvbox yellow */
+    --color-syn-who: #8ec07c;    /* gruvbox aqua */
+    --color-syn-where: #83a598;  /* gruvbox blue */
+}
+.sidebar, .term-pane, .drawer-head { background-color: var(--color-bg-pane); }
+
+/* + who, @ where, > notes */
+.mark { display: inline-block; width: 1ch; margin-right: 0.6ch; opacity: 0.7; font-family: var(--font-mono); }
+.detail-who { color: var(--color-syn-who); }
+.detail-where { color: var(--color-syn-where); }
+.detail-notes { color: var(--color-text-muted); }
+
+/* dates read as dates */
+.drawer-head .day-title, .drawer-tools .pane-year, .drawer-tools .pane-month,
+.diary-date, .entry-span, .search-result-date {
+    color: var(--color-syn-date);
+}
+
+/* ── Thu 1 Oct ──────────── good ── */
+.diary-day-head { border-bottom: 0; gap: var(--space-2); }
+.diary-day-head::before,
+.diary-day-head::after {
+    content: "──";
+    font-family: var(--font-mono);
+    color: var(--color-border);
+}
+.diary-rule { flex: 1; min-width: var(--space-4); border-top: 1px solid var(--color-border); }
+
+/* [n] new entry · [esc] cancel · [↵] save */
+.add-event-btn.btn-primary,
+.entry-form .save-btn.btn-primary {
+    background: transparent;
+    border-color: var(--color-accent);
+    color: var(--color-accent-hover);
+}
+.add-event-btn.btn-primary:hover:not(:disabled),
+.entry-form .save-btn.btn-primary:hover:not(:disabled) {
+    background: rgba(104, 157, 106, 0.15);
+    border-color: var(--color-accent-hover);
+    color: var(--color-accent-hover);
+}
+.entry-form .cancel-btn { color: var(--color-text-muted); }
+.key-hint { opacity: 0.6; }
+@media (hover: none) { .key-hint { display: none; } }   /* no keyboard there */

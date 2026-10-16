@@ -368,8 +368,8 @@ async function refreshAfterChange() {
     await updateCalendarView();
 }
 
-function renderDetail(icon, text, extraClass = '') {
-    return text ? `<div class="event-detail-item ${extraClass}"><i class="fas ${icon}" aria-hidden="true"></i> ${escapeHtml(text)}</div>` : '';
+function renderDetail(kind, text, extraClass = '') {
+    return text ? detailLine(kind, escapeHtml(text), `event-detail-item ${extraClass}`) : '';
 }
 
 function renderEntryCard(event) {
@@ -384,9 +384,9 @@ function renderEntryCard(event) {
             <div class="subevent-time log-gutter" title="${escapeHtml(entryTimeLabel(s, dayState.iso))}">${gutterTime(s, dayState.iso)}</div>
             <div class="subevent-name">${escapeHtml(s.name)}</div>
             <div class="subevent-details">
-                ${renderDetail('fa-user', s.with_who)}
-                ${renderDetail('fa-map-marker-alt', s.where)}
-                ${renderDetail('fa-sticky-note', s.notes, 'entry-notes')}
+                ${renderDetail('who', s.with_who)}
+                ${renderDetail('where', s.where)}
+                ${renderDetail('notes', s.notes, 'entry-notes')}
             </div>
         </div>`).join('');
     return `
@@ -401,9 +401,9 @@ function renderEntryCard(event) {
             ${spanLine(event)}
             <div class="event-name">${escapeHtml(event.name)}</div>
             <div class="event-details">
-                ${renderDetail('fa-user', event.with_who)}
-                ${renderDetail('fa-map-marker-alt', event.where)}
-                ${renderDetail('fa-sticky-note', event.notes, 'entry-notes')}
+                ${renderDetail('who', event.with_who)}
+                ${renderDetail('where', event.where)}
+                ${renderDetail('notes', event.notes, 'entry-notes')}
             </div>
             ${subs ? `<div class="subevents-container"><div class="subevents-list">${subs}</div></div>` : ''}
             ${linked.length ? `<div class="entry-attachments">${linked.map((a) => attachmentTile(a, { small: true })).join('')}</div>` : ''}
@@ -443,7 +443,7 @@ function renderDay() {
     content.innerHTML = `
         ${dayHeader(date, { tools: true })}
         <div id="dayMoodSlot"></div>
-        <button class="add-event-btn btn btn-primary" type="button" data-act="new">New entry</button>
+        <button class="add-event-btn btn btn-primary" type="button" data-act="new"><span class="key-hint">[n] </span>new entry</button>
         <div id="entryFormSlot"></div>
         <div class="event-list">${cards || '<div class="no-events">No entries yet.</div>'}</div>
         ${renderAttachments()}`;
@@ -518,9 +518,9 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null 
             <textarea class="input" name="notes" placeholder="Notes" aria-label="Notes"></textarea>
             <div class="form-error" role="alert" hidden></div>
             <div class="form-buttons">
-                <button type="button" class="btn btn-secondary cancel-btn" data-act="cancel-form">Cancel</button>
+                <button type="button" class="btn btn-secondary cancel-btn" data-act="cancel-form"><span class="key-hint">[esc] </span>cancel</button>
                 <span class="form-buttons-title" aria-hidden="true">${FORM_TITLES[mode]}</span>
-                <button type="submit" class="btn btn-primary save-btn">Save</button>
+                <button type="submit" class="btn btn-primary save-btn"><span class="key-hint">[↵] </span>save</button>
             </div>
         </form>`;
     const form = document.getElementById('entryForm');
@@ -620,14 +620,15 @@ async function submitEntryForm() {
         'sub-edit': [`/events/subevents/${subId}`, 'PUT'],
     }[mode];
     const saveBtn = form.querySelector('.save-btn');
+    const saveLabel = saveBtn.innerHTML;
     saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving…';
+    saveBtn.textContent = 'saving…';
     try {
         await api(request[0], { method: request[1], json: payload });
     } catch (error) {
         // Keep the form and its text; say what went wrong.
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Save';
+        saveBtn.innerHTML = saveLabel;
         saveDraft(key, values);
         showError(error.message);
         return;

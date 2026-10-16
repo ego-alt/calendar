@@ -19,7 +19,11 @@ tickets that go with it, and the trends over time.
   when it holds a photo or ticket, today marked by a caret; dates,
   times, counts and the chrome in monospace, square corners on everything but
   the mood tiles, entries as log lines with a time gutter, and a live status
-  line in the bottom bar on desktop.
+  line in the bottom bar on desktop. The side drawers are panes of the same
+  terminal: `+ who`, `@ where` and `> notes` as text marks in gruvbox's colours
+  (dates yellow, people aqua, places blue), `── date ── mood ──` rules between
+  diary days, and buttons written as commands with their keys
+  (`[n] new entry`, `[esc] cancel`, `[↵] save`).
 - **Never lose writing** — half-written entries are kept as drafts per day and
   come back when the day reopens; deletes (entries, moments, attachments) can
   be undone, and are purged after 30 days.

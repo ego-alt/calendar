@@ -117,17 +117,17 @@
             const [datePart] = (r.start_time || '').split(' ');
             const [y, m, d] = datePart.split('-').map(Number);
             const display = formatDate(new Date(y, m - 1, d));
-            const detail = (icon, text) =>
-                text ? `<div class="diary-event-detail"><i class="fas ${icon}"></i> ${highlight(text)}</div>` : '';
+            const detail = (kind, text, extra = '') =>
+                text ? detailLine(kind, highlight(text), `diary-event-detail ${extra}`) : '';
             const mood = r.mood
                 ? `<span class="diary-mood" style="--mood: ${esc(r.mood.color)}"><span class="mood-dot" aria-hidden="true"></span>${esc(r.mood.name)}</span>` : '';
             return `
                 <div class="diary-event search-result" data-year="${y}" data-month="${m}" data-day="${d}">
                     <div class="search-result-date">${display} ${mood}</div>
                     <div class="diary-event-name">${highlight(r.name)}</div>
-                    ${detail('fa-user', r.with_who)}
-                    ${detail('fa-map-marker-alt', r.where)}
-                    ${r.notes ? `<div class="diary-event-detail diary-event-notes"><i class="fas fa-sticky-note"></i> ${highlight(r.notes)}</div>` : ''}
+                    ${detail('who', r.with_who)}
+                    ${detail('where', r.where)}
+                    ${detail('notes', r.notes, 'diary-event-notes')}
                 </div>`;
         }).join('') + `<div class="search-footer">${results.length} ${results.length === 1 ? 'entry' : 'entries'}${more
             ? ` · <button type="button" class="link-btn" id="searchMore">Show more</button>` : ''}</div>`;

@@ -193,7 +193,7 @@ body.view-search #searchView {
     .tmux-win { flex: 1; padding: 0 2px; }
     .tmux-win.active::after { content: ""; }
     /* The drawer fills the screen above the bar. */
-    .term-pane { right: -100vw; width: 100vw; background-color: var(--color-bg-base); border-left: 0; }
+    .term-pane { right: -100vw; width: 100vw; border-left: 0; }
     .term-pane .year-content { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-3); }
     .term-pane .year-dot, .term-pane .year-marker { width: 3px; height: 3px; bottom: 1px; }
     .term-pane .year-dot { right: 1px; }
