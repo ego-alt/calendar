@@ -137,12 +137,11 @@
         const year = Number(card.dataset.year);
         const month = Number(card.dataset.month);
         const day = Number(card.dataset.day);
-        viewState.mode = 'month';
         viewState.year = year;
         viewState.month = month;
-        // Leave Stats for the calendar, render the target month, open the day.
-        document.querySelector('.shell-tab[data-view="calendar"]')?.click();
-        await updateCalendarView();
+        viewState.weekAnchor = { year, month, day };
+        // Leave Search for the calendar's month grid at that month, open the day.
+        document.querySelector('.tmux-win[data-mode="month"]')?.click();
         showSidebar(day);
     }
 

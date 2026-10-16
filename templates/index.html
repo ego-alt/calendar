@@ -35,25 +35,7 @@
             </form>
         </div>
     </div>
-    <header class="shell-bar">
-        <nav class="shell-switch" role="tablist" aria-label="View">
-            <button class="shell-tab" data-view="calendar" role="tab" type="button">Calendar</button>
-            <button class="shell-tab" data-view="stats" role="tab" type="button">Stats</button>
-            <button class="shell-tab" data-view="search" role="tab" type="button">Search</button>
-        </nav>
-        <div class="shell-spacer"></div>
-        <div class="shell-actions">
-            <button type="button" class="btn btn-ghost keys-btn" id="keysBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><i class="fas fa-keyboard" aria-hidden="true"></i></button>
-            <nav class="mode-seg shell-cal-only" aria-label="Calendar view">
-                <button type="button" class="mode-seg-btn" data-mode="month" title="Month (m)">Month</button>
-                <button type="button" class="mode-seg-btn" data-mode="week" title="Week (w)">Week</button>
-                <button type="button" class="mode-seg-btn" data-mode="year" title="Year (y)">Year</button>
-                <button type="button" class="mode-seg-btn" data-mode="diary" title="Diary (d)">Diary</button>
-            </nav>
-        </div>
-    </header>
     <main id="calendarView">
-    <div class="content-wrapper">
         {% if first_run %}
         <div class="first-run" id="firstRun">
             <p class="first-run-title">Nothing logged yet.</p>
@@ -61,45 +43,63 @@
             <button type="button" class="btn btn-primary" id="firstRunBtn">Log today</button>
         </div>
         {% endif %}
-        <div class="cal-title-row">
-            <h1 id="calTitle">{{ date_label }}</h1>
-        </div>
-        <div class="calendar" id="calendarContainer">
-            <div class="month-grid" id="viewMonth">
-                {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
-                    <div class="weekday">{{ day }}</div>
-                {% endfor %}
-                
-                {% for day in calendar_data.prev_days %}
-                    <div class="day prev-month" data-day="{{ day }}"></div>
-                {% endfor %}
-                
-                {% for day in calendar_data.current_days %}
-                    <div class="day current-month {% if day < current_day%}past{% endif %}{% if day == current_day %} today{% endif %}" 
-                         data-day="{{ day }}"
-                         onclick="showSidebar({{ day }})"
-                         {% if day in mood_colors %}style="background-color: {{ mood_colors[day] }}"{% endif %}>
-                        {% set info = day_info.get(day) %}
-                        {% if info and info.chars %}
-                            <div class="fold fold-{{ 1 if info.chars < 280 else (2 if info.chars < 1200 else 3) }}" aria-hidden="true"></div>
-                        {% elif day in days_with_events %}
-                            <div class="fold fold-1" aria-hidden="true"></div>
-                        {% endif %}
-                        {% if info and info.attachments %}<div class="photo-notch" aria-hidden="true"></div>{% endif %}
-                        {% if day in days_with_marker %}
-                            <div class="marker-indicator"></div>
-                        {% endif %}
+        <!-- The centerpiece: the calendar as one terminal window. The diary is a
+             split pane inside it, closed until asked for (d). -->
+        <section class="term" id="termWindow">
+            <header class="term-bar view-nav">
+                <button type="button" class="btn btn-ghost view-nav-btn" data-nav="prev" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>
+                <h1 id="calTitle">{{ date_label }}</h1>
+                <button type="button" class="btn btn-ghost view-nav-btn" data-nav="next" aria-label="Next"><i class="fas fa-chevron-right"></i></button>
+            </header>
+            <div class="term-body">
+                <div class="term-main">
+                    <div class="calendar" id="calendarContainer">
+                        <div class="month-grid" id="viewMonth">
+                            {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+                                <div class="weekday">{{ day }}</div>
+                            {% endfor %}
+
+                            {% for day in calendar_data.prev_days %}
+                                <div class="day prev-month" data-day="{{ day }}"></div>
+                            {% endfor %}
+
+                            {% for day in calendar_data.current_days %}
+                                <div class="day current-month {% if day < current_day%}past{% endif %}{% if day == current_day %} today{% endif %}" 
+                                     data-day="{{ day }}"
+                                     onclick="showSidebar({{ day }})"
+                                     {% if day in mood_colors %}style="background-color: {{ mood_colors[day] }}"{% endif %}>
+                                    {% set info = day_info.get(day) %}
+                                    {% if info and info.chars %}
+                                        <div class="fold fold-{{ 1 if info.chars < 280 else (2 if info.chars < 1200 else 3) }}" aria-hidden="true"></div>
+                                    {% elif day in days_with_events %}
+                                        <div class="fold fold-1" aria-hidden="true"></div>
+                                    {% endif %}
+                                    {% if info and info.attachments %}<div class="photo-notch" aria-hidden="true"></div>{% endif %}
+                                    {% if day in days_with_marker %}
+                                        <div class="marker-indicator"></div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+
+                            {% for day in calendar_data.next_days %}
+                                <div class="day next-month" data-day="{{ day }}"></div>
+                            {% endfor %}
+                        </div>
+                        <div class="week-grid" id="viewWeek" style="display: none;"></div>
                     </div>
-                {% endfor %}
-                
-                {% for day in calendar_data.next_days %}
-                    <div class="day next-month" data-day="{{ day }}"></div>
-                {% endfor %}
+                    <div class="year-view" id="yearView">
+                        <div class="year-content" id="yearContent"></div>
+                    </div>
+                </div>
+                <aside class="term-pane" id="diaryView" aria-label="Diary">
+                    <div class="pane-bar">
+                        <span class="pane-title" id="diaryTitle">diary</span>
+                        <button type="button" class="btn btn-ghost pane-close" id="diaryClose" aria-label="Close the diary"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="diary-content" id="diaryContent"></div>
+                </aside>
             </div>
-            <div class="week-grid" id="viewWeek" style="display: none;"></div>
-        </div>
-        <div class="status-line" id="statusLine" aria-live="polite"></div>
-    </div>
+        </section>
     </main>
 
     <div class="color-picker" id="colorPicker">
@@ -110,22 +110,6 @@
     <div class="sidebar" id="sidebar">
         <div class="sidebar-handle"></div>
         <div id="sidebarContent"></div>
-    </div>
-    <div class="diary-sidebar" id="diaryView">
-        <div class="diary-header view-nav">
-            <button type="button" class="btn btn-ghost view-nav-btn" data-nav="prev" aria-label="Previous month"><i class="fas fa-chevron-left"></i></button>
-            <h2 id="diaryTitle">Diary</h2>
-            <button type="button" class="btn btn-ghost view-nav-btn" data-nav="next" aria-label="Next month"><i class="fas fa-chevron-right"></i></button>
-        </div>
-        <div class="diary-content" id="diaryContent"></div>
-    </div>
-    <div class="year-sidebar" id="yearView">
-        <div class="year-header view-nav">
-            <button type="button" class="btn btn-ghost view-nav-btn" data-nav="prev" aria-label="Previous year"><i class="fas fa-chevron-left"></i></button>
-            <h2 id="yearTitle">Year</h2>
-            <button type="button" class="btn btn-ghost view-nav-btn" data-nav="next" aria-label="Next year"><i class="fas fa-chevron-right"></i></button>
-        </div>
-        <div class="year-content" id="yearContent"></div>
     </div>
     <main id="statsView">
         <div class="st-wrap">
@@ -237,12 +221,22 @@
         </div>
     </main>
 
-    <nav class="mode-bar shell-cal-only" id="modeBar" aria-label="Calendar mode">
-        <button class="mode-item" type="button" data-mode="month"><i class="fas fa-calendar-days"></i><span>Month</span></button>
-        <button class="mode-item" type="button" data-mode="week"><i class="fas fa-calendar-week"></i><span>Week</span></button>
-        <button class="mode-item" type="button" data-mode="year"><i class="fas fa-calendar"></i><span>Year</span></button>
-        <button class="mode-item" type="button" data-mode="diary"><i class="fas fa-book"></i><span>Diary</span></button>
-    </nav>
+    <!-- One bar for the whole app, tmux-style: the calendar's windows, the
+         diary toggle, the other views, and a live status line. -->
+    <footer class="tmux" id="tmux">
+        <span class="tmux-session">cal</span>
+        <nav class="tmux-windows" aria-label="Views">
+            <button type="button" class="tmux-win" data-view="calendar" data-mode="month" title="Month (m)">month</button>
+            <button type="button" class="tmux-win" data-view="calendar" data-mode="week" title="Week (w)">week</button>
+            <button type="button" class="tmux-win" data-view="calendar" data-mode="year" title="Year (y)">year</button>
+            <button type="button" class="tmux-win tmux-toggle" id="diaryToggle" aria-pressed="false" title="Diary (d)">diary</button>
+            <span class="tmux-sep" aria-hidden="true">│</span>
+            <button type="button" class="tmux-win" data-view="stats">stats</button>
+            <button type="button" class="tmux-win" data-view="search" title="Search (/)">search</button>
+        </nav>
+        <div class="status-line" id="statusLine" aria-live="polite"></div>
+        <button type="button" class="tmux-win keys-btn" id="keysBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+    </footer>
 
     <!-- In-app confirmation (replaces the browser's confirm()). -->
     <div class="modal-scrim" id="confirmModal" hidden>
@@ -262,7 +256,8 @@
                 <dt><kbd>←</kbd> <kbd>→</kbd> or <kbd>h</kbd> <kbd>l</kbd></dt><dd>Previous / next month or week</dd>
                 <dt><kbd>j</kbd> <kbd>k</kbd></dt><dd>Next / previous year</dd>
                 <dt><kbd>t</kbd></dt><dd>Today</dd>
-                <dt><kbd>m</kbd> <kbd>w</kbd> <kbd>y</kbd> <kbd>d</kbd></dt><dd>Month, Week, Year, Diary</dd>
+                <dt><kbd>m</kbd> <kbd>w</kbd> <kbd>y</kbd></dt><dd>Month, Week, Year</dd>
+                <dt><kbd>d</kbd></dt><dd>Show or hide the diary</dd>
                 <dt><kbd>n</kbd></dt><dd>New entry on the open day (or today)</dd>
                 <dt><kbd>1</kbd>–<kbd>5</kbd></dt><dd>Mood for the open day, Great → Rough</dd>
                 <dt><kbd>x</kbd></dt><dd>Toggle the marker on the open day</dd>

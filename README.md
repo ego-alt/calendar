@@ -7,21 +7,25 @@
 A retrospective life log: how each day felt, what happened, the receipts and
 tickets that go with it, and the trends over time.
 
-- **Calendar** — Month, Week, Year and Diary views (one switch on desktop, a
-  bottom bar on phones). Tap any day to open it: set its **mood** (Great →
+- **Calendar** — Month, Week and Year views, switched from a tmux-style bar
+  along the bottom (with Stats and Search), plus a Diary pane you open beside
+  the calendar with `d`. Tap any day to open it: set its **mood** (Great →
   Rough), toggle the **marker** (a small, unlabelled red dot, a private
   tracker shown quietly on the calendar and the mood trend), write **entries** with optional times, people, places and notes, add
   **moments** inside an entry, and attach **photos and PDFs**.
 - **The look** — a mood mosaic in a terminal logbook: each day a tile tinted
   by its mood, its corner folding further the more you wrote, a small notch
   when it holds a photo or ticket, today marked by a caret; dates,
-  times and counts in monospace, entries as log lines with a time gutter, and
-  a status line under the month on desktop.
+  times, counts and the chrome in monospace, square corners on everything but
+  the mood tiles, entries as log lines with a time gutter, and a live status
+  line in the bottom bar on desktop.
 - **Never lose writing** — half-written entries are kept as drafts per day and
   come back when the day reopens; deletes (entries, moments, attachments) can
   be undone, and are purged after 30 days.
-- **Diary** — a month to read back, day by day, with moods, entries, moments
-  and attachments; **Year** — twelve tappable months.
+- **Diary** — the month on screen to read back, day by day, with moods,
+  entries, moments and attachments, in a pane beside the calendar (closed until
+  you open it; over the calendar on narrow screens); **Year** — twelve
+  tappable months.
 - **Stats** — logged days, streak, mood calendar (tap a day to open it), mood
   over time (actual / 7-day / 28-day), mood mix by month or weekday, days with
   entries, and **Mood with…**: average mood with each person and at each place

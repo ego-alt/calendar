@@ -4,7 +4,7 @@
 :root {
     --color-bg-base: #282828;
     --color-bg-elevated: #3c3836;
-    --color-bg-chrome: #1d2021;   /* top and bottom bars: Gruvbox "hard", darker than the page so the grid leads */
+    --color-bg-chrome: #1d2021;   /* window title bar and the bottom bar: Gruvbox "hard", darker than the page */
     --color-bg-inset: rgba(40, 40, 40, 0.5);
     --color-bg-inset-soft: rgba(40, 40, 40, 0.3);
     --color-bg-overlay: rgba(40, 40, 40, 0.85);
@@ -18,19 +18,31 @@
     --color-accent-hover: #8ec07c;
     --color-danger: #cc241d;
     --color-danger-hover: #fb4934;
-    --color-stripe: rgba(235, 219, 178, 0.03);
     --color-highlight-soft: rgba(235, 219, 178, 0.05);
-    --color-shadow-soft: rgba(0, 0, 0, 0.2);
-    --color-shadow: rgba(0, 0, 0, 0.3);
+
+    /* Terminal edges: square corners on the chrome (structural.css's radii are
+       overridden here). The mood tiles keep their rounding (--radius-tile), and
+       round things like mood dots use --radius-pill. */
+    --radius-sm: 0;
+    --radius-md: 0;
+    --radius-lg: 0;
+    --radius-tile: 8px;
+    --radius-tile-sm: 4px;
 }
 
 /* .btn / .input come from structural.css. Calendar keeps monospace inputs over
    a base surface (terminal flavor) — its one deliberate primitive override. */
 .input { background: var(--color-bg-base); font-family: var(--font-mono); }
+/* Chrome in monospace: buttons, labels and small UI text. Headings and what
+   you wrote stay in Inter. */
+.btn, .weekday, .year-weekday, .mood-chip, .st-tab, .filter-field, .search-hint,
+.toast, .modal-actions, .action-sheet-item, .link-btn {
+    font-family: var(--font-mono);
+}
 
-/* Always reserve the scrollbar gutter so the fixed top bar's right edge (and the
-   logout button) doesn't shift when toggling between the short Calendar view (no
-   scroll) and the long Stats view (scrolls). No-op on overlay-scrollbar mobile. */
+/* Always reserve the scrollbar gutter so the page doesn't shift sideways when
+   toggling between the short Calendar view (no scroll) and the long Stats view
+   (scrolls). No-op on overlay-scrollbar mobile. */
 html {
     scrollbar-gutter: stable;
 }
@@ -261,7 +273,7 @@ h2 {
 .day {
     aspect-ratio: 1;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-tile);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -319,7 +331,6 @@ h2 {
     grid-template-columns: repeat(7, 1fr);
     grid-template-rows: auto repeat(5, 1fr);
     gap: var(--space-2);
-    margin-bottom: var(--space-8);
     width: 100%;
 }
 #calendarContainer {
@@ -343,62 +354,25 @@ h2 {
 .day:hover .eye-icon {
     opacity: 1;
 }
-.sidebar, .diary-sidebar, .year-sidebar {
+/* The day panel: a drawer from the left, above the window, ending at the
+   bottom bar. A 1px rule instead of a shadow (terminal edges). */
+.sidebar {
     position: fixed;
+    top: 0;
+    left: -300px;
     width: min(300px, 80vw);
-    height: 100vh;
+    height: calc(100dvh - var(--tmux-h));
     background-color: var(--color-bg-elevated);
-    box-shadow: 0 0 8px var(--color-shadow);
+    border-right: 1px solid var(--color-border);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    /* All drawers layer above the view toggle (1001) so they slide over it, but
-     * below the icon buttons (1003) so the icons stay tappable to close them. */
-    z-index: 1002;
+    z-index: 1004;
     opacity: 0;
     overflow-y: auto;
     padding: var(--space-5);
-    top: 0;
-}
-.sidebar, .diary-sidebar {
-    background-image: repeating-linear-gradient(
-        45deg,
-        var(--color-stripe),
-        var(--color-stripe) 4px,
-        transparent 4px,
-        transparent 8px
-    );
-}
-.sidebar {
-    left: -300px;
-    border-radius: 0 var(--radius-md) var(--radius-md) 0;
-}
-.diary-sidebar, .year-sidebar {
-    right: -400px;
-    border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 .sidebar.active {
     left: 0;
     opacity: 1;
-}
-.diary-sidebar.active, .year-sidebar.active {
-    right: 0;
-    opacity: 1;
-}
-.day.past {
-    background-image: repeating-linear-gradient(
-        45deg,
-        var(--color-stripe),
-        var(--color-stripe) 2px,
-        transparent 2px,
-        transparent 4px
-    );
-}
-.content-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 700px;
-    margin: auto;
 }
 .event-card, .diary-event {
     background: var(--color-bg-inset);
@@ -503,7 +477,6 @@ h2 {
     border-radius: var(--radius-md);
     width: 90%;
     max-width: 320px;
-    box-shadow: 0 4px 12px var(--color-shadow);
     border: 1px solid var(--color-border);
     text-align: center;
 }
@@ -586,25 +559,9 @@ h2 {
     white-space: pre-line;
 }
 
-/* Desktop styles (default) */
-@media (min-width: 481px) {
-    /* The day panel starts below the fixed top bar (its header and the attach
-       button were hidden under it). */
-    .sidebar {
-        top: var(--shell-bar-h);
-        height: calc(100dvh - var(--shell-bar-h));
-    }
-}
 /* Mobile styles */
 @media (max-width: 480px) {
-    /* Nudge the centered views down so they sit clear below the fixed top bar
-     * (the centering then happens within the remaining space). */
-    body {
-        padding-top: var(--space-8);
-    }
-    /* Smaller title on phones — the 32px desktop h1 looks oversized and crowds
-     * the fixed top bar; shrinking it also gives the centered content more
-     * clearance below the bar. */
+    /* Smaller headings on phones: the 32px desktop h1 looks oversized. */
     h1 {
         font-size: var(--text-lg);
         margin-bottom: var(--space-3);
@@ -626,10 +583,10 @@ h2 {
         transition: bottom 0.3s ease;
         overflow-y: auto;
     }
-    /* Dock above the mode bar (z 1005) so the sheet's bottom buttons aren't
+    /* Dock above the bottom bar (z 1005) so the sheet's bottom buttons aren't
      * buried under it. */
     .sidebar.active {
-        bottom: var(--mode-bar-h);
+        bottom: var(--tmux-h);
     }
     /* Visible bar is 40x4, but padding (drawn transparent via background-clip)
      * gives it a comfortable tap target for dismissing. */
@@ -647,9 +604,6 @@ h2 {
         border-radius: 2px;
         cursor: pointer;
     }
-    .diary-sidebar, .year-sidebar {
-        width: 90vw;
-    }
 }
 /* Year view styles */
 .year-month-grid {
@@ -666,7 +620,7 @@ h2 {
 .year-day {
     aspect-ratio: 1;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-tile-sm);
     font-size: var(--text-sm);
     position: relative;
     display: flex;
@@ -890,7 +844,7 @@ h2 {
     border-radius: var(--radius-md);
     padding: var(--space-3);
     margin: var(--space-3) 0 var(--space-4);
-    box-shadow: 0 2px 8px var(--color-shadow-soft);
+    border: 1px solid var(--color-border);
     animation: fadeIn 0.2s ease;
 }
 .entry-form .form-header {
@@ -941,7 +895,7 @@ h2 {
 .toasts {
     position: fixed;
     left: 50%;
-    bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
+    bottom: calc(var(--tmux-h) + var(--space-3));
     transform: translateX(-50%);
     z-index: 2000;
     display: flex;
@@ -962,7 +916,6 @@ h2 {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     padding: var(--space-2) var(--space-4);
-    box-shadow: 0 6px 18px var(--color-shadow);
     font-size: var(--text-sm);
     opacity: 0;
     transform: translateY(8px);
@@ -999,14 +952,13 @@ h2 {
     border-radius: var(--radius-md);
     padding: var(--space-5);
     width: min(360px, 100%);
-    box-shadow: 0 12px 32px var(--color-shadow);
 }
 .modal-head { font-weight: 600; color: var(--color-text-primary); }
 .modal-detail { color: var(--color-text-muted); font-size: var(--text-sm); margin: var(--space-2) 0 var(--space-4); }
 .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
 
 @media (max-width: 480px) {
-    .toasts { bottom: calc(var(--mode-bar-h, 54px) + var(--space-3)); }
+    .toasts { bottom: calc(var(--tmux-h) + var(--space-3)); }
     .entry-form input, .entry-form textarea { font-size: var(--text-base); }   /* no iOS zoom */
 }
 
@@ -1185,8 +1137,7 @@ h2 {
 
 /* ---- phones: the entry form is a full-screen sheet with Save on top ---- */
 @media (max-width: 480px) {
-    body.entry-form-open .mode-bar,
-    body.entry-form-open .shell-bar { display: none; }
+    body.entry-form-open .tmux { display: none; }
     body.entry-form-open .entry-form {
         position: fixed;
         inset: 0;
@@ -1219,12 +1170,6 @@ h2 {
 
 
 /* ---- today ---- */
-.cal-title-row {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: var(--space-3);
-}
 /* Today is the cursor: a steady terminal block caret in the corner (no
    blinking: it was distracting), and its number in full strength. */
 .day.today { border-color: var(--color-text-secondary); }
@@ -1468,8 +1413,7 @@ kbd {
 .wc-empty { display: block; margin-top: var(--space-1); font-size: var(--text-sm); color: var(--color-text-muted); }
 
 /* ---- signed out: the sign-in card is the page ---- */
-body.signed-out main, body.signed-out .mode-bar, body.signed-out .shell-switch,
-body.signed-out .mode-seg, body.signed-out .keys-btn { display: none !important; }
+body.signed-out main, body.signed-out .tmux { display: none !important; }
 body.signed-out .login-overlay { background: var(--color-bg-base); }
 
 /* ---- first run ---- */
@@ -1584,30 +1528,8 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 .day.today .photo-notch { left: 17px; }
 .day:hover .photo-notch { opacity: 0; }   /* the quick-mood eye takes that corner */
 
-/* ---- status line: desktop month view, under the grid ---- */
-.status-line { display: none; }
-@media (hover: hover) and (min-width: 481px) {
-    body.view-calendar .status-line {
-        display: block;
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: 26px;
-        line-height: 26px;
-        padding: 0 var(--space-4);
-        background: var(--color-bg-chrome);
-        border-top: 1px solid var(--color-border-soft);
-        color: var(--color-text-muted);
-        font-family: var(--font-mono);
-        font-size: var(--text-xs);
-        white-space: pre;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        z-index: 1001;
-    }
-    body.view-calendar .status-line::before { content: "› "; color: var(--color-accent); }
-}
+/* ---- status line: lives in the bottom bar (shell.css); › marks it ---- */
+.status-line::before { content: "› "; color: var(--color-accent); }
 
 /* a multi-day entry's dates, on their own line above its title */
 .entry-span {

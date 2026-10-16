@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupMonthGridListeners();
     setupSwipeNavigation();
     document.addEventListener('keydown', handleKeyPress);
-    setupModeBar();
+    setupTmux();
     window.monthData = window.INITIAL_MONTH;
     renderStatusLine();
     document.getElementById('firstRunBtn')?.addEventListener('click', async () => {
@@ -130,52 +130,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const keysModal = document.getElementById('keysModal');
     keysModal.addEventListener('click', (e) => { if (e.target === keysModal) keysModal.hidden = true; });
     document.getElementById('keysBtn')?.addEventListener('click', () => { keysModal.hidden = false; });
-    document.querySelector('#diaryView .view-nav').addEventListener('click', (e) => {
+    // ‹ › in the window's title bar step by whatever the window shows.
+    document.querySelector('#termWindow .view-nav').addEventListener('click', (e) => {
         const b = e.target.closest('[data-nav]');
-        if (b) updateMonth(b.dataset.nav);
+        if (!b) return;
+        if (isYearMode()) updateYear(b.dataset.nav);
+        else updateMonth(b.dataset.nav);
     });
-    document.querySelector('#yearView .view-nav').addEventListener('click', (e) => {
-        const b = e.target.closest('[data-nav]');
-        if (b) updateYear(b.dataset.nav);
-    });
+    document.getElementById('diaryClose').addEventListener('click', () => toggleDiaryView(false));
 });
 
-/** Bottom mode bar (mobile): Month / Week / Year / Diary as four peer modes. */
-function setupModeBar() {
-    const bar = document.getElementById('modeBar');
-    if (!bar) return;
-    document.querySelectorAll('.mode-item, .mode-seg-btn').forEach((b) => {
+/** The bottom bar's calendar windows (month / week / year) and diary toggle.
+ *  Switching views (calendar / stats / search) is shell.js's job. */
+function setupTmux() {
+    document.querySelectorAll('.tmux-win[data-mode]').forEach((b) => {
         b.addEventListener('click', () => setCalendarMode(b.dataset.mode));
     });
-    updateBottomBar();
+    document.getElementById('diaryToggle').addEventListener('click', () => {
+        document.querySelector('.tmux-win[data-view="calendar"]').click();   // from stats/search too
+        toggleDiaryView(true);
+    });
+    updateTmux();
 }
 
-/** Switch the calendar's content mode (month/week grid or year/diary view). */
+/** What the window shows: the month or week grid, or the year. */
 function setCalendarMode(mode) {
     if (mode === 'year') {
         toggleYearView(true);
-    } else if (mode === 'diary') {
-        toggleDiaryView(true);
     } else {
         toggleYearView(false);
-        toggleDiaryView(false);
         toggleWeekView(mode === 'week');
     }
-    updateBottomBar();
+    updateTmux();
 }
 
-/** Reflect the active mode in the bottom bar (year/diary panel, else month/week). */
-function updateBottomBar() {
-    const bar = document.getElementById('modeBar');
-    if (!bar) return;
-    let mode;
-    if (document.getElementById('yearView').classList.contains('active')) mode = 'year';
-    else if (document.getElementById('diaryView').classList.contains('active')) mode = 'diary';
-    else mode = viewState.mode;
-    document.querySelectorAll('.mode-item, .mode-seg-btn').forEach((b) => {
-        b.classList.toggle('active', b.dataset.mode === mode);
-        b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+const isYearMode = () => document.getElementById('termWindow').classList.contains('year-mode');
+const isDiaryOpen = () => document.getElementById('termWindow').classList.contains('diary-open');
+
+/** Light up the active window in the bottom bar, and the diary toggle. */
+function updateTmux() {
+    const calendar = document.body.classList.contains('view-calendar');
+    const mode = isYearMode() ? 'year' : viewState.mode;
+    document.querySelectorAll('.tmux-win[data-mode]').forEach((b) => {
+        const on = calendar && b.dataset.mode === mode;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', String(on));
     });
+    const diary = document.getElementById('diaryToggle');
+    diary.classList.toggle('active', calendar && isDiaryOpen());
+    diary.setAttribute('aria-pressed', String(calendar && isDiaryOpen()));
+}
+window.updateTmux = updateTmux;
+
+/** The window title: the year in year mode, else the month or week label. */
+let periodLabel = document.getElementById('calTitle').textContent;
+function setWindowTitle(label) {
+    if (label !== undefined) periodLabel = label;
+    document.getElementById('calTitle').textContent = isYearMode() ? String(viewState.year) : periodLabel;
 }
 
 /** Jump every view back to today. */
@@ -184,10 +195,9 @@ async function goToToday() {
     viewState.month = CURRENT_MONTH;
     viewState.weekAnchor = { year: CURRENT_YEAR, month: CURRENT_MONTH, day: CURRENT_DAY };
     await updateCalendarView();
-    if (document.getElementById('yearView').classList.contains('active')) loadYearView(CURRENT_YEAR);
-    updateBottomBar();
+    if (isYearMode()) loadYearView(CURRENT_YEAR);
+    updateTmux();
 }
-window.updateBottomBar = updateBottomBar;
 
 /** Document-level and static-DOM listeners — call once. */
 function setupGlobalEventListeners() {
@@ -224,7 +234,6 @@ function setupGlobalEventListeners() {
         }
         // The day panel closes on a tap outside it, unless that tap opens a
         // day (month/week/year cells, diary entries) or is on our own overlays.
-        // Diary and Year are full views now: they close by switching mode.
         const keepsPanel = t.closest(
             '#sidebar, #colorPicker, .day, .eye-icon, .week-grid, .year-day, .diary-day-head, .diary-event, #confirmModal, #toasts, #actionSheet, #viewer, #keysModal, #keysBtn'
         );
@@ -327,9 +336,10 @@ function handleKeyPress(event) {
             toast('Draft kept');
         } else if (document.getElementById('sidebar').classList.contains('active')) {
             dismissSidebar();
-        } else if (!inInput) {
+        } else if (!inInput && isDiaryOpen()) {
             toggleDiaryView(false);
-            toggleYearView(false);
+        } else if (!inInput && isYearMode()) {
+            setCalendarMode('month');
         }
         event.preventDefault();
         return;
@@ -340,7 +350,7 @@ function handleKeyPress(event) {
     if (event.key === '?') { keysSheet.hidden = !keysSheet.hidden; event.preventDefault(); return; }
     if (event.key === '/') {
         event.preventDefault();
-        document.querySelector('.shell-tab[data-view="search"]')?.click();
+        document.querySelector('.tmux-win[data-view="search"]')?.click();
         document.getElementById('searchInput').focus();
         return;
     }
@@ -360,7 +370,7 @@ function handleKeyPress(event) {
         case 'j': updateYear('next'); break;
         case 'm': setCalendarMode('month'); break;
         case 'w': setCalendarMode('week'); break;
-        case 'd': setCalendarMode('diary'); break;
+        case 'd': toggleDiaryView(); break;
         case 'y': setCalendarMode('year'); break;
         case 't': goToToday(); break;
         case 'x': if (panelOpen) toggleDayMarker(viewState.year, viewState.month, currentOpenDay); break;
@@ -448,8 +458,8 @@ async function updateYear(direction) {
         viewState.weekAnchor = { year: a.year + (direction === 'next' ? 1 : -1), month: a.month, day: a.day };
     }
     await updateCalendarView();
-    if (document.getElementById('yearView').classList.contains('active')) loadYearView(viewState.year);
-    updateBottomBar();
+    if (isYearMode()) loadYearView(viewState.year);
+    updateTmux();
 }
 
 async function shiftWeek(direction) {
@@ -457,9 +467,11 @@ async function shiftWeek(direction) {
     const d = new Date(a.year, a.month - 1, a.day);
     d.setDate(d.getDate() + (direction === 'next' ? 7 : -7));
     viewState.weekAnchor = { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
+    const monthBefore = viewState.month;
     viewState.year = viewState.weekAnchor.year;
     viewState.month = viewState.weekAnchor.month;
     await renderWeek();
+    if (isDiaryOpen() && viewState.month !== monthBefore) loadMonthEvents();   // the diary shows the week's month
 }
 
 async function updateCalendarView() {
@@ -481,7 +493,7 @@ async function updateCalendarView() {
         if (token !== viewToken) return;
         
         // Update main header
-        document.getElementById('calTitle').textContent = data.month_label;
+        setWindowTitle(data.month_label);
         const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         
         // Generate the new month HTML (inside #viewMonth so the sibling #viewWeek survives)
@@ -513,12 +525,8 @@ async function updateCalendarView() {
         window.monthData = { year, month, ...data };
         renderStatusLine();
         setupMonthGridListeners();
-        updateBottomBar();
-        
-        // Refresh diary view if it's open
-        if (document.getElementById('diaryView').classList.contains('active')) {
-            loadMonthEvents();
-        }
+        updateTmux();
+        if (isDiaryOpen()) loadMonthEvents();
 
     } catch (error) {
         if (token !== viewToken) return;
@@ -560,7 +568,7 @@ function toggleWeekView(show) {
         weekGrid.style.display = 'none';
         updateCalendarView();
     }
-    updateBottomBar();
+    updateTmux();
 }
 
 async function renderWeek() {
@@ -574,8 +582,8 @@ async function renderWeek() {
         if (token !== viewToken) return;
         if (data.status !== 'success') throw new Error('week');
 
-        document.getElementById('calTitle').textContent = data.week_label;
-        updateBottomBar();
+        setWindowTitle(data.week_label);
+        updateTmux();
 
         const weekRoot = document.getElementById('viewWeek');
         const isMobile = window.innerWidth <= 480;
@@ -787,49 +795,24 @@ async function handleLogin(event) {
 }
 
 
-function toggleSidebar(sidebarType, show) {
-    const diaryView = document.getElementById('diaryView');
-    const yearView = document.getElementById('yearView');
-    
-    // Determine which sidebar is primary and which is secondary based on type
-    const primarySidebar = sidebarType === 'diary' ? diaryView : yearView;
-    const secondarySidebar = sidebarType === 'diary' ? yearView : diaryView;
-    
-    // Determine whether to show or hide if not specified
-    if (show === undefined) {
-        show = !primarySidebar.classList.contains('active');
-    }
-    
-    // Always close the secondary sidebar
-    secondarySidebar.classList.remove('active');
-    
-    if (show) {
-        // Load appropriate data based on sidebar type
-        if (sidebarType === 'diary') {
-            loadMonthEvents();
-        } else {
-            loadYearView(viewState.year);
-        }
-
-        // Show the sidebar. The `active` class lands next frame (so the slide-in
-        // transition plays), so sync the bottom bar there too — otherwise it reads
-        // the not-yet-active panel and the Year/Diary icon never highlights.
-        requestAnimationFrame(() => {
-            primarySidebar.classList.add('active');
-            updateBottomBar();
-        });
-    } else {
-        primarySidebar.classList.remove('active');
-        updateBottomBar();
-    }
-}
-
-function toggleDiaryView(show) {
-    toggleSidebar('diary', show);
-}
-
+/** Year mode: the window shows twelve month grids instead of one. */
 function toggleYearView(show) {
-    toggleSidebar('year', show);
+    const win = document.getElementById('termWindow');
+    if (show === undefined) show = !isYearMode();
+    win.classList.toggle('year-mode', show);
+    document.getElementById('yearView').classList.toggle('active', show);
+    if (show) loadYearView(viewState.year);
+    setWindowTitle();
+    updateTmux();
+}
+
+/** The diary: a split pane in the window, closed until asked for. */
+function toggleDiaryView(show) {
+    const win = document.getElementById('termWindow');
+    if (show === undefined) show = !isDiaryOpen();
+    win.classList.toggle('diary-open', show);
+    if (show) loadMonthEvents();
+    updateTmux();
 }
 
 /** The Diary: one month to read back, day by day, with each day's mood,
@@ -839,8 +822,7 @@ async function loadMonthEvents() {
     const content = document.getElementById('diaryContent');
     const { year, month } = viewState;
     const monthLong = new Date(year, month - 1, 1).toLocaleDateString('en-GB', { month: 'long' });
-    document.getElementById('diaryTitle').textContent =
-        `Diary · ${new Date(year, month - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`;
+    document.getElementById('diaryTitle').textContent = `diary · ${MONTH_ABBR[month - 1]} ${year}`;
     content.innerHTML = '<div class="loading-indicator">Loading…</div>';
     let events, monthData, attachments;
     try {
@@ -938,7 +920,7 @@ document.getElementById('diaryContent').addEventListener('click', (e) => {
 /** Year: twelve tappable month grids with moods, markers and entry dots. */
 async function loadYearView(year, { keepScroll = false } = {}) {
     const yearContent = document.getElementById('yearContent');
-    document.getElementById('yearTitle').textContent = String(year);
+    setWindowTitle();
     if (!keepScroll) yearContent.innerHTML = '<div class="loading-indicator">Loading…</div>';
     let data;
     try {

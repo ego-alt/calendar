@@ -1,10 +1,10 @@
-/* App-shell controller: the persistent top bar swaps between the Calendar and
-   Stats views in-page (no full reload), keeps /stats as a real URL via the
-   History API, and lazy-loads the Stats data the first time it's opened. */
+/* App-shell controller: the bottom bar swaps between the Calendar, Stats and
+   Search views in-page (no full reload), keeps /stats and /search as real URLs
+   via the History API, and lazy-loads the Stats data the first time it's opened. */
 (function () {
-    const bar = document.querySelector(".shell-bar");
+    const bar = document.getElementById("tmux");
     if (!bar) return;
-    const tabs = Array.from(bar.querySelectorAll(".shell-tab"));
+    const tabs = Array.from(bar.querySelectorAll(".tmux-win[data-view]"));
     let statsLoaded = false;
     let statsLoading = null;
 
@@ -46,17 +46,20 @@
 
     const PATHS = { calendar: "/", stats: "/stats", search: "/search" };
 
+    let current = null;
     function setView(view, { push = true } = {}) {
-        // Switching the top-level view closes any open calendar sub-view
-        // (year / diary / day) so we don't land on another view with one still open.
-        ["yearView", "diaryView", "sidebar"].forEach((id) => {
-            document.getElementById(id)?.classList.remove("active");
-        });
-        window.updateBottomBar?.();
+        if (view === current) return;
+        current = view;
+        // The day panel floats over the page, so it closes on leaving. The
+        // window's own state (year mode, diary pane) is kept for coming back.
+        document.getElementById("sidebar")?.classList.remove("active");
         document.body.classList.toggle("view-calendar", view === "calendar");
         document.body.classList.toggle("view-stats", view === "stats");
         document.body.classList.toggle("view-search", view === "search");
-        tabs.forEach((t) => t.classList.toggle("active", t.dataset.view === view));
+        // Stats and Search light up here; the calendar's windows (month / week /
+        // year) and the diary toggle are lit by updateTmux.
+        tabs.filter((t) => !t.dataset.mode).forEach((t) => t.classList.toggle("active", t.dataset.view === view));
+        window.updateTmux?.();
         if (view === "stats") loadStats();
         if (push) {
             history.pushState({ view }, "", appUrl(PATHS[view] || "/"));
