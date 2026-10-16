@@ -91,7 +91,7 @@ function isoFromDate(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/* One date style everywhere (AUDIT 3.1): "Tue 6 Oct 2026", built by hand so
+/* One date style everywhere: "Tue 6 Oct 2026", built by hand so
  * it doesn't vary by browser locale (Chrome's en-GB says "Sept", adds commas). */
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

@@ -13,7 +13,7 @@ from trash import now, purge_deleted
 from ._helpers import json_login_required
 
 # Receipts, tickets and photos: images and PDFs only. Anything else could be
-# served from this origin and run as the app (AUDIT 4.8).
+# served from this origin and run as the app.
 IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/heif"}
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif"}
 THUMB_SIZE = 480

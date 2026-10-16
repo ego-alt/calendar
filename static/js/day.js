@@ -98,7 +98,7 @@ window.addEventListener('online', () => toast('Back online'));
 
 // ---------- dates ----------
 
-/** "Tue 6 Oct 2026" — the one long date format (see AUDIT 3.1). */
+/** "Tue 6 Oct 2026" — the one long date format. */
 function formatDayLong(date) {
     return formatDate(date);
 }
