@@ -1,10 +1,9 @@
-/* App shell: the month as the centerpiece, one context pane beside it (Year
-   or Diary, closed until asked for), and one tmux-style bar along the bottom
-   that carries the navigation and the status line. Loaded after index.css so
-   it wins. */
+/* App shell: the month as the centerpiece, a context drawer on the right
+   (Year or Diary, closed until asked for) mirroring the day panel on the left,
+   and one tmux-style bar along the bottom that carries the navigation and the
+   status line. Loaded after index.css so it wins. */
 :root {
     --tmux-h: calc(28px + env(safe-area-inset-bottom));
-    --pane-w: 380px;
 }
 
 body {
@@ -27,7 +26,6 @@ body {
 body.view-calendar #calendarView { display: flex; }
 
 .term { width: min(100%, 760px); }
-.term.pane-open { width: min(100%, calc(760px + var(--pane-w))); }
 
 /* The heading: "October 2026" in Inter at full size. */
 .term-bar {
@@ -40,23 +38,30 @@ body.view-calendar #calendarView { display: flex; }
     text-align: center;
 }
 
-.term-body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-}
-.term.pane-open .term-body { grid-template-columns: minmax(0, 1fr) var(--pane-w); }
 .term-main { padding: var(--space-5); min-width: 0; }
 .term-main .calendar { max-width: none; margin: 0; }
 
-/* ---- the context pane: Year | Diary ---- */
-/* It takes the height the month gives it and scrolls inside, so a long month
-   of writing never stretches the page. */
-.term-pane { display: none; }
+/* ---- the context drawer: Year | Diary ---- */
+/* The day panel's mirror image (index.css .sidebar): same width, surface,
+   edge and slide, from the right. It floats over the page, so the month never
+   moves; on a wide screen both drawers fit either side of it. */
+.term-pane {
+    position: fixed;
+    top: 0;
+    right: -300px;
+    width: min(300px, 80vw);
+    height: calc(100dvh - var(--tmux-h));
+    background-color: var(--color-bg-elevated);
+    border-left: 1px solid var(--color-border);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1004;
+    opacity: 0;
+    visibility: hidden;   /* off-screen: keep it out of the tab order too */
+}
 .term.pane-open .term-pane {
-    display: block;
-    position: relative;
-    border-left: 1px solid var(--color-border-soft);
-    min-height: 320px;
+    right: 0;
+    opacity: 1;
+    visibility: visible;
 }
 .pane-bar {
     display: flex;
@@ -105,17 +110,15 @@ body.view-calendar #calendarView { display: flex; }
 }
 .pane-body[hidden] { display: none; }
 
-/* Year in the pane: a two-column navigator of small months. The month on
-   screen is outlined; a month's name or any of its days takes you there. */
+/* Year in the drawer: a navigator of small months, one per row (two on a
+   phone). The month on screen is outlined; a month's name or any of its days
+   takes you there. */
 .term-pane .year-content {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-4) var(--space-3);
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
 }
 .term-pane .year-month-grid { gap: 2px; }
 .term-pane .year-weekday { font-size: var(--text-xs); }
-.term-pane .year-dot, .term-pane .year-marker { width: 3px; height: 3px; bottom: 1px; }
-.term-pane .year-dot { right: 1px; }
-.term-pane .year-marker { left: 1px; }
 .year-month { padding: var(--space-1); border: 1px solid transparent; border-radius: var(--radius-tile-sm); }
 .year-month.shown { border-color: var(--color-text-muted); }
 .term-pane .year-month { margin: 0; }
@@ -134,23 +137,6 @@ body.view-calendar #calendarView { display: flex; }
     cursor: pointer;
 }
 .year-month-title:hover { color: var(--color-text-primary); }
-
-/* Not enough width for a split: the pane slides over the month instead. */
-@media (max-width: 1180px) {
-    .term.pane-open { width: min(100%, 760px); }
-    .term.pane-open .term-body { grid-template-columns: minmax(0, 1fr); }
-    .term.pane-open .term-pane {
-        position: fixed;
-        top: 0;
-        right: 0;
-        bottom: var(--tmux-h);
-        width: min(var(--pane-w), 100vw);
-        min-height: 0;
-        background: var(--color-bg-base);
-        border-left: 1px solid var(--color-border);
-        z-index: 1002;
-    }
-}
 
 /* ---- the bottom bar (tmux) ---- */
 .tmux {
@@ -237,7 +223,13 @@ body.view-search #searchView {
     .tmux-windows { flex: 1; }
     .tmux-win { flex: 1; padding: 0 2px; }
     .tmux-win.active::after { content: ""; }
+    /* The drawer fills the screen above the bar. */
+    .term-pane { right: -100vw; width: 100vw; background-color: var(--color-bg-base); border-left: 0; }
     .pane-bar { height: 44px; }
     .pane-body { inset: 45px 0 0 0; }
+    .term-pane .year-content { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-3); }
+    .term-pane .year-dot, .term-pane .year-marker { width: 3px; height: 3px; bottom: 1px; }
+    .term-pane .year-dot { right: 1px; }
+    .term-pane .year-marker { left: 1px; }
 }
 @media (max-width: 480px), (hover: none) { .keys-btn { display: none; } }   /* no keyboard there */

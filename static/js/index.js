@@ -242,9 +242,9 @@ function setupGlobalEventListeners() {
             moodPickerSelectedDay = null;
         }
         // The day panel closes on a tap outside it, unless that tap opens a
-        // day (month or year cells, diary entries) or is on our own overlays.
+        // day (a month cell), lands in the context drawer, or is on our own overlays.
         const keepsPanel = t.closest(
-            '#sidebar, #colorPicker, .day, .eye-icon, .year-day, .diary-day-head, .diary-event, #confirmModal, #toasts, #actionSheet, #viewer, #keysModal, #keysBtn'
+            '#sidebar, #contextPane, #colorPicker, .day, .eye-icon, #confirmModal, #toasts, #actionSheet, #viewer, #keysModal, #keysBtn'
         );
         if (!keepsPanel && sidebar.classList.contains('active')) {
             sidebar.classList.remove('active');

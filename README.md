@@ -7,8 +7,9 @@
 A retrospective life log: how each day felt, what happened, the receipts and
 tickets that go with it, and the trends over time.
 
-- **Calendar** — the month is the centrepiece, with a context pane beside it
-  for the Year or the Diary (closed until you open it with `y` or `d`). A
+- **Calendar** — the month is the centrepiece, with a context drawer on the
+  right for the Year or the Diary (closed until you open it with `y` or `d`),
+  mirroring the day panel on the left. A
   tmux-style bar along the bottom switches to Stats and Search. Tap any day to open it: set its **mood** (Great →
   Rough), toggle the **marker** (a small, unlabelled red dot, a private
   tracker shown quietly on the calendar and the mood trend), write **entries** with optional times, people, places and notes, add
@@ -22,10 +23,11 @@ tickets that go with it, and the trends over time.
 - **Never lose writing** — half-written entries are kept as drafts per day and
   come back when the day reopens; deletes (entries, moments, attachments) can
   be undone, and are purged after 30 days.
-- **Context pane** — **Year**: twelve small months as a navigator (the month
-  on screen is outlined; tap a month or a day to go there). **Diary**: the
-  month on screen to read back, day by day, with moods, entries, moments and
-  attachments. It sits beside the month, or over it on narrow screens.
+- **Context drawer** — **Year**: twelve small months as a navigator (the
+  month on screen is outlined; tap a month or a day to go there). **Diary**:
+  the month on screen to read back, day by day, with moods, entries, moments
+  and attachments. It slides over the page from the right, so the month never
+  moves; on phones it fills the screen.
 - **Stats** — logged days, streak, mood calendar (tap a day to open it), mood
   over time (actual / 7-day / 28-day), mood mix by month or weekday, days with
   entries, and **Mood with…**: average mood with each person and at each place

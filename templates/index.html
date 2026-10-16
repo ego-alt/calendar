@@ -43,8 +43,9 @@
             <button type="button" class="btn btn-primary" id="firstRunBtn">Log today</button>
         </div>
         {% endif %}
-        <!-- The centerpiece is the month. Beside it, one context pane (Year or
-             Diary), closed until asked for (y / d). -->
+        <!-- The centerpiece is the month. A context drawer (Year or Diary)
+             slides over the page from the right, closed until asked for
+             (y / d), mirroring the day panel on the left. -->
         <section class="term" id="termWindow">
             <header class="term-bar">
                 <h1 id="calTitle">{{ date_label }}</h1>
