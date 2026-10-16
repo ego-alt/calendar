@@ -28,6 +28,9 @@
     --radius-lg: 0;
     --radius-tile: 8px;
     --radius-tile-sm: 4px;
+
+    /* Both side drawers (day panel left, Year / Diary right), padding included. */
+    --drawer-w: 340px;
 }
 
 /* .btn / .input come from structural.css. Calendar keeps monospace inputs over
@@ -353,13 +356,15 @@ h2 {
 .day:hover .eye-icon {
     opacity: 1;
 }
-/* The day panel: a drawer from the left, above the window, ending at the
-   bottom bar. A 1px rule instead of a shadow (terminal edges). */
+/* The day panel: a drawer from the left, over the page, ending at the bottom
+   bar. A 1px rule instead of a shadow (terminal edges). The Year / Diary
+   drawer mirrors it from the right (shell.css .term-pane). */
 .sidebar {
     position: fixed;
     top: 0;
-    left: -300px;
-    width: min(300px, 80vw);
+    left: calc(-1 * var(--drawer-w));
+    box-sizing: border-box;
+    width: min(var(--drawer-w), 80vw);
     height: calc(100dvh - var(--tmux-h));
     background-color: var(--color-bg-elevated);
     border-right: 1px solid var(--color-border);
@@ -576,6 +581,7 @@ h2 {
         left: 0;
         bottom: -100vh;
         top: auto;
+        box-sizing: content-box;   /* the sheet's size as it has always been */
         width: 90vw;
         height: 78dvh;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;

@@ -48,8 +48,9 @@ body.view-calendar #calendarView { display: flex; }
 .term-pane {
     position: fixed;
     top: 0;
-    right: -300px;
-    width: min(300px, 80vw);
+    right: calc(-1 * var(--drawer-w));
+    box-sizing: border-box;
+    width: min(var(--drawer-w), 80vw);
     height: calc(100dvh - var(--tmux-h));
     background-color: var(--color-bg-elevated);
     border-left: 1px solid var(--color-border);
