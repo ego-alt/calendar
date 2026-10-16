@@ -4,6 +4,8 @@ A personal life log: how each day felt, what happened, and the receipts and tick
 
 ![Calendar](images/calendar-2026-10.png)
 
+![On a phone: month, day, year, diary, stats and search](images/calendar-phone-2026-10.png)
+
 ## Features
 
 - **The month** is the centrepiece. Each day is a tile tinted by its mood; its corner folds further the more you wrote, a notch marks a photo or ticket, and a caret marks today.
