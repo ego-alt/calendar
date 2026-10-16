@@ -35,7 +35,8 @@
 
 /* .btn / .input come from structural.css. Calendar keeps monospace inputs over
    a base surface (terminal flavor) — its one deliberate primitive override. */
-.input { background: var(--color-bg-base); font-family: var(--font-mono); }
+.input { background: var(--color-bg-base); font-family: var(--font-mono); font-size: var(--text-sm); }
+.btn { font-size: var(--text-sm); }
 /* Chrome in monospace: buttons, labels and small UI text. Headings and what
    you wrote stay in Inter. */
 .btn, .weekday, .year-weekday, .mood-chip, .st-tab, .filter-field, .search-hint,
@@ -392,6 +393,8 @@ h2 {
 .drawer-title .day-title,
 .drawer-tools .pane-year,
 .drawer-tools .pane-month {
+    font-family: var(--font-sans);   /* a title: Inter, like the month heading */
+    font-size: var(--text-base);
     font-weight: 600;
     color: var(--color-text-primary);
     white-space: nowrap;
@@ -402,7 +405,7 @@ h2 {
     border: 0;
     padding: var(--space-1) var(--space-2);
     font: inherit;
-    font-size: var(--text-base);
+    font-size: var(--text-sm);
     line-height: 1;
     color: var(--color-text-muted);
     cursor: pointer;
@@ -427,7 +430,7 @@ h2 {
 }
 .event-name, .diary-event-name {
     color: var(--color-text-primary);
-    font-weight: bold;
+    font-weight: 600;
     margin-bottom: var(--space-2);
 }
 .event-details, .subevent-details, .diary-event-detail {
@@ -553,7 +556,7 @@ h2 {
 }
 .subevent-name {
     color: var(--color-text-primary);
-    font-weight: bold;
+    font-weight: 600;
     margin-bottom: var(--space-1);
 }
 @keyframes fadeIn {
@@ -569,7 +572,7 @@ h2 {
     margin-bottom: var(--space-5);
 }
 .diary-date, .year-month-title {
-    font-weight: bold;
+    font-weight: 600;
     color: var(--color-text-primary);
     padding-bottom: var(--space-1);
     border-bottom: 1px solid var(--color-border);
@@ -583,7 +586,7 @@ h2 {
 .diary-subevent-title {
     color: var(--color-text-secondary);
     font-size: var(--text-sm);
-    font-weight: bold;
+    font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 2px;
     margin-bottom: var(--space-1);
@@ -797,7 +800,7 @@ h2 {
 
 @media (max-width: 480px) {
     .toasts { bottom: calc(var(--tmux-h) + var(--space-3)); }
-    .entry-form input, .entry-form textarea { font-size: var(--text-base); }   /* no iOS zoom */
+    .input, .entry-form input, .entry-form textarea { font-size: var(--text-base); }   /* no iOS zoom */
 }
 
 /* ---- mood + marker in the day panel ---- */
@@ -821,6 +824,7 @@ h2 {
     background: var(--color-bg-inset);
     color: var(--color-text-muted);
     font: inherit;
+    font-family: var(--font-mono);   /* a control label */
     font-size: var(--text-xs);
     cursor: pointer;
     transition: background 0.15s, color 0.15s, border-color 0.15s;
@@ -1044,6 +1048,7 @@ h2 {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    font-family: var(--font-mono);   /* a label */
     font-size: var(--text-sm);
     color: var(--color-text-secondary);
 }
@@ -1216,7 +1221,7 @@ button.diary-file { border: 0; cursor: zoom-in; font: inherit; }
 .keys-list dt { white-space: nowrap; color: var(--color-text-muted); font-size: var(--text-sm); }
 .keys-list dd { margin: 0; font-size: var(--text-sm); }
 kbd {
-    font: 0.78rem var(--font-mono);
+    font: var(--text-xs) var(--font-mono);
     padding: 1px 6px;
     border-radius: 4px;
     border: 1px solid var(--color-border);
@@ -1300,8 +1305,7 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 
 
 /* ---- facts in monospace, words in Inter (the logbook voice) ---- */
-.day::after, .year-day::after,
-.day-title, .diary-date, .search-result-date,
+.day::after, .year-day::after, .search-result-date,
 .st-tile .n, .st-range, .shelf-count,
 .attachment-caption, .search-footer, .upload-progress {
     font-family: var(--font-mono);
@@ -1309,7 +1313,6 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 }
 /* Page headings (the month, Diary, Year) stay in the heading face, like
    "Your year in moods" and "Search" on the other tabs. */
-.day-title { font-weight: 600; letter-spacing: -0.02em; }
 
 /* ---- the mosaic's depth ---- */
 /* a folded corner (bottom-right) that grows with how much was written */
@@ -1358,7 +1361,7 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
    lines between days, and buttons written as commands with their keys. */
 :root {
     --color-bg-pane: #282828;    /* gruvbox bg0 */
-    --color-syn-date: #d79921;   /* gruvbox yellow */
+    --color-syn-date: #689d6a;   /* the theme's green (gruvbox aqua, faded) */
     --color-syn-who: #8ec07c;    /* gruvbox aqua */
     --color-syn-where: #83a598;  /* gruvbox blue */
 }
@@ -1370,15 +1373,14 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 .detail-where { color: var(--color-syn-where); }
 .detail-notes { color: var(--color-text-muted); }
 
-/* dates read as dates */
+/* dates read as dates, in the theme's green */
 .drawer-head .day-title, .drawer-tools .pane-year, .drawer-tools .pane-month,
 .diary-date, .entry-span, .search-result-date {
     color: var(--color-syn-date);
 }
 
-/* ── Thu 1 Oct ──────────── good ── */
+/* Thu 1 Oct ──────────── good ── */
 .diary-day-head { border-bottom: 0; gap: var(--space-2); }
-.diary-day-head::before,
 .diary-day-head::after {
     content: "──";
     font-family: var(--font-mono);
@@ -1400,6 +1402,5 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
     color: var(--color-accent-hover);
 }
 .entry-form .cancel-btn { color: var(--color-text-muted); }
-.add-event-btn, .entry-form .cancel-btn, .entry-form .save-btn { font-size: var(--text-sm); }   /* the header's size */
 .key-hint { opacity: 0.6; }
 @media (hover: none) { .key-hint { display: none; } }   /* no keyboard there */

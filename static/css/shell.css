@@ -52,7 +52,7 @@ body.view-calendar #calendarView { display: flex; }
     box-sizing: border-box;
     width: min(var(--drawer-w), 80vw);
     height: calc(100dvh - var(--tmux-h));
-    background-color: var(--color-bg-elevated);
+    background-color: var(--color-bg-pane);   /* same as the day panel (index.css) */
     border-left: 1px solid var(--color-border);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1004;
