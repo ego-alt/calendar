@@ -32,6 +32,13 @@ def log_has_attachments(log: DailyLog) -> bool:
     )
 
 
+def log_is_empty(log: DailyLog) -> bool:
+    """A day record with nothing left on it (no mood, marker, note or files)
+    can go."""
+    return (log.mood_key is None and not log.has_marker and not (log.note or "").strip()
+            and not log_has_attachments(log))
+
+
 def purge_deleted(older_than: timedelta = PURGE_AFTER) -> int:
     """Remove rows soft-deleted before the cutoff. Returns how many went."""
     cutoff = now() - older_than
@@ -74,7 +81,7 @@ def purge_deleted(older_than: timedelta = PURGE_AFTER) -> int:
     db.session.flush()
     for log_id in touched_logs:   # a day left with nothing on it goes too
         log = db.session.get(DailyLog, log_id)
-        if log and log.mood_key is None and not log.has_marker and not log_has_attachments(log):
+        if log and log_is_empty(log):
             db.session.delete(log)
 
     db.session.commit()

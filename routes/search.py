@@ -123,8 +123,12 @@ def search_events():
     if not explicit_mood and routed.mood:
         labels.append(f"{routed.mood} days")
 
-    # Each result carries its day's mood, so the list reads like the diary.
-    days = {event.start_time.date() for event, _ in matches}
+    # Each result carries its day's mood, so the list reads like the diary. A
+    # matching day note comes back as kind "note".
+    def day_of(item):
+        return item.date if isinstance(item, DailyLog) else item.start_time.date()
+
+    days = {day_of(item) for item, _ in matches}
     moods = {
         log.date: log.mood_key
         for log in DailyLog.query.filter(
@@ -132,12 +136,13 @@ def search_events():
         )
     } if days else {}
     results = []
-    for event, _ in matches:
-        mood = MOOD_BY_KEY.get(moods.get(event.start_time.date()))
-        results.append({
-            **retrieve_event_data(event),
-            "mood": {"name": mood.name, "color": mood.color} if mood else None,
-        })
+    for item, _ in matches:
+        mood = MOOD_BY_KEY.get(moods.get(day_of(item)))
+        mood = {"name": mood.name, "color": mood.color} if mood else None
+        if isinstance(item, DailyLog):
+            results.append({"kind": "note", "date": item.date.isoformat(), "note": item.note, "mood": mood})
+        else:
+            results.append({"kind": "entry", **retrieve_event_data(item), "mood": mood})
     return jsonify({
         "status": "success", "results": results, "more": more, "parsed": {"labels": labels},
     })

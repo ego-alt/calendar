@@ -27,6 +27,16 @@ function isAllDayEvent(event) {
     );
 }
 
+/** A trip's note for one of its days: a moment of a multi-day entry named
+ *  just "Day #3" (or "Half-day"), within one day. The entry already shows
+ *  "day 3 of 5", so this reads as plain text under it, not a titled moment. */
+function isTripDayNote(entry, moment) {
+    const day = (s) => (s || '').slice(0, 10);
+    return Boolean(entry.end_time) && day(entry.start_time) !== day(entry.end_time)
+        && day(moment.start_time) === day(moment.end_time || moment.start_time)
+        && /^(day\s*#?\s*\d+|half[- ]?day)$/i.test((moment.name || '').trim());
+}
+
 /** Parse "YYYY-MM-DD HH:MM" as a local-time Date — explicit to dodge browser parsing differences. */
 function parseLocalDateTime(str) {
     const [datePart, timePart] = str.split(' ');
@@ -69,6 +79,7 @@ function renderStatusLine(day = null) {
         const mood = moodNameForColor((data.mood_colors || {})[day]);
         const bits = [formatDate(date), mood || 'no mood',
             d.entries ? `${d.entries} ${d.entries === 1 ? 'entry' : 'entries'}` : 'no entries'];
+        if (d.note) bits.push('a note');
         if (d.attachments) bits.push(plural(d.attachments, 'attachment'));
         el.textContent = bits.join('  ·  ');
         return;
@@ -608,9 +619,11 @@ async function loadMonthEvents() {
     const moodColors = monthData.mood_colors || {};
     const markers = new Set(monthData.days_with_marker || []);
     const files = attachments.attachments || {};
+    const notes = events.notes || {};
     diaryFiles = files;
     const days = [...new Set([
         ...Object.keys(entriesByDay), ...Object.keys(moodColors), ...Object.keys(files), ...markers,
+        ...Object.keys(notes),
     ].map(Number))].sort((a, b) => a - b);
 
     if (!days.length) {
@@ -629,7 +642,11 @@ async function loadMonthEvents() {
         const iso = isoFromDate(date);
         const color = moodColors[day];
         const entries = (entriesByDay[day] || []).map((event) => {
-            const moments = (event.subevents || []).filter((s) => s.start_time.startsWith(iso)).map((s) => `
+            const moments = (event.subevents || []).filter((s) => s.start_time.startsWith(iso)).map((s) => isTripDayNote(event, s) ? `
+                <div class="diary-subevent trip-day-note">
+                    ${detail('where', s.where)}
+                    ${detail('notes', s.notes, 'diary-event-notes')}
+                </div>` : `
                 <div class="diary-subevent">
                     <div class="diary-subevent-title">${escapeHtml(s.name)}${s.where ? `<span class="diary-subevent-content"> · ${escapeHtml(s.where)}</span>` : ''}</div>
                     ${s.notes ? `<div class="diary-subevent-content">${escapeHtml(s.notes)}</div>` : ''}
@@ -668,6 +685,7 @@ async function loadMonthEvents() {
                     ${color ? `<span class="diary-mood" style="--mood: ${color}"><span class="mood-dot" aria-hidden="true"></span>${escapeHtml(moodName(color))}</span>` : ''}
                     ${markers.has(day) ? '<span class="diary-marker" aria-hidden="true"></span>' : ''}
                 </button>
+                ${notes[day] ? `<div class="diary-day-note">${detail('notes', notes[day], 'diary-event-notes')}</div>` : ''}
                 ${entries ? `<div class="diary-events">${entries}</div>` : ''}
                 ${fileTiles ? `<div class="diary-files">${fileTiles}</div>` : ''}
             </section>`;

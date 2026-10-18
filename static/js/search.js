@@ -114,13 +114,20 @@
             return;
         }
         resultsEl.innerHTML = results.map((r) => {
-            const [datePart] = (r.start_time || '').split(' ');
+            const [datePart] = (r.kind === 'note' ? r.date : r.start_time || '').split(' ');
             const [y, m, d] = datePart.split('-').map(Number);
             const display = formatDate(new Date(y, m - 1, d));
             const detail = (kind, text, extra = '') =>
                 text ? detailLine(kind, highlight(text), `diary-event-detail ${extra}`) : '';
             const mood = r.mood
                 ? `<span class="diary-mood" style="--mood: ${esc(r.mood.color)}"><span class="mood-dot" aria-hidden="true"></span>${esc(r.mood.name)}</span>` : '';
+            if (r.kind === 'note') {
+                return `
+                <div class="diary-event search-result" data-year="${y}" data-month="${m}" data-day="${d}">
+                    <div class="search-result-date">${display} ${mood}</div>
+                    ${detailLine('notes', highlight(r.note), 'diary-event-detail diary-event-notes')}
+                </div>`;
+            }
             return `
                 <div class="diary-event search-result" data-year="${y}" data-month="${m}" data-day="${d}">
                     <div class="search-result-date">${display} ${mood}</div>
@@ -129,7 +136,7 @@
                     ${detail('where', r.where)}
                     ${detail('notes', r.notes, 'diary-event-notes')}
                 </div>`;
-        }).join('') + `<div class="search-footer">${results.length} ${results.length === 1 ? 'entry' : 'entries'}${more
+        }).join('') + `<div class="search-footer">${results.length} ${results.length === 1 ? 'result' : 'results'}${more
             ? ` · <button type="button" class="link-btn" id="searchMore">Show more</button>` : ''}</div>`;
     }
 

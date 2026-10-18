@@ -37,6 +37,8 @@ class DailyLog(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     mood_key = db.Column(db.String, nullable=True)
     has_marker = db.Column(db.Boolean, nullable=False, default=False)
+    # A note about the day itself: no name or times, unlike an entry.
+    note = db.Column(db.Text, nullable=True)
 
     # Make date unique per user
     __table_args__ = (db.UniqueConstraint("user_id", "date", name="unique_user_date"),)
@@ -116,6 +118,23 @@ class EventEmbedding(db.Model):
     embedding = db.Column(db.LargeBinary, nullable=False)  # float32, L2-normalized
     model = db.Column(db.String, nullable=False)  # producing model id
     source_hash = db.Column(db.String, nullable=False)  # skip re-embedding unchanged text
+    updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class DayNoteEmbedding(db.Model):
+    """The search embedding for a day's note (see EventEmbedding); its lexical
+    twin is the `day_note_fts` FTS5 table."""
+
+    __tablename__ = "day_note_embedding"
+
+    daily_log_id = db.Column(
+        db.Integer,
+        db.ForeignKey("daily_logs.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    embedding = db.Column(db.LargeBinary, nullable=False)
+    model = db.Column(db.String, nullable=False)
+    source_hash = db.Column(db.String, nullable=False)
     updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
 
 

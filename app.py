@@ -2,6 +2,7 @@ import os
 import pathlib
 import secrets
 
+import click
 from flask import Flask
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -105,6 +106,31 @@ def create_app(config=None):
         count = reindex_all()
         print(f"Reindexed {count} events.")
 
+    @app.cli.command("convert-daily-logs")
+    @click.option("--apply", "do_apply", is_flag=True, help="Make the changes (default: preview only).")
+    def convert_daily_logs_command(do_apply):
+        """Turn whole-day "Daily log" entries into day notes (see day_notes.py)."""
+        from day_notes import apply, plan
+
+        steps, skipped = plan()
+        for step in steps:
+            e = step["event"]
+            note = step["note"].replace("\n", " ")
+            print(f"{step['day']}  note: {note[:70]}{'…' if len(note) > 70 else ''}")
+            for s in step["moments"]:
+                print(f"            + entry: {s.name} ({s.start_time:%d %b %H:%M}–{(s.end_time or s.start_time):%H:%M})")
+            if step["photos"]:
+                print(f"            {len(step['photos'])} photo(s) go back to the day")
+        for e, why in skipped:
+            print(f"skipped {e.start_time:%Y-%m-%d} “{e.name}”: {why}")
+        moments = sum(len(s["moments"]) for s in steps)
+        print(f"\n{len(steps)} Daily log(s) → day notes, {moments} moment(s) → entries, {len(skipped)} skipped.")
+        if do_apply:
+            apply(steps)
+            print("Done. The old Daily log entries are in the trash for 30 days.")
+        else:
+            print("Preview only. Run again with --apply to make these changes.")
+
     @app.cli.command("purge-deleted")
     def purge_deleted_command():
         """Permanently remove entries and attachments deleted over 30 days ago."""
@@ -117,8 +143,6 @@ def create_app(config=None):
 
     # Load the search model in the background at start-up, so the first search
     # doesn't wait several seconds for it (tests and CLI commands skip this).
-    import click
-
     in_cli = click.get_current_context(silent=True) is not None   # flask db upgrade, flask run…
     if not app.config.get("TESTING") and not in_cli and os.environ.get("SEARCH_WARMUP", "1") == "1":
         import threading

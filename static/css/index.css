@@ -1346,6 +1346,41 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 /* ---- status line: lives in the bottom bar (shell.css); › marks it ---- */
 .status-line::before { content: "› "; color: var(--color-accent); }
 
+/* The day's own note, typed straight in under the mood: written like every
+   other note ("> ", italic). */
+.day-note-wrap {
+    display: flex;
+    align-items: baseline;
+    margin: 0 0 var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px dashed var(--color-border);
+}
+.day-note-wrap:focus-within { border-bottom-color: var(--color-accent); }
+.day-note {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    resize: none;
+    overflow: hidden;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    font-style: italic;
+    line-height: 1.5;
+}
+.day-note::placeholder { color: var(--color-text-muted); opacity: 0.8; }
+.day-note:focus { outline: none; }
+
+/* The day's note in the diary, above the day's entries. */
+.diary-day-note { margin: var(--space-2) 0; }
+
+/* A trip's note for the day: prose straight under the trip, no title or gutter. */
+.subevent-card.trip-day-note { grid-template-columns: minmax(0, 1fr); }
+.subevent-card.trip-day-note > * { grid-column: 1; }
+.subevent-card.trip-day-note .subevent-details { padding-right: 2.25rem; }   /* room for the … button */
+.diary-subevent.trip-day-note { border-left: 0; padding-left: 0; }
+
 /* A trip's day without a note yet: one quiet command to add it. */
 .day-note-btn {
     justify-self: start;

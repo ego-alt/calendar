@@ -7,7 +7,7 @@
  * Cancel (after asking, if anything changed) or a successful save clears one.
  *
  * Loaded after index.js and shares its globals: viewState, currentOpenDay,
- * appUrl, escapeHtml, parseLocalDateTime, isAllDayEvent, isoFromDate,
+ * appUrl, escapeHtml, parseLocalDateTime, isAllDayEvent, isTripDayNote, isoFromDate,
  * updateCalendarView, dismissSidebar. */
 
 // ---------- feedback: toasts and an in-app confirm ----------
@@ -375,7 +375,7 @@ async function showSidebar(day) {
         if (currentOpenDay !== day) return;   // another day was opened meanwhile
         dayState = {
             day, iso, events: events.events, attachments: attachments.attachments,
-            mood: events.mood, hasMarker: events.has_marker,
+            mood: events.mood, hasMarker: events.has_marker, note: events.note || '',
         };
         renderDay();
         const draft = latestDraftFor(iso);
@@ -403,7 +403,19 @@ function renderDetail(kind, text, extraClass = '') {
 
 function renderEntryCard(event) {
     const linked = dayState.attachments.filter((a) => a.event_id === event.id);
-    const subs = (event.subevents || []).map((s) => `
+    const subs = (event.subevents || []).map((s) => isTripDayNote(event, s) ? `
+        <div class="subevent-card trip-day-note" data-event-id="${event.id}" data-subevent-id="${s.id}">
+            <div class="subevent-actions">
+                <button type="button" class="icon-btn" data-act="edit-sub" title="Edit this day's note" aria-label="Edit this day's note"><i class="fas fa-edit"></i></button>
+                <button type="button" class="icon-btn" data-act="delete-sub" title="Delete this day's note" aria-label="Delete this day's note"><i class="fas fa-trash"></i></button>
+            </div>
+            <button type="button" class="more-btn" data-act="more-sub" aria-label="More actions for this day's note"><i class="fas fa-ellipsis-h"></i></button>
+            <div class="subevent-details">
+                ${renderDetail('who', s.with_who)}
+                ${renderDetail('where', s.where)}
+                ${renderDetail('notes', s.notes, 'entry-notes')}
+            </div>
+        </div>` : `
         <div class="subevent-card" data-event-id="${event.id}" data-subevent-id="${s.id}">
             <div class="subevent-actions">
                 <button type="button" class="icon-btn" data-act="edit-sub" title="Edit moment" aria-label="Edit moment"><i class="fas fa-edit"></i></button>
@@ -435,7 +447,7 @@ function renderEntryCard(event) {
                 ${renderDetail('notes', event.notes, 'entry-notes')}
             </div>
             ${subs ? `<div class="subevents-container"><div class="subevents-list">${subs}</div></div>` : ''}
-            ${!subs && tripDay(event) ? `<button type="button" class="day-note-btn" data-act="add-day-note">+ day #${tripDay(event).n} note</button>` : ''}
+            ${!subs && tripDay(event) ? `<button type="button" class="day-note-btn" data-act="add-day-note">+ note for day ${tripDay(event).n}</button>` : ''}
             ${linked.length ? `<div class="entry-attachments">${linked.map((a) => attachmentTile(a, { small: true })).join('')}</div>` : ''}
         </div>`;
 }
@@ -473,11 +485,77 @@ function renderDay() {
     content.innerHTML = `
         ${dayHeader(date, { tools: true })}
         <div id="dayMoodSlot"></div>
+        <div class="day-note-wrap detail-notes"><span class="mark" aria-hidden="true">&gt;</span><textarea class="day-note" id="dayNote" rows="1" placeholder="Write about the day…" aria-label="A note about the day"></textarea></div>
         <button class="add-event-btn btn btn-primary" type="button" data-act="new"><span class="key-hint">[n] </span>new entry</button>
         <div id="entryFormSlot"></div>
         <div class="event-list">${cards || '<div class="no-events">No entries yet.</div>'}</div>
         ${renderAttachments()}`;
     renderMoodRow();
+    setUpDayNote();
+}
+
+// ---------- the day's note ----------
+// Free text on the day itself (not an entry): typed straight in, saved as you
+// go. If a save can't get through, the text is kept on this device and sent
+// with the next change or the next time the day is opened.
+
+const NOTE_DRAFTS_KEY = 'calendar-note-drafts';
+let noteTimer = null;
+function noteDrafts() {
+    try { return JSON.parse(localStorage.getItem(NOTE_DRAFTS_KEY)) || {}; } catch (_) { return {}; }
+}
+function setNoteDraft(iso, text) {
+    const drafts = noteDrafts();
+    if (text === null) delete drafts[iso]; else drafts[iso] = text;
+    try { localStorage.setItem(NOTE_DRAFTS_KEY, JSON.stringify(drafts)); } catch (_) { /* private mode */ }
+}
+
+function setUpDayNote() {
+    const el = document.getElementById('dayNote');
+    if (!el || !dayState) return;
+    const state = dayState;
+    let saved = state.note;
+    const draft = noteDrafts()[state.iso];
+    el.value = draft ?? saved;
+    const fit = () => { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; };
+    fit();
+
+    async function save() {
+        clearTimeout(noteTimer);
+        const text = el.value.trim();
+        if (text === saved.trim()) { setNoteDraft(state.iso, null); return; }
+        setNoteDraft(state.iso, el.value);
+        const [year, month, day] = state.iso.split('-').map(Number);
+        let res;
+        try {
+            res = await api('/mood/note', { method: 'POST', json: { year, month, day, note: text } });
+        } catch (error) {
+            toast(`Your note is kept on this device. ${error.message}`, { error: true });
+            return;
+        }
+        setNoteDraft(state.iso, null);
+        const previous = res.previous || '';
+        saved = text;
+        state.note = text;
+        window.statsStale = true;
+        updateCalendarView();   // the tile's fold follows how much was written
+        if (!text && previous) {
+            toast('Note cleared', { action: 'Undo', onAction: async () => {
+                await api('/mood/note', { method: 'POST', json: { year, month, day, note: previous } });
+                if (dayState === state) { el.value = previous; saved = previous; state.note = previous; fit(); }
+                updateCalendarView();
+            } });
+        }
+    }
+    el.addEventListener('input', () => {
+        fit();
+        setNoteDraft(state.iso, el.value);
+        clearTimeout(noteTimer);
+        noteTimer = setTimeout(save, 800);
+    });
+    el.addEventListener('blur', save);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); el.blur(); } });
+    if (draft != null && draft.trim() !== saved.trim()) save();   // a note left unsaved last time
 }
 
 // ---------- the entry form ----------

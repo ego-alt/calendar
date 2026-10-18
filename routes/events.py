@@ -193,6 +193,7 @@ def events():
             "events": events_data,
             "mood": log.mood_key if log else None,
             "has_marker": bool(log and log.has_marker),
+            "note": log.note if log else None,
         })
 
     try:
@@ -381,7 +382,14 @@ def month_events():
         event_data = retrieve_event_data(event)
         event_data["subevents"] = [retrieve_event_data(s) for s in subevents]
         events_data.append(event_data)
-    return jsonify({"status": "success", "events": events_data})
+    notes = {
+        log.date.day: log.note
+        for log in DailyLog.query.filter(
+            DailyLog.user_id == current_user.id, DailyLog.note.isnot(None),
+            DailyLog.date >= start_date.date(), DailyLog.date < end_date.date(),
+        )
+    }
+    return jsonify({"status": "success", "events": events_data, "notes": notes})
 
 
 # Longest span /events/range answers in one go; callers page by date beyond it.

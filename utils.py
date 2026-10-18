@@ -116,7 +116,8 @@ def get_month_data(year, month, user_id: int | None):
 
 def get_month_details(year, month, user_id: int | None) -> dict:
     """Per day of the month: how many entries, how much was written (title +
-    notes of entries and moments, in characters) and how many attachments.
+    notes of entries and moments, and the day's note, in characters) and how
+    many attachments.
     Drives the folded corners, photo notches and the status line."""
     if not user_id:
         return {}
@@ -145,6 +146,12 @@ def get_month_details(year, month, user_id: int | None) -> dict:
         DailyLog.user_id == user_id, DailyLog.date >= start.date(), DailyLog.date < end.date()
     ):
         info[a.daily_log.date.day]["attachments"] += 1
+    for log in DailyLog.query.filter(   # the day's own note counts as writing too
+        DailyLog.user_id == user_id, DailyLog.note.isnot(None),
+        DailyLog.date >= start.date(), DailyLog.date < end.date(),
+    ):
+        info[log.date.day]["chars"] += len(log.note)
+        info[log.date.day]["note"] = True
     return {day: dict(v) for day, v in info.items()}
 
 

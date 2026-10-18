@@ -1,4 +1,5 @@
-"""Local hybrid search index over diary entries (events + folded subevents).
+"""Local hybrid search index over diary entries (events + folded subevents)
+and day notes (the note on a day itself, indexed alongside).
 
 Retrieval-only, fully on-device — no external services, no API keys:
   * dense    — fastembed/ONNX sentence embeddings, brute-force cosine over the
@@ -16,13 +17,14 @@ import hashlib
 import os
 import re
 import threading
+from datetime import datetime
 
 import numpy as np
 from flask import current_app
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import selectinload
 
-from models import DailyLog, Event, EventEmbedding, db
+from models import DailyLog, DayNoteEmbedding, Event, EventEmbedding, db
 
 EMBED_MODEL = "BAAI/bge-small-en-v1.5"  # 384-dim, ONNX, ~tens of MB (no torch)
 _RRF_K = 60  # Reciprocal Rank Fusion constant
@@ -165,16 +167,76 @@ def remove_event_safe(event_id):
         current_app.logger.exception("Failed to de-index event %s", event_id)
 
 
+# --- day notes ---------------------------------------------------------------
+
+
+def ensure_note_fts_table():
+    db.session.execute(
+        db.text(
+            "CREATE VIRTUAL TABLE IF NOT EXISTS day_note_fts "
+            "USING fts5(daily_log_id UNINDEXED, text, tokenize = 'porter unicode61')"
+        )
+    )
+
+
+def remove_day_note(log_id):
+    ensure_note_fts_table()
+    row = db.session.get(DayNoteEmbedding, log_id)
+    if row is not None:
+        db.session.delete(row)
+    db.session.execute(db.text("DELETE FROM day_note_fts WHERE daily_log_id = :id"), {"id": log_id})
+    db.session.commit()
+
+
+def index_day_note(log_id):
+    """(Re)index a day's note, or drop it from the index when it's gone."""
+    ensure_note_fts_table()
+    log = db.session.get(DailyLog, log_id)
+    document = _clean(log.note) if log else ""
+    if not document:
+        remove_day_note(log_id)
+        return
+    digest = _source_hash(document)
+    row = db.session.get(DayNoteEmbedding, log_id)
+    if row is not None and row.source_hash == digest and row.model == EMBED_MODEL:
+        return
+    vector = embed_texts([document])[0]
+    if row is None:
+        row = DayNoteEmbedding(daily_log_id=log_id)
+        db.session.add(row)
+    row.embedding = vector.tobytes()
+    row.model = EMBED_MODEL
+    row.source_hash = digest
+    db.session.execute(db.text("DELETE FROM day_note_fts WHERE daily_log_id = :id"), {"id": log_id})
+    db.session.execute(db.text("INSERT INTO day_note_fts (daily_log_id, text) VALUES (:id, :text)"),
+                       {"id": log_id, "text": document})
+    db.session.commit()
+
+
+def index_day_note_safe(log_id):
+    try:
+        index_day_note(log_id)
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Failed to index the note of day %s", log_id)
+
+
 def reindex_all():
-    """Rebuild both indexes for every event. Returns the count indexed."""
+    """Rebuild every index: entries and day notes. Returns the count indexed."""
     ensure_fts_table()
+    ensure_note_fts_table()
     db.session.execute(db.text("DELETE FROM event_fts"))
+    db.session.execute(db.text("DELETE FROM day_note_fts"))
     db.session.query(EventEmbedding).delete()
+    db.session.query(DayNoteEmbedding).delete()
     db.session.commit()
     events = Event.query.options(selectinload(Event.subevents)).all()
     for event in events:
         index_event(event)
-    return len(events)
+    notes = [log_id for (log_id,) in db.session.query(DailyLog.id).filter(DailyLog.note.isnot(None))]
+    for log_id in notes:
+        index_day_note(log_id)
+    return len(events) + len(notes)
 
 
 # --- querying -------------------------------------------------------------
@@ -205,22 +267,42 @@ def _candidate_events(user_id, *, date_from, date_to, mood, who, who_op, where):
     return query.order_by(Event.start_time.desc()).all()
 
 
-def _dense_rank(query_text, user_id, candidate_ids):
-    """Event ids ranked by cosine similarity to the query (best first)."""
-    rows = (
+def _candidate_notes(user_id, *, date_from, date_to, mood, who, where):
+    """Day notes that pass the filters. A note has no people or place of its
+    own, so a who/where filter leaves none."""
+    if who or where:
+        return []
+    query = DailyLog.query.filter(DailyLog.user_id == user_id, DailyLog.note.isnot(None))
+    if date_from is not None:
+        query = query.filter(DailyLog.date >= date_from.date())
+    if date_to is not None:
+        query = query.filter(DailyLog.date < date_to.date())
+    if mood:
+        query = query.filter(DailyLog.mood_key == mood)
+    return query.order_by(DailyLog.date.desc()).all()
+
+
+def _dense_rank(query_text, user_id, candidate_ids, note_ids=frozenset()):
+    """Keys ("e", event id) / ("n", day id) ranked by cosine similarity to the
+    query (best first). Entries and notes share one embedding model, so their
+    scores compare directly."""
+    rows = [(("e", eid), emb) for eid, emb in (
         db.session.query(EventEmbedding.event_id, EventEmbedding.embedding)
         .join(Event, Event.id == EventEmbedding.event_id)
         .filter(Event.user_id == user_id)
         .all()
-    )
-    rows = [r for r in rows if r[0] in candidate_ids]
+    ) if eid in candidate_ids]
+    if note_ids:
+        rows += [(("n", lid), emb) for lid, emb in (
+            db.session.query(DayNoteEmbedding.daily_log_id, DayNoteEmbedding.embedding).all()
+        ) if lid in note_ids]
     if not rows:
         return []
-    ids = [r[0] for r in rows]
+    keys = [r[0] for r in rows]
     matrix = np.stack([np.frombuffer(r[1], dtype=np.float32) for r in rows])
     scores = matrix @ embed_query(query_text)
-    ranked = [(ids[i], float(scores[i])) for i in np.argsort(-scores)]
-    return [eid for eid, score in ranked if score >= DENSE_MIN_SCORE]
+    ranked = [(keys[i], float(scores[i])) for i in np.argsort(-scores)]
+    return [key for key, score in ranked if score >= DENSE_MIN_SCORE]
 
 
 def _fts_match(query_text):
@@ -231,19 +313,23 @@ def _fts_match(query_text):
     return " OR ".join(f'"{t}"' for t in tokens)
 
 
-def _sparse_rank(query_text, candidate_ids):
-    """Event ids ranked by BM25 lexical relevance (best first)."""
+def _sparse_rank(query_text, candidate_ids, note_ids=frozenset()):
+    """Keys ("e", event id) / ("n", day id) ranked by BM25 lexical relevance
+    (best first)."""
     match = _fts_match(query_text)
     if not match:
         return []
-    rows = db.session.execute(
-        db.text(
-            "SELECT event_id, bm25(event_fts) AS rank "
-            "FROM event_fts WHERE event_fts MATCH :q ORDER BY rank"
-        ),
+    rows = [(("e", r[0]), r[1]) for r in db.session.execute(
+        db.text("SELECT event_id, bm25(event_fts) FROM event_fts WHERE event_fts MATCH :q"),
         {"q": match},
-    ).all()
-    return [r[0] for r in rows if r[0] in candidate_ids]
+    ).all() if r[0] in candidate_ids]
+    if note_ids:
+        ensure_note_fts_table()
+        rows += [(("n", r[0]), r[1]) for r in db.session.execute(
+            db.text("SELECT daily_log_id, bm25(day_note_fts) FROM day_note_fts WHERE day_note_fts MATCH :q"),
+            {"q": match},
+        ).all() if r[0] in note_ids]
+    return [key for key, _ in sorted(rows, key=lambda r: r[1])]
 
 
 def _rrf(*ranked_lists):
@@ -257,7 +343,8 @@ def _rrf(*ranked_lists):
 
 def search(user_id, q=None, *, date_from=None, date_to=None, mood=None,
            who=None, who_op="and", where=None, limit=20):
-    """Hybrid search. Returns [(Event, score|None)] best first.
+    """Hybrid search. Returns [(Event | DailyLog, score|None)] best first: a
+    DailyLog result is a day whose note matched.
 
     `who` is a name or list of names; `who_op` ("and"/"or") sets how multiple
     combine. With no query text, returns the metadata-filtered candidates by
@@ -272,15 +359,24 @@ def search(user_id, q=None, *, date_from=None, date_to=None, mood=None,
         user_id, date_from=date_from, date_to=date_to, mood=mood,
         who=who, who_op=who_op, where=where,
     )
-    if not candidates:
+    notes = _candidate_notes(user_id, date_from=date_from, date_to=date_to, mood=mood,
+                             who=who, where=where)
+    if not candidates and not notes:
         return []
-    by_id = {e.id: e for e in candidates}
+    by_key = {("e", e.id): e for e in candidates} | {("n", n.id): n for n in notes}
 
     if not q:
-        return [(e, None) for e in candidates[:limit]]
+        # Newest first; a day's note comes before that day's entries.
+        def newest_first(item):
+            if isinstance(item, DailyLog):
+                return (item.date, 1, datetime.max)
+            return (item.start_time.date(), 0, item.start_time)
+        ordered = sorted(by_key.values(), key=newest_first, reverse=True)
+        return [(item, None) for item in ordered[:limit]]
 
-    candidate_ids = set(by_id)
-    dense = _dense_rank(q, user_id, candidate_ids)
-    sparse = _sparse_rank(q, candidate_ids)
+    candidate_ids = {e.id for e in candidates}
+    note_ids = frozenset(n.id for n in notes)
+    dense = _dense_rank(q, user_id, candidate_ids, note_ids)
+    sparse = _sparse_rank(q, candidate_ids, note_ids)
     fused = _rrf(dense, sparse)[:limit]
-    return [(by_id[eid], score) for eid, score in fused if eid in by_id]
+    return [(by_key[key], score) for key, score in fused if key in by_key]

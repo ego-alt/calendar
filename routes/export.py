@@ -1,6 +1,6 @@
 """Download everything: the whole diary as one zip.
 
-  entries.json   every day's mood and marker, every entry with its moments
+  entries.json   every day's mood, marker and note, every entry with its moments
   diary.md       the same as a readable Markdown diary, oldest first
   attachments/   the original files, in a folder per day
 """
@@ -89,6 +89,7 @@ def export_all():
                 "date": d.isoformat(),
                 "mood": mood.name if mood else None,
                 "marked": bool(log and log.has_marker),
+                "note": log.note if log else None,
                 "entries": [
                     {**_entry(e), "moments": [_entry(s) for s in _moments(e)]}
                     for e in day_entries
@@ -101,6 +102,8 @@ def export_all():
             if log and log.has_marker:
                 head += " · marked"
             md += [head, ""]
+            if log and log.note:
+                md += [log.note, ""]
             for e in day_entries:
                 md.append(f"### {e.name}")
                 bits = [b for b in (e.with_who and f"with {e.with_who}",
