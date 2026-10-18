@@ -103,14 +103,15 @@ def test_subevent_crud(authed_client):
     listing = authed_client.get("/events?year=2026&month=5&day=11").get_json()
     sub_id = listing["events"][0]["subevents"][0]["id"]
 
-    out_of_range = authed_client.post(f"/events/{parent_id}/subevents", json={
+    # A moment dated outside its entry stretches the entry rather than failing.
+    later = authed_client.post(f"/events/{parent_id}/subevents", json={
         "name": "After party",
         "start_date": "12-05-2026",
         "start_time": "20:00",
         "end_date": "12-05-2026",
         "end_time": "23:00",
     })
-    assert out_of_range.status_code == 400
+    assert later.status_code == 200 and "now runs" in later.get_json()["stretched"]
 
     deleted = authed_client.delete(f"/events/subevents/{sub_id}")
     assert deleted.status_code == 200

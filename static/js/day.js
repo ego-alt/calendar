@@ -153,6 +153,32 @@ function spanLine(entry) {
     return `<div class="entry-span">${escapeHtml(from)} – ${escapeHtml(to)}</div>`;
 }
 
+/** Which day of a multi-day entry the open day is: {n, of}, or null. */
+function tripDay(entry) {
+    if (!entry.end_time || !dayState) return null;
+    const day = (iso) => Date.UTC(...iso.split('-').map((x, i) => Number(x) - (i === 1 ? 1 : 0)));
+    const first = day(entry.start_time.slice(0, 10));
+    const last = day(entry.end_time.slice(0, 10));
+    if (last <= first) return null;
+    const n = Math.round((day(dayState.iso) - first) / 864e5) + 1;
+    return { n, of: Math.round((last - first) / 864e5) + 1 };
+}
+
+/** A day's note on a trip: "Day #3", the whole day (or the part of it the
+ *  entry covers on its first and last day). */
+function dayNotePreset(entry) {
+    const trip = tripDay(entry);
+    const [sd, st] = entry.start_time.split(' ');
+    const [ed, et] = entry.end_time.split(' ');
+    const iso = dayState.iso;
+    return {
+        name: `Day #${trip.n}`,
+        start_date: iso, start_time: iso === sd && st !== '00:00' ? st : '',
+        end_date: iso, end_time: iso === ed && et !== '23:59' ? et : '',
+        with_who: '', where: '', notes: '',
+    };
+}
+
 // ---------- drafts ----------
 
 const DRAFTS_KEY = 'calendar-drafts';
@@ -409,6 +435,7 @@ function renderEntryCard(event) {
                 ${renderDetail('notes', event.notes, 'entry-notes')}
             </div>
             ${subs ? `<div class="subevents-container"><div class="subevents-list">${subs}</div></div>` : ''}
+            ${!subs && tripDay(event) ? `<button type="button" class="day-note-btn" data-act="add-day-note">+ day #${tripDay(event).n} note</button>` : ''}
             ${linked.length ? `<div class="entry-attachments">${linked.map((a) => attachmentTile(a, { small: true })).join('')}</div>` : ''}
         </div>`;
 }
@@ -487,12 +514,50 @@ function isDirty(values, initial) {
     return Object.keys(values).some((k) => (values[k] || '').trim() !== (initial[k] || '').trim());
 }
 
-function openEntryForm(mode, { eventId = null, subId = null, draftValues = null } = {}) {
+// ---------- names you've used before ----------
+
+// Loaded once per page and after each save: [{name, where, with_who, count}].
+let pastNames = null;
+async function loadPastNames(force = false) {
+    if (pastNames && !force) return pastNames;
+    try { pastNames = (await api('/events/suggestions')).suggestions; } catch (_) { pastNames = pastNames || []; }
+    return pastNames;
+}
+
+/** New entries: the name field offers names you've used before, and picking
+ *  one fills in the place and people that usually go with it (only fields
+ *  you haven't typed in, and only what was on most of those entries). */
+async function offerPastNames(form) {
+    const list = await loadPastNames();
+    if (!list.length || !form.isConnected) return;
+    const datalist = document.createElement('datalist');
+    datalist.id = 'pastNames';
+    datalist.innerHTML = list.map((s) => {
+        const hint = [s.where && `@ ${s.where}`, s.with_who && `+ ${s.with_who}`, `${s.count}×`].filter(Boolean).join('  ');
+        return `<option value="${escapeHtml(s.name)}" label="${escapeHtml(hint)}"></option>`;
+    }).join('');
+    form.appendChild(datalist);
+    form.elements.name.setAttribute('list', 'pastNames');
+    form.elements.name.addEventListener('input', () => {
+        const match = list.find((s) => s.name.toLowerCase() === form.elements.name.value.trim().toLowerCase());
+        if (!match) return;
+        let filled = false;
+        for (const field of ['where', 'with_who']) {
+            if (match[field] && !form.elements[field].value.trim()) {
+                form.elements[field].value = match[field];
+                filled = true;
+            }
+        }
+        if (filled) form.dispatchEvent(new Event('input'));   // keep the draft in step
+    });
+}
+
+function openEntryForm(mode, { eventId = null, subId = null, draftValues = null, preset = null } = {}) {
     const slot = document.getElementById('entryFormSlot');
     if (!slot) return;
     const entry = mode === 'edit' ? findEntry(eventId)
         : mode === 'sub-edit' ? findEntry(eventId, subId) : null;
-    const initial = valuesFromEntry(entry);
+    const initial = preset || valuesFromEntry(entry);
     const parent = mode.startsWith('sub') ? findEntry(eventId) : null;
     const key = formKey(mode, eventId, subId);
     const draft = draftValues || readDrafts()[key]?.values;
@@ -545,6 +610,7 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null 
         }, 250);
     });
     form.addEventListener('submit', (e) => { e.preventDefault(); submitEntryForm(); });
+    if (mode === 'new') offerPastNames(form);
 
     document.getElementById('sidebar').classList.add('form-open');
     document.body.classList.add('entry-form-open');
@@ -626,8 +692,9 @@ async function submitEntryForm() {
     const saveLabel = saveBtn.innerHTML;
     saveBtn.disabled = true;
     saveBtn.textContent = 'saving…';
+    let result;
     try {
-        await api(request[0], { method: request[1], json: payload });
+        result = await api(request[0], { method: request[1], json: payload });
     } catch (error) {
         // Keep the form and its text; say what went wrong.
         saveBtn.disabled = false;
@@ -638,7 +705,9 @@ async function submitEntryForm() {
     }
     clearDraft(key);
     closeEntryForm({ discard: true });
-    toast('Saved');
+    // A moment dated outside its entry stretches the entry; say so.
+    toast(result.stretched || 'Saved');
+    if (mode === 'new') loadPastNames(true);
     await refreshAfterChange();
 }
 
@@ -860,6 +929,7 @@ document.getElementById('sidebarContent').addEventListener('click', (e) => {
         case 'new': openEntryForm('new'); break;
         case 'edit': openEntryForm('edit', { eventId }); break;
         case 'add-sub': openEntryForm('sub-new', { eventId }); break;
+        case 'add-day-note': openEntryForm('sub-new', { eventId, preset: dayNotePreset(findEntry(eventId)) }); break;
         case 'edit-sub': openEntryForm('sub-edit', { eventId, subId }); break;
         case 'delete': deleteEntry(eventId); break;
         case 'delete-sub': deleteEntry(eventId, subId); break;

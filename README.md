@@ -10,6 +10,7 @@ A personal life log: how each day felt, what happened, and the receipts and tick
 
 - **The month** is the centrepiece. Each day is a tile tinted by its mood; its corner folds further the more you wrote, a notch marks a photo or ticket, and a caret marks today.
 - **Day panel** (left, tap a day): the day's mood, a private marker, entries with optional times, people, places and notes, moments inside an entry, and photos or PDFs. Half-written entries are kept as drafts.
+- **Less typing**: names you've used before are suggested with their usual place and people; each day of a trip offers a "Day #3" note; a moment dated outside its entry stretches the entry; photos join the day's entry when there's only one.
 - **Year / Diary drawer** (right, `y` / `d`): the year as a navigator, or the month on screen written out day by day.
 - **Stats**: streaks, mood over time and by weekday, and your mood with each person and place.
 - **Search** by meaning, words or filters ("dinner with Sam last month"), entirely on-device.

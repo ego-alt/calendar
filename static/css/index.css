@@ -1346,6 +1346,22 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 /* ---- status line: lives in the bottom bar (shell.css); › marks it ---- */
 .status-line::before { content: "› "; color: var(--color-accent); }
 
+/* A trip's day without a note yet: one quiet command to add it. */
+.day-note-btn {
+    justify-self: start;
+    text-align: left;
+    margin-top: var(--space-2);
+    padding: 2px 0;
+    background: none;
+    border: 0;
+    font: inherit;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+.day-note-btn:hover, .day-note-btn:focus-visible { color: var(--color-accent); }
+
 /* a multi-day entry's dates, on their own line above its title */
 .entry-span {
     font-family: var(--font-mono);

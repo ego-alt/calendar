@@ -50,16 +50,35 @@ def is_within_parent_date(parent: Event, start_datetime, end_datetime) -> bool:
     )
 
 
+def fit_parent(parent: Event, start, end) -> str | None:
+    """Stretch an entry so a moment dated outside it fits, rather than refuse
+    the moment. An all-day edge stays all-day (00:00 / 23:59 of the new day).
+    Returns a line saying what changed, or None when nothing did."""
+    if is_within_parent_date(parent, start, end):
+        return None
+    old_end = parent.end_time or parent.start_time
+    if start < parent.start_time:
+        all_day = parent.start_time.time() == datetime.min.time()
+        parent.start_time = datetime.combine(start.date(), datetime.min.time()) if all_day else start
+    if end > old_end:
+        all_day = old_end.strftime("%H:%M") == "23:59"
+        parent.end_time = end.replace(hour=23, minute=59, second=0, microsecond=0) if all_day else end
+    span = _fmt_day_span(parent.start_time, parent.end_time or parent.start_time)
+    return f"“{parent.name}” now runs {span}."
+
+
+def _fmt_day_span(start, end):
+    if start.date() == end.date():
+        return start.strftime("%a %-d %b")
+    same_month = (start.year, start.month) == (end.year, end.month)
+    return f"{start.strftime('%a %-d' if same_month else '%a %-d %b')} – {end.strftime('%a %-d %b')}"
+
+
 class EntryError(ValueError):
     """An entry the user sent that can't be saved; the message is shown as is."""
 
 
-def _fmt_span(start, end):
-    fmt = lambda d: d.strftime("%-d %b %H:%M")  # noqa: E731
-    return f"{fmt(start)}–{fmt(end)}" if end else fmt(start)
-
-
-def read_entry(data: dict, parent: Event | None = None):
+def read_entry(data: dict):
     """Validate an entry payload → (name, start, end). Raises EntryError with a
     message fit for the user."""
     data = data or {}
@@ -75,15 +94,14 @@ def read_entry(data: dict, parent: Event | None = None):
         raise EntryError("That date or time doesn't look right.") from None
     if end < start:
         raise EntryError("The end is before the start.")
-    if parent and not is_within_parent_date(parent, start, end):
-        span = _fmt_span(parent.start_time, parent.end_time)
-        raise EntryError(f"This moment falls outside its entry ({span}).")
     return name, start, end
 
 
 def edit_event_data(event: Event | SubEvent, data: dict, parent: Event | None = None):
-    """Edit the event or subevent details (raises EntryError on bad input)."""
-    name, start_datetime, end_datetime = read_entry(data, parent)
+    """Edit the event or subevent details (raises EntryError on bad input).
+    Returns a note when a moment's new time stretched its entry, else None."""
+    name, start_datetime, end_datetime = read_entry(data)
+    stretched = fit_parent(parent, start_datetime, end_datetime) if parent else None
     if isinstance(event, Event) and data.get("move_moments"):
         # Moving the whole entry: its moments travel with it by the same amount,
         # so "move dinner to Saturday" works without unpicking each moment.
@@ -113,12 +131,14 @@ def edit_event_data(event: Event | SubEvent, data: dict, parent: Event | None = 
     event.where = data.get("where")
 
     db.session.commit()
-    return True
+    return stretched
 
 
 def create_event(event_class, data: dict, parent: Event | None = None, **kwargs):
-    """Create a new event or subevent (raises EntryError on bad input)."""
-    name, start_datetime, end_datetime = read_entry(data, parent)
+    """Create a new event or subevent (raises EntryError on bad input).
+    Returns (event, note), the note saying how a moment stretched its entry."""
+    name, start_datetime, end_datetime = read_entry(data)
+    stretched = fit_parent(parent, start_datetime, end_datetime) if parent else None
 
     event_attrs = {
         **kwargs,
@@ -132,7 +152,7 @@ def create_event(event_class, data: dict, parent: Event | None = None, **kwargs)
     event = event_class(**event_attrs)
     db.session.add(event)
     db.session.commit()
-    return event
+    return event, stretched
 
 
 def delete_event(event: Event | SubEvent):
@@ -176,10 +196,16 @@ def events():
         })
 
     try:
-        event = create_event(Event, request.json, user_id=current_user.id)
+        event, _ = create_event(Event, request.json, user_id=current_user.id)
     except EntryError as e:
         return jsonify({"status": "error", "message": str(e)}), 400
     index_event_safe(event)
+    # Photos already on these days belong to this entry if it's the only one.
+    from .attachments import link_to_lone_entry
+    end = event.end_time or event.start_time
+    days = [(event.start_time + timedelta(days=i)).date()
+            for i in range(min((end.date() - event.start_time.date()).days + 1, 62))]
+    link_to_lone_entry(current_user.id, days)
     return jsonify({"status": "success", "message": "Saved", "id": event.id})
 
 
@@ -260,12 +286,14 @@ def subevents(event_id):
         return jsonify({"status": "error", "message": "That entry no longer exists."}), 404
 
     try:
-        subevent = create_event(SubEvent, request.json, parent=parent_event, event_id=event_id)
+        subevent, stretched = create_event(SubEvent, request.json, parent=parent_event, event_id=event_id)
     except EntryError as e:
+        db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 400
     index_event_safe(parent_event)  # reindex parent with the new subevent folded in
     return jsonify({
         "status": "success", "message": "Subevent created successfully", "id": subevent.id,
+        "stretched": stretched,
     })
 
 
@@ -297,12 +325,47 @@ def manage_subevent(subevent_id):
 
     parent_event = db.session.get(Event, subevent.event_id)
     try:
-        edit_event_data(subevent, request.json, parent_event)
+        stretched = edit_event_data(subevent, request.json, parent_event)
     except EntryError as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 400
     index_event_safe(parent_event)  # reindex parent with the edited subevent text
-    return jsonify({"status": "success", "message": "Subevent updated"})
+    return jsonify({"status": "success", "message": "Subevent updated", "stretched": stretched})
+
+
+@event_blueprint.route("/suggestions", methods=["GET"])
+@json_login_required
+def suggestions():
+    """Names you've used before, for the new-entry form. Each carries the place
+    and people you usually go with it: a value is only suggested when it was
+    on more than half of that name's entries (so "Hangout" doesn't always mean
+    the same friend), and only from names used twice or more."""
+    from collections import Counter
+
+    rows = (db.session.query(Event.name, Event.where, Event.with_who, Event.start_time)
+            .filter(Event.user_id == current_user.id).order_by(Event.start_time.desc()).all())
+    groups: dict[str, list] = {}
+    for row in rows:
+        groups.setdefault(row.name.strip().lower(), []).append(row)
+    out = []
+    for entries in groups.values():
+        if len(entries) < 2:
+            continue
+
+        def usual(field, entries=entries):
+            values = Counter((getattr(e, field) or "").strip() for e in entries)
+            value, n = values.most_common(1)[0]
+            return value if value and n * 2 > len(entries) else ""
+
+        out.append({
+            "name": entries[0].name.strip(),          # latest spelling
+            "where": usual("where"),
+            "with_who": usual("with_who"),
+            "count": len(entries),
+            "last": entries[0].start_time.strftime("%Y-%m-%d"),
+        })
+    out.sort(key=lambda s: (s["count"], s["last"]), reverse=True)   # most used, then most recent
+    return jsonify({"status": "success", "suggestions": out[:200]})
 
 
 @event_blueprint.route("/month", methods=["GET"])
