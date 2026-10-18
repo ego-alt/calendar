@@ -183,7 +183,36 @@ def upload_attachment():
     )
     db.session.add(attachment)
     db.session.commit()
+    link_to_lone_entry(current_user.id, [date])
     return jsonify({"status": "success", "attachment": _attachment_payload(attachment)})
+
+
+def link_to_lone_entry(user_id: int, dates) -> int:
+    """Photos on a day with exactly one entry belong to that entry: link any
+    that aren't linked yet. Days with several entries are left for you to
+    choose (the viewer's entry picker). Returns how many were linked."""
+    from datetime import time, timedelta
+
+    from sqlalchemy import func
+
+    linked = 0
+    for day in dates:
+        start = datetime.combine(day, time.min)
+        entries = Event.query.filter(
+            Event.user_id == user_id,
+            Event.start_time < start + timedelta(days=1),
+            func.coalesce(Event.end_time, Event.start_time) >= start,
+        ).limit(2).all()
+        if len(entries) != 1:
+            continue
+        for attachment in (Attachment.query.join(DailyLog)
+                           .filter(DailyLog.user_id == user_id, DailyLog.date == day,
+                                   Attachment.event_id.is_(None)).all()):
+            attachment.event_id = entries[0].id
+            linked += 1
+    if linked:
+        db.session.commit()
+    return linked
 
 
 def _safe_headers(response):
