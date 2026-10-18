@@ -1,14 +1,13 @@
 // Offline support for the calendar.
 //
-// One cache: the page, our static files, fonts/icons from the CDN, and the
+// One cache: the page, our static files (fonts and icons included), and the
 // JSON the views read (months, years, days, diary, stats, thumbnails).
 // Pages and JSON are network-first (fresh online, last copy offline); static
 // files are stale-while-revalidate. Writes (POST/PUT/PATCH/DELETE) are never
 // touched: offline, they fail visibly and the entry form keeps its draft.
 
-const CACHE = 'calendar-v2';
+const CACHE = 'calendar-v3';
 const ROOT = new URL(self.registration.scope).pathname;   // ends in "/"
-const CDN = new Set(['cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com']);
 const PASSTHROUGH = ['auth/', 'export', 'sw.js', 'healthz', 'search/data'];
 const JSON_ROUTES = ['get_month', 'get_year', 'events', 'attachments', 'stats/data'];
 
@@ -32,11 +31,7 @@ self.addEventListener('fetch', (event) => {
     const request = event.request;
     if (request.method !== 'GET') return;
     const url = new URL(request.url);
-    if (url.origin !== self.location.origin) {
-        if (CDN.has(url.hostname)) event.respondWith(staleWhileRevalidate(request));
-        return;
-    }
-    if (!url.pathname.startsWith(ROOT)) return;
+    if (url.origin !== self.location.origin || !url.pathname.startsWith(ROOT)) return;
     const path = url.pathname.slice(ROOT.length);
     if (PASSTHROUGH.some((p) => path.startsWith(p))) return;
 
@@ -67,7 +62,7 @@ async function staleWhileRevalidate(request) {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(request);
     const network = fetch(request).then((response) => {
-        if (response.ok || response.type === 'opaque') cache.put(request, response.clone());
+        if (response.ok) cache.put(request, response.clone());
         return response;
     }).catch(() => cached);
     return cached || network;
