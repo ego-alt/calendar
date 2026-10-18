@@ -75,6 +75,9 @@ async function api(path, { method = 'GET', json, form } = {}) {
     } catch (_) {
         throw new Error("Couldn't reach the calendar. Check your connection.");
     }
+    if (response.status === 401) {
+        throw new Error("You've been signed out. Sign in again, then save; your text is kept.");
+    }
     let data = {};
     try { data = await response.json(); } catch (_) { /* not JSON */ }
     if (!response.ok || data.status === 'error') {
