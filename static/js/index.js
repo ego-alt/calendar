@@ -19,7 +19,7 @@ let moodPickerMenuOpen = false;
 
 let globalListenersAttached = false;
 
-/** True when start ends at 00:00 and end ends at 23:59 (legacy all-day encoding). */
+/** True when start ends at 00:00 and end ends at 23:59: how all-day entries are stored. */
 function isAllDayEvent(event) {
     return Boolean(
         event.start_time && event.start_time.endsWith('00:00')

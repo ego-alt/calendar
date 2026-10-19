@@ -9,18 +9,13 @@ from moods import MOOD_BY_KEY, MOODS
 
 
 def parse_event_datetime(date_str, time_str=None, is_end: bool = False):
-    """Date as ISO "YYYY-MM-DD" (native date inputs) or the older "DD-MM-YYYY";
+    """Date as ISO "YYYY-MM-DD" (what native date inputs and the MCP tools send);
     time as "HH:MM". A missing time means the start or end of the day.
     Raises ValueError on anything else."""
-    date = None
-    for fmt in ("%Y-%m-%d", "%d-%m-%Y"):
-        try:
-            date = datetime.strptime((date_str or "").strip(), fmt)
-            break
-        except ValueError:
-            continue
-    if date is None:
-        raise ValueError(f"unreadable date: {date_str!r}")
+    try:
+        date = datetime.strptime((date_str or "").strip(), "%Y-%m-%d")
+    except ValueError:
+        raise ValueError(f"unreadable date: {date_str!r}") from None
     if time_str:
         time_obj = datetime.strptime(time_str.strip(), "%H:%M").time()
     else:

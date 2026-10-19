@@ -46,9 +46,9 @@ def test_login_rejects_bad_password(client, user):
 def test_event_crud(authed_client):
     create = authed_client.post("/events", json={
         "name": "Coffee",
-        "start_date": "11-05-2026",
+        "start_date": "2026-05-11",
         "start_time": "14:00",
-        "end_date": "11-05-2026",
+        "end_date": "2026-05-11",
         "end_time": "15:00",
         "where": "Blue Bottle",
         "with_who": "Sam",
@@ -66,9 +66,9 @@ def test_event_crud(authed_client):
     updated = authed_client.put(f"/events/{event['id']}", json={
         **{k: v for k, v in event.items() if k not in skip},
         "name": "Coffee with Sam",
-        "start_date": "11-05-2026",
+        "start_date": "2026-05-11",
         "start_time": "14:30",
-        "end_date": "11-05-2026",
+        "end_date": "2026-05-11",
         "end_time": "15:30",
     })
     assert updated.status_code == 200
@@ -83,9 +83,9 @@ def test_event_crud(authed_client):
 def test_subevent_crud(authed_client):
     parent = authed_client.post("/events", json={
         "name": "Conference",
-        "start_date": "11-05-2026",
+        "start_date": "2026-05-11",
         "start_time": "09:00",
-        "end_date": "11-05-2026",
+        "end_date": "2026-05-11",
         "end_time": "17:00",
     })
     assert parent.status_code == 200
@@ -93,9 +93,9 @@ def test_subevent_crud(authed_client):
 
     sub = authed_client.post(f"/events/{parent_id}/subevents", json={
         "name": "Opening keynote",
-        "start_date": "11-05-2026",
+        "start_date": "2026-05-11",
         "start_time": "09:30",
-        "end_date": "11-05-2026",
+        "end_date": "2026-05-11",
         "end_time": "10:30",
     })
     assert sub.status_code == 200
@@ -106,9 +106,9 @@ def test_subevent_crud(authed_client):
     # A moment dated outside its entry stretches the entry rather than failing.
     later = authed_client.post(f"/events/{parent_id}/subevents", json={
         "name": "After party",
-        "start_date": "12-05-2026",
+        "start_date": "2026-05-12",
         "start_time": "20:00",
-        "end_date": "12-05-2026",
+        "end_date": "2026-05-12",
         "end_time": "23:00",
     })
     assert later.status_code == 200 and "now runs" in later.get_json()["stretched"]
@@ -246,10 +246,9 @@ def test_entry_validation_messages(authed_client):
     assert r.status_code == 400 and r.json["message"] == "The end is before the start."
     r = authed_client.post("/events/", json={**base, "start_date": "10/10/2026"})
     assert r.status_code == 400 and "doesn't look right" in r.json["message"]
-    # ISO (native date inputs) and the older DD-MM-YYYY both work
+    r = authed_client.post("/events/", json={**base, "start_date": "10-10-2026"})
+    assert r.status_code == 400 and "doesn't look right" in r.json["message"]
     assert authed_client.post("/events/", json=base).status_code == 200
-    legacy = {**base, "start_date": "10-10-2026", "end_date": "10-10-2026"}
-    assert authed_client.post("/events/", json=legacy).status_code == 200
 
 
 def test_editing_an_entry_cannot_strand_its_moments(authed_client):

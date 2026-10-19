@@ -458,7 +458,7 @@ h2 {
     font-style: italic;
     white-space: pre-line;
 }
-/* Date/time inputs share the row via flex; date is wider to fit DD-MM-YYYY. */
+/* Date/time inputs share the row via flex; date is wider to fit a full date. */
 .date-input,
 .time-input {
     font-size: var(--text-sm);

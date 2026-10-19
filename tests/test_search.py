@@ -32,9 +32,9 @@ def stub_embeddings(monkeypatch):
 def _make_event(client, name, day=11, **fields):
     resp = client.post("/events", json={
         "name": name,
-        "start_date": f"{day:02d}-05-2026",
+        "start_date": f"2026-05-{day:02d}",
         "start_time": "14:00",
-        "end_date": f"{day:02d}-05-2026",
+        "end_date": f"2026-05-{day:02d}",
         "end_time": "15:00",
         **fields,
     })
@@ -164,8 +164,8 @@ def test_search_reflects_edits_and_deletes(authed_client):
 
     authed_client.put(f"/events/{event_id}", json={
         "name": "Standup",
-        "start_date": "11-05-2026", "start_time": "14:00",
-        "end_date": "11-05-2026", "end_time": "15:00",
+        "start_date": "2026-05-11", "start_time": "14:00",
+        "end_date": "2026-05-11", "end_time": "15:00",
         "notes": "sprint retrospective",
     })
     hit = authed_client.get("/search/data?q=retrospective").get_json()["results"]
