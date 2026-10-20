@@ -1356,6 +1356,8 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
     border-bottom: 1px dashed var(--color-border);
 }
 .day-note-wrap:focus-within { border-bottom-color: var(--color-accent); }
+/* The day's note reads at the size of an entry's notes. */
+.day-note-wrap, .diary-day-note { font-size: var(--text-sm); }
 .day-note {
     flex: 1;
     min-width: 0;
