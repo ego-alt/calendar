@@ -476,9 +476,10 @@ def test_receipts_go_to_the_entry_their_time_falls_in(authed_client):
     bill = upload(time="21:10")                                             # just after dinner ended
     assert bill["event_id"] == events["Dinner"] and bill["time"] == "21:10"
     assert upload(time="1245")["event_id"] == events["Lunch"]
-    assert upload(hour="13", minute="40")["event_id"] == events["Lunch"]
+    assert upload(time="13:40")["event_id"] == events["Lunch"]
     assert upload(time="14:20")["event_id"] is None                          # well after lunch: not lunch's
-    assert upload(time="2026-05-11T19:05:00")["event_id"] == events["Dinner"]
+    assert upload(time="1905")["event_id"] == events["Dinner"]
+    assert upload(time="2575")["time"] is None                               # not a time: stays on the day
     assert upload(time="16:00")["event_id"] is None                          # between the two: yours to choose
     untimed = upload()
     assert untimed["event_id"] is None and untimed["time"] is None

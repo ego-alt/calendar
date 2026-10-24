@@ -26,20 +26,13 @@ OPEN_ENDED = timedelta(hours=2)
 
 
 def receipt_time(form, day):
-    """The time on the receipt, as the scanner read it, on the receipt's day; None
-    when it sent none. Taken from "time" (HH:MM, HHMM or a full ISO date and
-    time), or "hour" and "minute"."""
-    value = (form.get("time") or "").strip()
+    """The time on the receipt, as the scanner read it ("time", as HHmm or HH:MM),
+    on the receipt's day; None when it sent none."""
+    value = (form.get("time") or "").strip().replace(":", "")
+    if len(value) != 4 or not value.isdigit():
+        return None
     try:
-        if form.get("hour") not in (None, ""):
-            return datetime.combine(day, time(int(form["hour"]), int(form.get("minute") or 0)))
-        if not value:
-            return None
-        if len(value) > 8:
-            return datetime.fromisoformat(value).replace(tzinfo=None)
-        if value.isdigit() and len(value) in (3, 4):          # 1244
-            value = f"{value[:-2]}:{value[-2:]}"
-        return datetime.combine(day, time.fromisoformat(value))
+        return datetime.combine(day, time(int(value[:2]), int(value[2:])))
     except ValueError:
         return None
 
