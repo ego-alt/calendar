@@ -239,8 +239,8 @@ def manage_event(event_id):
 
 
 def _link_receipts(event):
-    """Receipts and photos on the entry's days that aren't linked yet: to this
-    entry if their time falls in it, or if it's the day's only entry."""
+    """Receipts on the entry's days that aren't linked yet: to this entry if the
+    time on them falls in it."""
     from .attachments import link_to_entries
     end = event.end_time or event.start_time
     days = [(event.start_time + timedelta(days=i)).date()

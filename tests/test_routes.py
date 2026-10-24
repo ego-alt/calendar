@@ -490,14 +490,14 @@ def test_receipts_go_to_the_entry_their_time_falls_in(authed_client):
                                          "end_date": "2026-05-11", "end_time": "09:45"})
     listed = {a["id"]: a for a in authed_client.get("/attachments?year=2026&month=5&day=11").json["attachments"]}
     assert listed[loose["id"]]["event_id"] not in (None, events["Lunch"], events["Dinner"])
-    assert listed[untimed["id"]]["event_id"] is None                         # still three entries: no guess
+    assert listed[untimed["id"]]["event_id"] is None                         # no time: stays on the day
 
 
-def test_a_timed_receipt_doesnt_go_to_the_days_only_entry_by_default(authed_client):
+def test_the_days_only_entry_takes_only_the_receipts_its_time_holds(authed_client):
     """The day's only entry is 11-12; a receipt the scanner read 12:44 on isn't
-    its (it was attached before, being the only one). One without a time still is."""
+    its (it was attached before, being the only one), and nor is one without a time."""
     authed_client.post("/events/", json={"name": "Coffee", "start_date": "2026-05-12", "start_time": "11:00",
                                          "end_date": "2026-05-12", "end_time": "12:00"})
     data = {"year": 2026, "month": 5, "day": 12, "time": "12:44", "file": (BytesIO(_png()), "r.png", "image/png")}
     assert authed_client.post("/attachments", data=data, content_type="multipart/form-data").json["attachment"]["event_id"] is None
-    assert _upload(authed_client, 2026, 5, 12).json["attachment"]["event_id"] is not None
+    assert _upload(authed_client, 2026, 5, 12).json["attachment"]["event_id"] is None      # no time: stays on the day

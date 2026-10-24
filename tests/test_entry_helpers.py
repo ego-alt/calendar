@@ -1,4 +1,4 @@
-"""Entries doing the obvious thing: photos join the day's only entry, a moment
+"""Entries doing the obvious thing: a receipt joins the entry its time falls in, a moment
 dated outside its entry stretches it, and names you've used before come back
 with their usual place and people."""
 from tests.test_api_endpoints import _entry
@@ -9,26 +9,36 @@ def _day_attachments(client, y, m, d):
     return client.get(f"/attachments?year={y}&month={m}&day={d}").get_json()["attachments"]
 
 
-# ---------- photos ----------
+# ---------- receipts ----------
 
-def test_photo_joins_the_days_only_entry(authed_client):
-    eid = _entry(authed_client, start_date="2026-05-11", end_date="2026-05-11")
+def _receipt(client, y, m, d, when=None):
+    from io import BytesIO
+
+    from tests.test_routes import _png
+    data = {"year": y, "month": m, "day": d, "file": (BytesIO(_png()), "r.png", "image/png")}
+    if when:
+        data["time"] = when
+    return client.post("/attachments", data=data, content_type="multipart/form-data")
+
+
+def test_a_receipt_without_a_time_stays_on_its_day(authed_client):
+    _entry(authed_client, start_date="2026-05-11", end_date="2026-05-11", start_time="09:00", end_time="17:00")
     _upload(authed_client, 2026, 5, 11)
-    assert [a["event_id"] for a in _day_attachments(authed_client, 2026, 5, 11)] == [eid]
+    assert [a["event_id"] for a in _day_attachments(authed_client, 2026, 5, 11)] == [None]
 
 
-def test_photo_stays_on_the_day_when_there_are_several_entries(authed_client):
-    _entry(authed_client, start_date="2026-05-12", end_date="2026-05-12")
-    _entry(authed_client, name="Lunch", start_date="2026-05-12", end_date="2026-05-12")
-    _upload(authed_client, 2026, 5, 12)
+def test_a_timed_receipt_doesnt_join_an_all_day_entry(authed_client):
+    _entry(authed_client, start_date="2026-05-12", end_date="2026-05-12", start_time="", end_time="")
+    _receipt(authed_client, 2026, 5, 12, "13:00")
     assert [a["event_id"] for a in _day_attachments(authed_client, 2026, 5, 12)] == [None]
 
 
-def test_photos_taken_first_join_the_entry_written_later(authed_client):
-    _upload(authed_client, 2026, 5, 13)
-    _upload(authed_client, 2026, 5, 14)
-    eid = _entry(authed_client, name="Trip", start_date="2026-05-13", start_time="", end_date="2026-05-14", end_time="")
-    assert {a["event_id"] for d in (13, 14) for a in _day_attachments(authed_client, 2026, 5, d)} == {eid}
+def test_receipts_scanned_first_join_the_entry_written_later(authed_client):
+    _receipt(authed_client, 2026, 5, 13, "20:30")
+    _upload(authed_client, 2026, 5, 13)                                   # no time: stays on the day
+    eid = _entry(authed_client, name="Dinner", start_date="2026-05-13", start_time="19:30",
+                 end_date="2026-05-13", end_time="22:00")
+    assert sorted(a["event_id"] or 0 for a in _day_attachments(authed_client, 2026, 5, 13)) == [0, eid]
 
 
 # ---------- moments outside their entry ----------

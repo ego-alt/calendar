@@ -216,11 +216,9 @@ def upload_attachment():
 
 
 def link_to_entries(user_id: int, dates) -> int:
-    """Each receipt or photo not yet linked goes to its entry. One with a time
-    (read off the receipt by the scanner) goes to the entry that time falls in,
-    or stays unlinked; one without goes to the day's only entry. Days with
-    several entries and nothing to tell them apart are left for you to choose
-    (the viewer's entry picker). Returns how many were linked."""
+    """Each receipt not yet linked, with a time (read off it by the scanner), goes
+    to the timed entry that time falls in. Anything else stays on its day, for
+    you to link in the viewer if you like. Returns how many were linked."""
     from sqlalchemy import func
 
     linked = 0
@@ -236,10 +234,7 @@ def link_to_entries(user_id: int, dates) -> int:
         for attachment in (Attachment.query.join(DailyLog)
                            .filter(DailyLog.user_id == user_id, DailyLog.date == day,
                                    Attachment.event_id.is_(None)).all()):
-            if attachment.receipt_time:
-                entry = entry_at(attachment.receipt_time, entries)
-            else:
-                entry = entries[0] if len(entries) == 1 else None
+            entry = entry_at(attachment.receipt_time, entries) if attachment.receipt_time else None
             if entry:
                 attachment.event_id = entry.id
                 linked += 1
@@ -254,18 +249,17 @@ def _all_day(entry) -> bool:
 
 
 def entry_at(when, entries):
-    """The entry a time falls in, or None: a timed entry holding it (give or take
-    RECEIPT_MARGIN; inside the entry itself beats the margins, then the one that
-    began most recently), else the day's one all-day entry."""
+    """The timed entry a time falls in, give or take RECEIPT_MARGIN, or None.
+    Inside the entry itself beats the margins, then the one that began most
+    recently. All-day entries have no time of their own, so never match."""
     def end(e):
         return e.end_time or e.start_time + OPEN_ENDED
     timed = [e for e in entries if not _all_day(e)]
     hits = [e for e in timed if e.start_time - RECEIPT_MARGIN <= when <= end(e) + RECEIPT_MARGIN]
-    if hits:
-        return min(hits, key=lambda e: (not (e.start_time <= when <= end(e)), when < e.start_time,
-                                        abs((when - e.start_time).total_seconds())))
-    all_day = [e for e in entries if _all_day(e)]
-    return all_day[0] if len(all_day) == 1 else None
+    if not hits:
+        return None
+    return min(hits, key=lambda e: (not (e.start_time <= when <= end(e)), when < e.start_time,
+                                    abs((when - e.start_time).total_seconds())))
 
 
 def _safe_headers(response):
