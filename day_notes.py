@@ -57,7 +57,7 @@ def plan(user_id=None):
 
 
 def apply(steps):
-    from routes.attachments import link_to_lone_entry
+    from routes.attachments import link_to_entries
 
     for step in steps:
         event, day = step["event"], step["day"]
@@ -81,4 +81,4 @@ def apply(steps):
         for entry in new_entries:
             index_event(entry)
         index_day_note(log.id)
-        link_to_lone_entry(event.user_id, [day])
+        link_to_entries(event.user_id, [day])

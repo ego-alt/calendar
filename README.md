@@ -55,4 +55,4 @@ Search settings (optional): `SEARCH_DENSE_MIN_SCORE` (default `0.6`; lower for m
 
 ## For other apps
 
-The phone scanner app posts receipts to `POST /attachments` (`file`, `year`, `month`, `day`): images and PDFs up to 10 MB, HEIC converted to JPEG. The home stack's MCP server uses the JSON endpoints under `/events`, `/mood`, `/search/data` and `/stats/data`.
+The phone scanner app posts receipts to `POST /attachments` (`file`, `year`, `month`, `day`, and optionally `time` as `HH:MM` or `taken_at` as an ISO time): images and PDFs up to 10 MB, HEIC converted to JPEG. A receipt goes to the entry whose time holds when it was taken (from 30 minutes before it starts to an hour after it ends; an entry without an end counts as two hours), or to the day's only entry. Its time is the one the scanner sends, else the photo's own clock, else the moment it's added if that's on its day (the `TZ` setting gives the local time). Receipts already there join an entry when it's written or its time changes; anything still unmatched is yours to choose in the viewer. The home stack's MCP server uses the JSON endpoints under `/events`, `/mood`, `/search/data` and `/stats/data`.

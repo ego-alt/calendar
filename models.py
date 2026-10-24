@@ -64,6 +64,8 @@ class Attachment(db.Model):
     created_at = db.Column(db.DateTime, server_default=func.now())
     deleted_at = db.Column(db.DateTime, nullable=True, index=True)  # soft delete (undo)
     caption = db.Column(db.String, nullable=True)
+    # When it was taken (local time, like entries), if known: links it to its entry.
+    taken_at = db.Column(db.DateTime, nullable=True)
     # Optional: the entry this receipt/ticket belongs to (else it's the day's).
     event_id = db.Column(
         db.Integer, db.ForeignKey("events.id", ondelete="SET NULL"), nullable=True, index=True

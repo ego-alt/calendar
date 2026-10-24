@@ -201,12 +201,7 @@ def events():
     except EntryError as e:
         return jsonify({"status": "error", "message": str(e)}), 400
     index_event_safe(event)
-    # Photos already on these days belong to this entry if it's the only one.
-    from .attachments import link_to_lone_entry
-    end = event.end_time or event.start_time
-    days = [(event.start_time + timedelta(days=i)).date()
-            for i in range(min((end.date() - event.start_time.date()).days + 1, 62))]
-    link_to_lone_entry(current_user.id, days)
+    _link_receipts(event)
     return jsonify({"status": "success", "message": "Saved", "id": event.id})
 
 
@@ -239,7 +234,18 @@ def manage_event(event_id):
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 400
     index_event_safe(event)
+    _link_receipts(event)        # a new time can take in receipts not yet linked
     return jsonify({"status": "success", "message": "Saved"})
+
+
+def _link_receipts(event):
+    """Receipts and photos on the entry's days that aren't linked yet: to this
+    entry if their time falls in it, or if it's the day's only entry."""
+    from .attachments import link_to_entries
+    end = event.end_time or event.start_time
+    days = [(event.start_time + timedelta(days=i)).date()
+            for i in range(min((end.date() - event.start_time.date()).days + 1, 62))]
+    link_to_entries(current_user.id, days)
 
 
 @event_blueprint.route("/<int:event_id>/restore", methods=["POST"])
