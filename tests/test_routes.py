@@ -459,36 +459,29 @@ def test_static_urls_are_versioned(authed_client):
     assert "static/js/day.js?v=" in html and "static/css/index.css?v=" in html
 
 
-def _jpeg_taken(when):
-    """A JPEG whose EXIF says when it was taken."""
-    from PIL import Image
 
-    img, exif = Image.new("RGB", (4, 4), "white"), Image.Exif()
-    exif.get_ifd(0x8769)[36867] = when
-    out = BytesIO()
-    img.save(out, "JPEG", exif=exif)
-    return out.getvalue()
-
-
-def test_receipts_go_to_the_entry_they_were_taken_in(authed_client):
-    """Two entries on a day: a receipt goes to the one whose time holds it (or
-    an hour after it ends: the bill), whether it says so, its photo does, or
-    the entry is written afterwards. One taken at neither stays for you."""
+def test_receipts_go_to_the_entry_their_time_falls_in(authed_client):
+    """Two entries on a day: a receipt goes to the one the time the scanner read
+    on it falls in (or an hour after it ends: the bill), also when the entry is
+    written afterwards. One at neither, or with no time, stays for you."""
     for name, start, end in (("Lunch", "12:30", "13:30"), ("Dinner", "19:00", "21:00")):
         authed_client.post("/events/", json={"name": name, "start_date": "2026-05-11", "start_time": start,
                                              "end_date": "2026-05-11", "end_time": end})
     events = {e["name"]: e["id"] for e in authed_client.get("/events/?year=2026&month=5&day=11").json["events"]}
 
     def upload(**extra):
-        data = {"year": 2026, "month": 5, "day": 11, **extra}
-        data.setdefault("file", (BytesIO(_png()), "receipt.png", "image/png"))
+        data = {"year": 2026, "month": 5, "day": 11, "file": (BytesIO(_png()), "receipt.png", "image/png"), **extra}
         return authed_client.post("/attachments", data=data, content_type="multipart/form-data").json["attachment"]
 
-    assert upload(time="21:40")["event_id"] == events["Dinner"]             # the bill, after it ended
-    photo = upload(file=(BytesIO(_jpeg_taken("2026:05:11 12:45:00")), "IMG_1.jpg", "image/jpeg"))
-    assert photo["event_id"] == events["Lunch"] and photo["taken_at"] == "12:45"
+    bill = upload(time="21:10")                                             # just after dinner ended
+    assert bill["event_id"] == events["Dinner"] and bill["time"] == "21:10"
+    assert upload(time="1245")["event_id"] == events["Lunch"]
+    assert upload(hour="13", minute="40")["event_id"] == events["Lunch"]
+    assert upload(time="14:20")["event_id"] is None                          # well after lunch: not lunch's
+    assert upload(time="2026-05-11T19:05:00")["event_id"] == events["Dinner"]
     assert upload(time="16:00")["event_id"] is None                          # between the two: yours to choose
-    assert upload(taken_at="2026-05-11T19:05:00")["event_id"] == events["Dinner"]
+    untimed = upload()
+    assert untimed["event_id"] is None and untimed["time"] is None
 
     # Written afterwards: a receipt already there joins the entry its time falls in.
     loose = upload(time="09:10")
@@ -497,16 +490,14 @@ def test_receipts_go_to_the_entry_they_were_taken_in(authed_client):
                                          "end_date": "2026-05-11", "end_time": "09:45"})
     listed = {a["id"]: a for a in authed_client.get("/attachments?year=2026&month=5&day=11").json["attachments"]}
     assert listed[loose["id"]]["event_id"] not in (None, events["Lunch"], events["Dinner"])
+    assert listed[untimed["id"]]["event_id"] is None                         # still three entries: no guess
 
 
-def test_a_receipt_scanned_later_isnt_given_that_time(authed_client, monkeypatch):
-    """Added on another day with no time of its own: no time, so the day's only
-    entry still takes it, but no guess is made from when it was added."""
-    import routes.attachments as attachments
-    from datetime import datetime as real
-
-    monkeypatch.setattr(attachments, "local_now", lambda: real(2026, 5, 13, 10, 0))
-    authed_client.post("/events/", json={"name": "Concert", "start_date": "2026-05-11", "start_time": "20:00",
-                                         "end_date": "2026-05-11", "end_time": "23:00"})
-    a = _upload(authed_client, 2026, 5, 11).json["attachment"]
-    assert a["taken_at"] is None and a["event_id"] is not None
+def test_a_timed_receipt_doesnt_go_to_the_days_only_entry_by_default(authed_client):
+    """The day's only entry is 11-12; a receipt the scanner read 12:44 on isn't
+    its (it was attached before, being the only one). One without a time still is."""
+    authed_client.post("/events/", json={"name": "Coffee", "start_date": "2026-05-12", "start_time": "11:00",
+                                         "end_date": "2026-05-12", "end_time": "12:00"})
+    data = {"year": 2026, "month": 5, "day": 12, "time": "12:44", "file": (BytesIO(_png()), "r.png", "image/png")}
+    assert authed_client.post("/attachments", data=data, content_type="multipart/form-data").json["attachment"]["event_id"] is None
+    assert _upload(authed_client, 2026, 5, 12).json["attachment"]["event_id"] is not None

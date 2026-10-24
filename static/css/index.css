@@ -615,8 +615,11 @@ h2 {
         left: 0;
         bottom: -100vh;
         top: auto;
-        box-sizing: content-box;   /* the sheet's size as it has always been */
-        width: 90vw;
+        /* Its size as it has always been (90% of the screen plus its padding),
+           but never wider than the screen: the padding grows with the phone's
+           text size, and the sheet ran off the right edge. */
+        box-sizing: border-box;
+        width: min(100vw, calc(90vw + 2 * var(--space-5)));
         height: 78dvh;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         transition: bottom 0.3s ease;
@@ -706,20 +709,9 @@ h2 {
     gap: var(--space-2);
     align-items: center;
 }
-/* A grid item won't shrink below its content by default, and iOS Safari gives
-   date and time inputs a wide content box of their own (its picker styling):
-   on an iPhone the row ran off the screen. Let them shrink to their column. */
-.field-row .input { min-width: 0; width: 100%; max-width: 100%; }
-@supports (-webkit-touch-callout: none) {
-    .entry-form input[type="date"], .entry-form input[type="time"] {
-        -webkit-appearance: none;
-        appearance: none;
-        display: block;
-        min-height: 2.6em;
-    }
-    .entry-form input[type="date"]::-webkit-date-and-time-value,
-    .entry-form input[type="time"]::-webkit-date-and-time-value { text-align: left; }
-}
+/* A grid item won't shrink below its content by default, so a wide date
+   field (large text on the phone) pushed its row past the screen's edge. */
+.field-row .input { min-width: 0; max-width: 100%; box-sizing: border-box; }
 .field-label { grid-column: 1 / -1; margin-bottom: calc(-1 * var(--space-1)); font-size: var(--text-sm); color: var(--color-text-muted); }
 .field-hint { margin-top: calc(-1 * var(--space-1)); }
 .form-error {

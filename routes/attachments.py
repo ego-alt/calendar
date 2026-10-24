@@ -1,4 +1,3 @@
-import os
 import pathlib
 import uuid
 from datetime import datetime, time, timedelta
@@ -19,59 +18,30 @@ IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/heic
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif"}
 THUMB_SIZE = 480
 
-# Linking a receipt to its entry by time: it can come a little before the entry
-# starts (a ticket bought at the door) or a while after it ends (the bill). An
-# entry with no end time counts as lasting OPEN_ENDED.
-RECEIPT_BEFORE = timedelta(minutes=30)
-RECEIPT_AFTER = timedelta(hours=1)
+# Linking a receipt to its entry by the time on it: inside the entry, give or
+# take RECEIPT_MARGIN (clocks and rounding). A 12:44 receipt isn't an 11-12
+# entry's. An entry with no end time counts as lasting OPEN_ENDED.
+RECEIPT_MARGIN = timedelta(minutes=15)
 OPEN_ENDED = timedelta(hours=2)
 
 
-def local_now():
-    """Now on the wall clock entries are written in (the TZ setting; the server's own clock without it)."""
-    zone = os.environ.get("TZ")
-    if zone:
-        try:
-            from zoneinfo import ZoneInfo
-            return datetime.now(ZoneInfo(zone)).replace(tzinfo=None)
-        except Exception:  # noqa: BLE001 — an unknown zone falls back to the server's clock
-            pass
-    return datetime.now()
-
-
-def _photo_time(path):
-    """When a photo says it was taken (EXIF, local time), or None."""
-    from PIL import Image
-
+def receipt_time(form, day):
+    """The time on the receipt, as the scanner read it, on the receipt's day; None
+    when it sent none. Taken from "time" (HH:MM, HHMM or a full ISO date and
+    time), or "hour" and "minute"."""
+    value = (form.get("time") or "").strip()
     try:
-        with Image.open(path) as img:
-            exif = img.getexif()
-            stamp = exif.get_ifd(0x8769).get(36867) or exif.get(306)   # DateTimeOriginal, else DateTime
-        return datetime.strptime(str(stamp).strip("\x00 "), "%Y:%m:%d %H:%M:%S") if stamp else None
-    except Exception:  # noqa: BLE001 — no readable clock
+        if form.get("hour") not in (None, ""):
+            return datetime.combine(day, time(int(form["hour"]), int(form.get("minute") or 0)))
+        if not value:
+            return None
+        if len(value) > 8:
+            return datetime.fromisoformat(value).replace(tzinfo=None)
+        if value.isdigit() and len(value) in (3, 4):          # 1244
+            value = f"{value[:-2]}:{value[-2:]}"
+        return datetime.combine(day, time.fromisoformat(value))
+    except ValueError:
         return None
-
-
-def taken_at(form, path, is_image, day):
-    """When a receipt or photo was taken, on its day, or None:
-    what the scanner says ("time" as HH:MM, or "taken_at" as an ISO time), else
-    the photo's own clock, else now if it's being added on that day (scanned
-    then and there)."""
-    candidates = []
-    if form.get("taken_at"):
-        try:
-            candidates.append(datetime.fromisoformat(form["taken_at"]).replace(tzinfo=None))
-        except ValueError:
-            pass
-    if form.get("time"):
-        try:
-            candidates.append(datetime.combine(day, time.fromisoformat(form["time"])))
-        except ValueError:
-            pass
-    if is_image:
-        candidates.append(_photo_time(path))
-    candidates.append(local_now())
-    return next((t for t in candidates if t and t.date() == day), None)
 
 
 def _thumb_path(stored_name):
@@ -109,7 +79,7 @@ def _attachment_payload(attachment):
         "size_bytes": attachment.size_bytes,
         "caption": attachment.caption,
         "event_id": attachment.event_id,
-        "taken_at": attachment.taken_at.strftime("%H:%M") if attachment.taken_at else None,
+        "time": attachment.receipt_time.strftime("%H:%M") if attachment.receipt_time else None,
         "is_image": attachment.mime_type.startswith("image/"),
     }
 
@@ -201,12 +171,6 @@ def upload_attachment():
     storage_path = folder / stored_name
     upload.save(storage_path)
 
-    if is_image and (ext in {".heic", ".heif"} or mime in {"image/heic", "image/heif"}):
-        import pillow_heif
-
-        pillow_heif.register_heif_opener()
-    when = taken_at(request.form, storage_path, is_image, date)
-
     if is_image:
         from PIL import Image
 
@@ -242,7 +206,7 @@ def upload_attachment():
         stored_name=stored_name,
         mime_type="application/pdf" if is_pdf else mime,
         size_bytes=storage_path.stat().st_size,
-        taken_at=when,
+        receipt_time=receipt_time(request.form, date),
     )
     db.session.add(attachment)
     db.session.commit()
@@ -252,11 +216,11 @@ def upload_attachment():
 
 
 def link_to_entries(user_id: int, dates) -> int:
-    """Each receipt or photo not yet linked goes to its entry: the timed entry
-    whose span (from RECEIPT_BEFORE its start to RECEIPT_AFTER its end) holds
-    when it was taken; failing that, the day's only entry. Days with several
-    entries and nothing to tell them apart are left for you to choose (the
-    viewer's entry picker). Returns how many were linked."""
+    """Each receipt or photo not yet linked goes to its entry. One with a time
+    (read off the receipt by the scanner) goes to the entry that time falls in,
+    or stays unlinked; one without goes to the day's only entry. Days with
+    several entries and nothing to tell them apart are left for you to choose
+    (the viewer's entry picker). Returns how many were linked."""
     from sqlalchemy import func
 
     linked = 0
@@ -272,7 +236,10 @@ def link_to_entries(user_id: int, dates) -> int:
         for attachment in (Attachment.query.join(DailyLog)
                            .filter(DailyLog.user_id == user_id, DailyLog.date == day,
                                    Attachment.event_id.is_(None)).all()):
-            entry = entry_at(attachment.taken_at, entries) or (entries[0] if len(entries) == 1 else None)
+            if attachment.receipt_time:
+                entry = entry_at(attachment.receipt_time, entries)
+            else:
+                entry = entries[0] if len(entries) == 1 else None
             if entry:
                 attachment.event_id = entry.id
                 linked += 1
@@ -287,19 +254,18 @@ def _all_day(entry) -> bool:
 
 
 def entry_at(when, entries):
-    """The timed entry a moment belongs to, or None: one whose span (with the
-    receipt margins) holds it; inside the entry itself beats the margins, then
-    the one that began most recently before it."""
-    if when is None:
-        return None
-
+    """The entry a time falls in, or None: a timed entry holding it (give or take
+    RECEIPT_MARGIN; inside the entry itself beats the margins, then the one that
+    began most recently), else the day's one all-day entry."""
     def end(e):
         return e.end_time or e.start_time + OPEN_ENDED
-    hits = [e for e in entries if not _all_day(e) and e.start_time - RECEIPT_BEFORE <= when <= end(e) + RECEIPT_AFTER]
-    if not hits:
-        return None
-    return min(hits, key=lambda e: (not (e.start_time <= when <= end(e)), when < e.start_time,
-                                    abs((when - e.start_time).total_seconds())))
+    timed = [e for e in entries if not _all_day(e)]
+    hits = [e for e in timed if e.start_time - RECEIPT_MARGIN <= when <= end(e) + RECEIPT_MARGIN]
+    if hits:
+        return min(hits, key=lambda e: (not (e.start_time <= when <= end(e)), when < e.start_time,
+                                        abs((when - e.start_time).total_seconds())))
+    all_day = [e for e in entries if _all_day(e)]
+    return all_day[0] if len(all_day) == 1 else None
 
 
 def _safe_headers(response):
