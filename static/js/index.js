@@ -298,6 +298,19 @@ function setupGlobalEventListeners() {
         const handle = document.querySelector('.sidebar-handle');
         handle.addEventListener('click', dismissSidebar);
 
+        // Scrolling the sheet first grows it upwards, then it stays at its
+        // tallest (a strip of the month left showing above it) and the entries
+        // scroll. It never shrinks back while open; closing resets it.
+        const SHEET_GAP = 16;   // px of the month kept visible above the tallest sheet
+        sheet.addEventListener('scroll', () => {
+            if (!sheet.classList.contains('active')) return;
+            const bar = document.querySelector('.tmux')?.offsetHeight || 0;
+            const tallest = window.innerHeight - bar - SHEET_GAP;
+            const now = sheet.getBoundingClientRect().height;
+            if (now >= tallest) return;
+            sheet.style.height = `${Math.min(tallest, now + sheet.scrollTop)}px`;
+        }, { passive: true });
+
         let startY = null, atTop = false;
         sheet.addEventListener('touchstart', (e) => {
             startY = e.touches[0].clientY;

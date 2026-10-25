@@ -609,8 +609,9 @@ h2 {
     .date-input, .time-input {
         font-size: var(--text-base);
     }
-    /* Bottom-sheet event drawer. Two states only: open at this default height,
-     * or dismissed — tapping/swiping the handle slides it back down. */
+    /* Bottom-sheet event drawer: opens at this height; scrolling grows it up to
+     * nearly full height (index.js), then the entries scroll. Tapping or swiping
+     * the handle slides it back down. */
     .sidebar {
         left: 0;
         bottom: -100vh;
