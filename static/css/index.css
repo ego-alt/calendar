@@ -1,39 +1,5 @@
-/* Theme tokens — Gruvbox dark medium. Structural tokens (spacing, radii, type,
- * fonts, motion) live in structural.css, shared byte-identical across the home
- * stack; role names follow dashboard/docs/ui-spec.md. Only colours diverge here. */
-:root {
-    --color-bg-base: #1d2021;     /* Gruvbox bg0_h ("hard"), its darkest grey */
-    --color-bg-elevated: #3c3836;
-    --color-bg-chrome: #151515;   /* the bottom bar: a step darker than the page (not a Gruvbox grey; none is darker) */
-    --color-bg-inset: rgba(29, 32, 33, 0.5);
-    --color-bg-inset-soft: rgba(29, 32, 33, 0.3);
-    --color-bg-overlay: rgba(29, 32, 33, 0.85);
-    --color-bg-overlay-strong: rgba(60, 56, 54, 0.95);
-    --color-border: #504945;
-    --color-border-soft: rgba(80, 73, 69, 0.5);
-    --color-text-primary: #ebdbb2;
-    --color-text-secondary: #d5c4a1;
-    --color-text-muted: #a89984;
-    --color-accent: #689d6a;
-    --color-accent-hover: #8ec07c;
-    --color-danger: #cc241d;
-    --color-danger-hover: #fb4934;
-    --color-highlight-soft: rgba(235, 219, 178, 0.05);
-
-    /* Terminal edges: square corners on the chrome (structural.css's radii are
-       overridden here). The mood tiles keep their rounding (--radius-tile), and
-       round things like mood dots use --radius-pill. */
-    --radius-sm: 0;
-    --radius-md: 0;
-    --radius-lg: 0;
-    --radius-tile: 8px;
-    --radius-tile-sm: 4px;
-
-    /* Both side drawers (day panel left, Year / Diary right), padding included. */
-    --drawer-w: 340px;
-}
-
-/* .btn / .input come from structural.css. Calendar keeps monospace inputs over
+/* Sizes and colours are in tokens.css, buttons and inputs in controls.css. */
+/* .btn / .input come from controls.css. Calendar keeps monospace inputs over
    a base surface (terminal flavor) — its one deliberate primitive override. */
 .input { background: var(--color-bg-base); font-family: var(--font-mono); font-size: var(--text-sm); }
 .btn { font-size: var(--text-sm); }
@@ -1195,7 +1161,7 @@ button.diary-file { border: 0; cursor: zoom-in; font: inherit; }
 }
 .viewer-stage img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: var(--radius-sm); }
 .viewer-doc { text-align: center; color: var(--color-text-secondary); display: grid; gap: var(--space-3); justify-items: center; }
-.viewer-doc i { font-size: 56px; color: var(--color-danger-hover); }
+.viewer-doc i { font-size: 3.5em;   /* the PDF icon, big, sized to the text */ color: var(--color-danger-hover); }
 .viewer-nav {
     align-self: center;
     background: none;
@@ -1423,12 +1389,6 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
    step darker than the page, so the month is the brightest surface; text marks
    instead of icons, gruvbox's own colours as light syntax highlighting, rule
    lines between days, and buttons written as commands with their keys. */
-:root {
-    --color-bg-pane: #151515;    /* the bottom bar's near-black: drawers and bar frame the month */
-    --color-syn-date: #689d6a;   /* the theme's green (gruvbox aqua, faded) */
-    --color-syn-who: #8ec07c;    /* gruvbox aqua */
-    --color-syn-where: #83a598;  /* gruvbox blue */
-}
 .sidebar, .term-pane, .drawer-head { background-color: var(--color-bg-pane); }
 
 /* + who, @ where, > notes */
