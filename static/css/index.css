@@ -625,6 +625,10 @@ h2 {
         transition: bottom 0.3s ease;
         overflow-y: auto;
     }
+    /* The sheet's top padding (room for the handle) would leave the sticky
+     * header 20px short of the edge, with entries showing through above it:
+     * stick it to the sheet's edge instead. */
+    .sidebar .drawer-head { top: calc(-1 * var(--space-5)); }
     /* Dock above the bottom bar (z 1005) so the sheet's bottom buttons aren't
      * buried under it. */
     .sidebar.active {
