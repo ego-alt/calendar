@@ -198,7 +198,12 @@ function renderStats(data) {
             }
             // Drawn at the card's real width so labels stay readable on phones.
             const W = Math.max(280, Math.round(el.clientWidth || 900)), H = W < 500 ? 150 : 170;
-            const pad = { top: 10, right: 10, bottom: 22, left: 38 };
+            // Left margin fits the widest score label, which sits flush with the card's edge.
+            const css = getComputedStyle(document.documentElement);
+            const ctx = document.createElement("canvas").getContext("2d");
+            ctx.font = `${parseFloat(css.getPropertyValue("--text-xs")) * parseFloat(css.fontSize)}px ${css.getPropertyValue("--font-sans")}`;
+            const labelW = Math.max(0, ...labels.map(s => ctx.measureText(s.name).width));
+            const pad = { top: 10, right: 10, bottom: 22, left: Math.ceil(labelW) + 8 };
             const w = W - pad.left - pad.right;
             const h = H - pad.top - pad.bottom;
             const n = trend.length;
@@ -232,17 +237,23 @@ function renderStats(data) {
             const grids = labels.map(s => {
                 const y = yAt(s.score).toFixed(1);
                 return `<line x1="${pad.left}" y1="${y}" x2="${pad.left + w}" y2="${y}" class="st-tgrid"/>
-                        <text x="${pad.left - 5}" y="${(+y + 4).toFixed(1)}" class="st-tlabel">${esc(s.name)}</text>`;
+                        <text x="0" y="${(+y + 4).toFixed(1)}" class="st-tlabel">${esc(s.name)}</text>`;
             }).join("");
 
             let lastMo = -1, nth = 0;
-            const xTicks = trend.map((d, i) => {
+            const ticks = [];
+            trend.forEach((d, i) => {
                 const mo = new Date(d.d + "T00:00:00").getMonth();
-                if (mo === lastMo) return "";
+                if (mo === lastMo) return;
                 lastMo = mo;
-                if (W < 500 && nth++ % 2) return "";   // every other month on narrow screens
-                return `<text x="${xAt(i).toFixed(1)}" y="${H - 4}" class="st-tlabel">${MONTHS[mo]}</text>`;
-            }).join("");
+                if (W < 500 && nth++ % 2) return;   // every other month on narrow screens
+                ticks.push({ x: xAt(i), mo });
+            });
+            // A part-month at the start would crowd the next label.
+            if (ticks.length > 1 && ticks[1].x - ticks[0].x < 36) ticks.shift();
+            const xTicks = ticks.map(t =>
+                `<text x="${t.x.toFixed(1)}" y="${H - 4}" class="st-tlabel">${MONTHS[t.mo]}</text>`
+            ).join("");
 
             el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
                 ${grids}<path d="${pathD}" class="st-tline"/>${dots}${marks}${xTicks}
