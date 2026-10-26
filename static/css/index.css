@@ -851,6 +851,11 @@ h2 {
 }
 .marker-toggle.active .marker-dot { background: var(--color-danger); }
 @media (hover: none) { .marker-toggle { width: 44px; height: 44px; } }
+/* The drawers' small header controls get finger-sized targets too. */
+@media (hover: none) {
+    .drawer-step, .drawer-close { min-width: 44px; min-height: 44px; }
+    .pane-tab { min-height: 44px; }
+}
 .link-btn {
     background: none;
     border: 0;
@@ -904,6 +909,7 @@ h2 {
     .event-name, .subevent-name { padding-right: 36px; }
     /* attachment delete: always visible and big enough to hit */
     .attachment-delete { opacity: 1; width: 28px; height: 28px; }
+    .attachment-delete::after { content: ""; position: absolute; inset: -8px; }   /* a 44px target, the 28px look */
 }
 .action-sheet {
     position: fixed;

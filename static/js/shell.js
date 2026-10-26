@@ -62,9 +62,32 @@
         window.updateTmux?.();
         if (view === "stats") loadStats();
         if (push) {
-            history.pushState({ view }, "", appUrl(PATHS[view] || "/"));
+            // A panel's history entry, if one was open, becomes the view's.
+            if (layerDepth) { history.replaceState({ view }, "", appUrl(PATHS[view] || "/")); layerDepth = 0; }
+            else history.pushState({ view }, "", appUrl(PATHS[view] || "/"));
         }
     }
+
+    // ---------- back closes what's open ----------
+    // On a phone (and in the browser) back closes the open panel or sheet, top
+    // one first, before it changes view. History keeps one entry per open
+    // layer above the view's own, put back in line after every tap or key.
+    const byId = (id) => document.getElementById(id);
+    const layers = [   // topmost first: [is it open?, close it]
+        [() => !byId("confirmModal").hidden, () => byId("confirmCancel").click()],
+        [() => !byId("keysModal").hidden, () => { byId("keysModal").hidden = true; }],
+        [() => byId("viewer").classList.contains("open"), () => closeViewer()],
+        [() => byId("actionSheet").classList.contains("open"), () => closeActionSheet()],
+        [() => byId("sidebar").classList.contains("active"), () => closeDayPanel()],
+        [() => byId("termWindow").classList.contains("pane-open"), () => closePane()],
+    ];
+    let layerDepth = 0, ignoredPops = 0;
+    function syncLayers() {
+        const open = layers.filter(([isOpen]) => isOpen()).length;
+        while (layerDepth < open) history.pushState({ view: current, layer: ++layerDepth }, "");
+        if (layerDepth > open) { ignoredPops++; history.go(open - layerDepth); layerDepth = open; }
+    }
+    ["click", "keydown", "touchend"].forEach((ev) => document.addEventListener(ev, () => setTimeout(syncLayers, 0), true));
 
     tabs.forEach((t) => t.addEventListener("click", () => setView(t.dataset.view)));
     window.loadStats = loadStats;
@@ -79,8 +102,15 @@
         showSidebar(d);
     };
 
-    // Browser back/forward closes or reopens the Stats view.
+    // Browser back/forward closes or reopens the Stats view (once no panel is open).
     window.addEventListener("popstate", (e) => {
+        if (ignoredPops) { ignoredPops--; return; }
+        if (layerDepth) {   // back from an open panel: close it, stay on the view
+            layerDepth--;
+            layers.find(([isOpen]) => isOpen())?.[1]();
+            setTimeout(syncLayers, 0);
+            return;
+        }
         const path = location.pathname.replace(/\/+$/, "");
         let view = "calendar";
         if (e.state && e.state.view) view = e.state.view;
