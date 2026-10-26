@@ -186,3 +186,15 @@ def test_results_say_when_there_are_more_and_carry_mood(authed_client):
     assert res["more"] is False
     by_name = {r["name"]: r for r in res["results"]}
     assert by_name["Swim 1"]["mood"]["name"] == "Great" and by_name["Swim 2"]["mood"] is None
+
+
+def test_words_still_find_entries_when_the_model_cant_run(authed_client, monkeypatch):
+    """Out of memory, or not installed: the word index doesn't depend on it."""
+    def broken(*_):
+        raise RuntimeError("model unavailable")
+    monkeypatch.setattr(search_index, "embed_texts", broken)
+    monkeypatch.setattr(search_index, "embed_query", broken)
+    _make_event(authed_client, "Dinner at the harbour")
+    resp = authed_client.get("/search/data?q=harbour")
+    assert resp.status_code == 200
+    assert [r["name"] for r in resp.get_json()["results"]] == ["Dinner at the harbour"]

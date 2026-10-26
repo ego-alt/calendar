@@ -111,32 +111,46 @@ def ensure_fts_table():
     )
 
 
+def _embed_or_none(document, what):
+    """The document's vector, or None when the model can't run (not installed,
+    or out of memory): the word index works without it."""
+    try:
+        return embed_texts([document])[0]
+    except Exception:
+        current_app.logger.warning("Search by meaning unavailable; %s is searchable by its words only", what, exc_info=True)
+        return None
+
+
 def index_event(event):
-    """(Re)embed and (re)index a single event. Call after the event is committed."""
+    """(Re)index a single event: its words, then its meaning. Call after the
+    event is committed. The words go in first, so word search never waits on
+    (or fails with) the embedding model."""
     ensure_fts_table()
     document = build_document(event)
     if not document:
         remove_event(event.id)
         return
 
+    db.session.execute(db.text("DELETE FROM event_fts WHERE event_id = :id"), {"id": event.id})
+    db.session.execute(
+        db.text("INSERT INTO event_fts (event_id, text) VALUES (:id, :text)"),
+        {"id": event.id, "text": document},
+    )
+    db.session.commit()
+
     digest = _source_hash(document)
     row = db.session.get(EventEmbedding, event.id)
     if row is not None and row.source_hash == digest and row.model == EMBED_MODEL:
-        return  # text unchanged since last index — nothing to do
-
-    vector = embed_texts([document])[0]
+        return  # text unchanged since it was last embedded
+    vector = _embed_or_none(document, f"entry {event.id}")
+    if vector is None:
+        return
     if row is None:
         row = EventEmbedding(event_id=event.id)
         db.session.add(row)
     row.embedding = vector.tobytes()
     row.model = EMBED_MODEL
     row.source_hash = digest
-
-    db.session.execute(db.text("DELETE FROM event_fts WHERE event_id = :id"), {"id": event.id})
-    db.session.execute(
-        db.text("INSERT INTO event_fts (event_id, text) VALUES (:id, :text)"),
-        {"id": event.id, "text": document},
-    )
     db.session.commit()
 
 
@@ -196,20 +210,23 @@ def index_day_note(log_id):
     if not document:
         remove_day_note(log_id)
         return
+    db.session.execute(db.text("DELETE FROM day_note_fts WHERE daily_log_id = :id"), {"id": log_id})
+    db.session.execute(db.text("INSERT INTO day_note_fts (daily_log_id, text) VALUES (:id, :text)"),
+                       {"id": log_id, "text": document})
+    db.session.commit()
     digest = _source_hash(document)
     row = db.session.get(DayNoteEmbedding, log_id)
     if row is not None and row.source_hash == digest and row.model == EMBED_MODEL:
         return
-    vector = embed_texts([document])[0]
+    vector = _embed_or_none(document, f"the note of day {log_id}")
+    if vector is None:
+        return
     if row is None:
         row = DayNoteEmbedding(daily_log_id=log_id)
         db.session.add(row)
     row.embedding = vector.tobytes()
     row.model = EMBED_MODEL
     row.source_hash = digest
-    db.session.execute(db.text("DELETE FROM day_note_fts WHERE daily_log_id = :id"), {"id": log_id})
-    db.session.execute(db.text("INSERT INTO day_note_fts (daily_log_id, text) VALUES (:id, :text)"),
-                       {"id": log_id, "text": document})
     db.session.commit()
 
 
@@ -376,7 +393,11 @@ def search(user_id, q=None, *, date_from=None, date_to=None, mood=None,
 
     candidate_ids = {e.id for e in candidates}
     note_ids = frozenset(n.id for n in notes)
-    dense = _dense_rank(q, user_id, candidate_ids, note_ids)
+    try:
+        dense = _dense_rank(q, user_id, candidate_ids, note_ids)
+    except Exception:   # the model can't run: words alone still find things
+        current_app.logger.warning("Search by meaning unavailable; matching words only", exc_info=True)
+        dense = []
     sparse = _sparse_rank(q, candidate_ids, note_ids)
     fused = _rrf(dense, sparse)[:limit]
     return [(by_key[key], score) for key, score in fused if key in by_key]
