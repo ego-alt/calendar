@@ -54,9 +54,14 @@ def fit_parent(parent: Event, start, end) -> str | None:
     """Stretch an entry so a moment dated outside it fits, rather than refuse
     the moment. An all-day edge stays all-day (00:00 / 23:59 of the new day).
     Returns a line saying what changed, or None when nothing did."""
+    old_end = parent.end_time or parent.start_time
     if is_within_parent_date(parent, start, end):
         return None
-    old_end = parent.end_time or parent.start_time
+    # A moment without times (00:00–23:59) is on its day, not "all of it": on
+    # a day the entry already covers it fits, whatever the entry's hours.
+    untimed = start.time() == datetime.min.time() and end.strftime("%H:%M") == "23:59"
+    if untimed and parent.start_time.date() <= start.date() and end.date() <= old_end.date():
+        return None
     if start < parent.start_time:
         all_day = parent.start_time.time() == datetime.min.time()
         parent.start_time = datetime.combine(start.date(), datetime.min.time()) if all_day else start

@@ -66,6 +66,15 @@ def test_moving_a_moment_earlier_stretches_a_timed_entry(authed_client):
     assert authed_client.get(f"/events/{eid}").get_json()["event"]["start_time"] == "2026-03-10 18:00"
 
 
+def test_a_moment_without_times_on_its_entrys_day_keeps_the_entrys_hours(authed_client):
+    eid = _entry(authed_client)            # 10 Mar 19:00–21:00
+    r = authed_client.post(f"/events/{eid}/subevents", json={
+        "name": "Dessert", "start_date": "2026-03-10", "start_time": "", "end_date": "2026-03-10", "end_time": ""})
+    assert r.get_json()["stretched"] is None
+    event = authed_client.get(f"/events/{eid}").get_json()["event"]
+    assert (event["start_time"], event["end_time"]) == ("2026-03-10 19:00", "2026-03-10 21:00")
+
+
 def test_a_moment_inside_its_entry_changes_nothing(authed_client):
     eid = _entry(authed_client)
     r = authed_client.post(f"/events/{eid}/subevents", json={
