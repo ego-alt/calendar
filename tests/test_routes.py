@@ -445,6 +445,16 @@ def test_export_everything(authed_client):
     assert "## Mon 11 May 2026 · Great" in z.read("diary.md").decode()
 
 
+def test_the_exported_diary_keeps_entry_times(authed_client):
+    import zipfile
+    authed_client.post("/events/", json={"name": "Dinner", "start_date": "2026-03-10", "start_time": "19:00",
+                                         "end_date": "2026-03-10", "end_time": "21:00"})
+    authed_client.post("/events/", json={"name": "Moving day", "start_date": "2026-03-10", "end_date": "2026-03-10"})
+    diary = zipfile.ZipFile(BytesIO(authed_client.get("/export").data)).read("diary.md").decode()
+    assert "### 19:00–21:00 Dinner" in diary
+    assert "### Moving day" in diary   # all day: no clock
+
+
 def test_month_day_info(authed_client):
     authed_client.post("/events/", json={"name": "Trip", "start_date": "2026-05-03",
                                          "end_date": "2026-05-04", "notes": "x" * 300})

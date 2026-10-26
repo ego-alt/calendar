@@ -33,6 +33,17 @@ def _entry(e):
     }
 
 
+def _clock(e):
+    """"19:00–21:00 " (or "19:00 ") for a timed entry or moment, as the day
+    panel shows it; nothing for an all-day one."""
+    start, end = e.start_time, e.end_time
+    if start.strftime("%H:%M") == "00:00" and (end is None or end.strftime("%H:%M") == "23:59"):
+        return ""
+    if end and end.date() == start.date() and end != start:
+        return f"{start:%H:%M}–{end:%H:%M} "
+    return f"{start:%H:%M} "
+
+
 def _moments(e):
     return sorted(e.subevents, key=lambda s: s.start_time)
 
@@ -105,7 +116,7 @@ def export_all():
             if log and log.note:
                 md += [log.note, ""]
             for e in day_entries:
-                md.append(f"### {e.name}")
+                md.append(f"### {_clock(e)}{e.name}")
                 bits = [b for b in (e.with_who and f"with {e.with_who}",
                                     e.where and f"at {e.where}") if b]
                 if bits:
@@ -113,7 +124,7 @@ def export_all():
                 if e.notes:
                     md += ["", e.notes]
                 for s in _moments(e):
-                    md.append(f"- **{s.name}**" + (f": {s.notes}" if s.notes else ""))
+                    md.append(f"- {_clock(s)}**{s.name}**" + (f": {s.notes}" if s.notes else ""))
                 md.append("")
             for f in file_names:
                 md.append(f"- 📎 [{f['caption'] or pathlib.Path(f['file']).name}]({f['file']})")
