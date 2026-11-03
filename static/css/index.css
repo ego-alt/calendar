@@ -682,7 +682,7 @@ h2 {
 .field-hint { margin-top: calc(-1 * var(--space-1)); }
 .form-error[hidden] { display: none; }
 .form-error { margin-top: calc(-1 * var(--space-1)); }   /* under the field it's about (day.js) */
-.input.warn, .input.warn:focus { border-color: var(--color-warn); }
+.input.warn, .input.warn:focus { border-color: var(--color-text-secondary); }   /* the field it's about: a lighter edge */
 .retry-btn { margin-top: var(--space-2); }
 .add-event-btn { margin: 0 0 var(--space-3); }
 .sidebar.form-open .add-event-btn { display: none; }   /* you're already writing one */
@@ -1442,14 +1442,14 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 @media (hover: none) { .key-hint { display: none; } }   /* no keyboard there */
 
 /* ---- messages: one log line wherever they appear ----
-   A problem is marked "!" in orange, news "›" in the accent, like the status
-   line; the words keep their own colour. No boxes and no red: red is for the
-   buttons that destroy something. */
+   Terminal output: grey monospace, a problem marked "!", news "›" like the
+   status line, left-aligned where it stands alone. No colour, no boxes: red is
+   only for the buttons that destroy something. */
 .form-error, .toast, .error-message { font-family: var(--font-mono); }
 .form-error { font-size: var(--text-sm); color: var(--color-text-secondary); }
-.form-error::before, .toast-error::before, .error-message::before { content: "!"; color: var(--color-warn); font-weight: 700; }
+.form-error::before, .toast-error::before, .error-message::before { content: "!"; color: var(--color-text-muted); font-weight: 700; }
 .form-error::before, .error-message::before { margin-right: 0.6ch; }   /* in a toast, its gap spaces the mark */
-.toast:not(.toast-error)::before { content: "›"; color: var(--color-accent); }
-.error-message { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.toast:not(.toast-error)::before { content: "›"; color: var(--color-text-muted); }
+.error-message { font-size: var(--text-sm); color: var(--color-text-secondary); text-align: left; }
 /* In the year's grid of months, a message spans the whole width. */
 .year-content > :is(.error-message, .loading-indicator) { grid-column: 1 / -1; }
