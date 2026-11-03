@@ -16,7 +16,7 @@ function renderStats(data) {
             ? `No moods logged in ${data.year}.`
             : "Stats appear after a few days of logging.";
         status.hidden = false;
-    } else if (!status.querySelector("#statsRetry")) {
+    } else if (!status.querySelector(".retry-btn")) {
         status.hidden = true;
     }
 

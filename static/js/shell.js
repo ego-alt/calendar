@@ -19,7 +19,7 @@
         const view = document.getElementById("statsView");
         const status = document.getElementById("statsStatus");
         const firstLoad = !statsLoaded;
-        if (firstLoad) { view.classList.add("st-loading"); status.textContent = "Loading your stats…"; status.hidden = false; }
+        if (firstLoad) { view.classList.add("st-loading"); status.classList.remove("failed"); status.textContent = "Loading your stats…"; status.hidden = false; }
         window.statsStale = false;
         statsLoading = (async () => {
             try {
@@ -32,9 +32,10 @@
                 window.statsStale = true;   // try again on the next open
                 console.error("Failed to load stats:", e);
                 if (!statsLoaded) {
-                    status.innerHTML = 'Couldn\'t load your stats. <button type="button" class="link-btn" id="statsRetry">Try again</button>';
+                    status.innerHTML = `<div class="error-message">Couldn't load your stats.<br>${RETRY("stats-retry")}</div>`;
+                    status.classList.add("failed");   // the error line carries its own "!"
                     status.hidden = false;
-                    document.getElementById("statsRetry").onclick = () => loadStats();
+                    status.querySelector(".retry-btn").onclick = () => loadStats();
                 }
             } finally {
                 view.classList.remove("st-loading");

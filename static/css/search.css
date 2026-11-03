@@ -71,7 +71,7 @@
     padding: 0 1px;
 }
 .search-result-date { display: flex; align-items: center; gap: var(--space-3); }
-.search-footer { text-align: center; color: var(--color-text-muted); font-size: var(--text-sm); margin: var(--space-4) 0; }
+.search-footer { margin: var(--space-4) 0; }
 @media (max-width: 640px) {
     .filters-btn { display: inline-flex; align-items: center; }
     .search-filters { display: none; }

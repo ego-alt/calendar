@@ -12,15 +12,25 @@
 
 // ---------- feedback: toasts and an in-app confirm ----------
 
-/** toast("Saved") or toast("Deleted “X”", { action: "Undo", onAction }). */
+/** toast("Saved") or toast("Deleted “X”", { action: "Undo", onAction }).
+ *  A line on the bar, printed at once like terminal output, never wrapping:
+ *  a longer one ends in "…" and a tap shows the rest (and keeps it up). */
 function toast(message, { action, onAction, error = false } = {}) {
     const el = document.createElement('div');
-    el.className = 'toast' + (error ? ' toast-error' : '');
+    el.className = 'toast show' + (error ? ' toast-error' : '');
     el.setAttribute('role', error ? 'alert' : 'status');
     const text = document.createElement('span');
+    text.className = 'toast-text';
     text.textContent = message;
     el.appendChild(text);
-    const dismiss = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 250); };
+    let timer = null;
+    const dismiss = () => el.remove();
+    el.addEventListener('click', () => {
+        if (text.scrollWidth <= text.clientWidth && !el.classList.contains('full')) return;
+        el.classList.toggle('full');
+        clearTimeout(timer);
+        if (!el.classList.contains('full')) timer = setTimeout(dismiss, 4000);
+    });
     if (action) {
         const sep = document.createElement('span');
         sep.className = 'toast-sep';
@@ -34,8 +44,7 @@ function toast(message, { action, onAction, error = false } = {}) {
         el.appendChild(b);
     }
     document.getElementById('toasts').appendChild(el);
-    requestAnimationFrame(() => el.classList.add('show'));
-    setTimeout(dismiss, action ? 8000 : error ? 6000 : 3000);
+    timer = setTimeout(dismiss, action ? 8000 : error ? 6000 : 3000);
 }
 
 /** In-app confirm. Resolves true (OK), false (the cancel button) or null
@@ -77,10 +86,10 @@ async function api(path, { method = 'GET', json, form } = {}) {
             body: json ? JSON.stringify(json) : form,
         });
     } catch (_) {
-        throw new Error("Couldn't reach the calendar. Check your connection.");
+        throw Object.assign(new Error("Couldn't reach the calendar. Check your connection."), { short: 'offline' });
     }
     if (response.status === 401) {
-        throw new Error("You've been signed out. Sign in again, then save; your text is kept.");
+        throw Object.assign(new Error("You've been signed out. Sign in again, then save; your text is kept."), { short: 'signed out' });
     }
     let data = {};
     try { data = await response.json(); } catch (_) { /* not JSON */ }
@@ -89,6 +98,13 @@ async function api(path, { method = 'GET', json, form } = {}) {
     }
     return data;
 }
+
+/** Why something failed, as the second half of a bar line: "offline", or the
+ *  server's own sentence without its full stop. */
+/** The retry under a list that didn't load: a command, with its key (R). */
+const RETRY = (act) => `<button class="link-btn retry-btn" type="button" data-act="${act}"><span class="key-hint">[r] </span><span class="cmd-word">try again</span></button>`;
+
+const why = (error) => error.short || error.message.replace(/\.$/, '');
 
 // ---------- offline ----------
 
@@ -271,7 +287,7 @@ async function setDayMood(year, month, day, key, { undoable = true } = {}) {
     } catch (error) {
         if (open) { dayState.mood = before; renderMoodRow(); }
         paintDay(year, month, day, { mood: before ?? null });
-        toast(`Couldn't save the mood. ${error.message}`, { error: true });
+        toast(`Couldn't save the mood · ${why(error)}`, { error: true });
         return;
     }
     window.statsStale = true;
@@ -287,7 +303,7 @@ async function toggleDayMarker(year, month, day) {
     try {
         result = await api('/mood/marker/toggle', { method: 'POST', json: { year, month, day } });
     } catch (error) {
-        toast(`Couldn't change the marker. ${error.message}`, { error: true });
+        toast(`Couldn't change the marker · ${why(error)}`, { error: true });
         return;
     }
     window.statsStale = true;
@@ -403,7 +419,7 @@ async function showSidebar(day) {
         content.innerHTML = `
             ${dayHeader(new Date(viewState.year, viewState.month - 1, day))}
             <div class="error-message">${escapeHtml(error.message)}<br>
-                <button class="link-btn retry-btn" type="button" data-act="retry">Try again</button></div>`;
+                ${RETRY('retry')}</div>`;
     }
 }
 
@@ -549,7 +565,7 @@ function setUpDayNote() {
         try {
             res = await api('/mood/note', { method: 'POST', json: { year, month, day, note: text } });
         } catch (error) {
-            toast(`Your note is kept on this device. ${error.message}`, { error: true });
+            toast(`Your note is kept on this device · ${why(error)}`, { error: true });
             return;
         }
         setNoteDraft(state.iso, null);
@@ -777,8 +793,12 @@ function placeError(form, errorEl, msg) {
     } else if (/outside the new time/i.test(msg)) { after = rows[1]; marks = [f.start_date, f.end_date]; }
     if (after.classList?.contains('form-buttons')) after.before(errorEl); else after.after(errorEl);
     marks.forEach((el) => el.classList.add('warn'));
+    // Under the To row the message takes the hint's place ("Times are optional.").
+    const hint = form.querySelector('.field-hint');
+    if (hint) hint.hidden = after === rows[1];
     const clear = () => {
         form.querySelectorAll('.input.warn').forEach((el) => el.classList.remove('warn'));
+        if (hint) hint.hidden = false;
         errorEl.hidden = true;
         form.removeEventListener('input', clear);
     };
@@ -894,7 +914,7 @@ async function handleAttachmentUpload(event) {
             await api('/attachments', { method: 'POST', form });
             added += 1;
         } catch (error) {
-            toast(`${file.name}: ${error.message}`, { error: true });
+            toast(`${file.name} · ${why(error)}`, { error: true });
         }
     }
     progress.remove();

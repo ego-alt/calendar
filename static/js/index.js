@@ -420,6 +420,10 @@ function handleKeyPress(event) {
         document.querySelector('.tmux-win[data-view="calendar"]')?.click();
         return;
     }
+    if (event.key === 'r') {   // try again, where something didn't load
+        const retry = [...document.querySelectorAll('.retry-btn')].find((b) => b.offsetParent);
+        if (retry) { retry.click(); return; }
+    }
     if (!document.body.classList.contains('view-calendar')) return;
 
     const panelOpen = document.getElementById('sidebar').classList.contains('active') && currentOpenDay != null;
@@ -626,7 +630,7 @@ async function loadMonthEvents() {
     } catch (error) {
         if (viewState.year !== year || viewState.month !== month) return;
         content.innerHTML = `<div class="error-message">Couldn't load ${escapeHtml(monthLong)}. ${escapeHtml(error.message)}<br>
-            <button type="button" class="link-btn retry-btn" data-act="diary-retry">Try again</button></div>`;
+            ${RETRY('diary-retry')}</div>`;
         return;
     }
     if (viewState.year !== year || viewState.month !== month) return;   // moved on meanwhile
@@ -745,7 +749,7 @@ async function loadYearView(year, { keepScroll = false } = {}) {
         data = await api(`/get_year?year=${year}`);
     } catch (error) {
         yearContent.innerHTML = `<div class="error-message">Couldn't load ${year}. ${escapeHtml(error.message)}<br>
-            <button type="button" class="link-btn retry-btn" data-act="year-retry">Try again</button></div>`;
+            ${RETRY('year-retry')}</div>`;
         return;
     }
     if (year !== viewState.year) return;

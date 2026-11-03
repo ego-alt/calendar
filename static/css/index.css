@@ -717,6 +717,7 @@ h2 {
    a mark, the words, and an action as a word after "·". */
 .toast {
     pointer-events: auto;
+    cursor: default;
     display: flex;
     align-items: center;
     gap: var(--space-2);
@@ -727,11 +728,11 @@ h2 {
     border-top: 1px solid var(--color-border-soft);
     color: var(--color-text-secondary);
     font-size: var(--text-sm);
-    opacity: 0;
-    transform: translateY(4px);
-    transition: opacity var(--dur-base) ease, transform var(--dur-base) ease;
 }
-.toast.show { opacity: 1; transform: none; }
+/* One line: a longer message ends in "…", and a tap shows the rest (day.js). */
+.toast-text { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toast.full .toast-text { white-space: normal; }
+.toast > :not(.toast-text) { flex: none; }
 .toast-sep { color: var(--color-text-muted); }
 .toast-action {
     background: none;
@@ -1453,3 +1454,21 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 .error-message { font-size: var(--text-sm); color: var(--color-text-secondary); text-align: left; }
 /* In the year's grid of months, a message spans the whole width. */
 .year-content > :is(.error-message, .loading-indicator) { grid-column: 1 / -1; }
+
+/* Everything the calendar says on its own (loading, nothing here, a hint, a
+   count) is a status line too: "›", grey monospace, left-aligned at the
+   content's edge. */
+.loading-indicator, .no-events, .search-hint, .search-footer, .st-status {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    text-align: left;
+}
+.loading-indicator, .no-events, .error-message { padding: var(--space-3) 0; margin: 0; }
+.loading-indicator::before, .no-events::before, .search-hint::before, .search-footer::before, .st-status::before {
+    content: "›"; margin-right: 0.6ch;
+}
+.st-status.failed::before { content: none; }
+/* "[r] try again": a command, its word underlined, its key shown on a keyboard. */
+.retry-btn { text-decoration: none; }
+.retry-btn .cmd-word { text-decoration: underline; text-underline-offset: 2px; }
