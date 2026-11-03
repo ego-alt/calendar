@@ -17,7 +17,7 @@
  *  a longer one ends in "…" and a tap shows the rest (and keeps it up). */
 function toast(message, { action, onAction, error = false } = {}) {
     const el = document.createElement('div');
-    el.className = 'toast show' + (error ? ' toast-error' : '');
+    el.className = 'toast' + (error ? ' toast-error' : '');
     el.setAttribute('role', error ? 'alert' : 'status');
     const text = document.createElement('span');
     text.className = 'toast-text';
@@ -773,36 +773,35 @@ async function cancelEntryForm() {
     closeEntryForm({ discard: true });
 }
 
-/** Put the form's message under the field it's about, and mark that field
- *  (its edge turns orange) until it's next changed. Anything not about one
- *  field (the save failed, the entry's gone) stays at the foot of the form. */
+/** Put the form's message under the field it's about, and give that field a
+ *  lighter edge until it's next changed. A message about no one field (the
+ *  save failed, the entry's gone) sits at the foot of the form. */
 function placeError(form, errorEl, msg) {
     const f = form.elements;
-    const rows = form.querySelectorAll('.field-row');
-    form.querySelectorAll('.input.warn').forEach((el) => el.classList.remove('warn'));
+    const [fromRow, toRow] = form.querySelectorAll('.field-row');
+    const hint = form.querySelector('.field-hint');
     const realTime = (v) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
-    let after = form.querySelector('.form-buttons');
+    let after = null;
     let marks = [];
-    if (msg === 'Give this entry a name.') { after = f.name; marks = [f.name]; }
-    else if (msg === 'Pick a date.') { after = rows[0]; marks = [f.start_date]; }
-    else if (/end is before the start/i.test(msg)) { after = rows[1]; marks = [f.end_date, f.end_time]; }
+    if (msg === 'Give this entry a name.') [after, marks] = [f.name, [f.name]];
+    else if (msg === 'Pick a date.') [after, marks] = [fromRow, [f.start_date]];
+    else if (/end is before the start/i.test(msg)) [after, marks] = [toRow, [f.end_date, f.end_time]];
+    else if (/outside the new time/i.test(msg)) [after, marks] = [toRow, [f.start_date, f.end_date]];
     else if (/doesn't look right/i.test(msg)) {
         marks = [f.start_time, f.end_time].filter((el) => el.value && !realTime(el.value));
         if (!marks.length) marks = [f.start_date, f.end_date];
-        after = marks.includes(f.end_time) || marks.includes(f.end_date) ? rows[1] : rows[0];
-    } else if (/outside the new time/i.test(msg)) { after = rows[1]; marks = [f.start_date, f.end_date]; }
-    if (after.classList?.contains('form-buttons')) after.before(errorEl); else after.after(errorEl);
-    marks.forEach((el) => el.classList.add('warn'));
-    // Under the To row the message takes the hint's place ("Times are optional.").
-    const hint = form.querySelector('.field-hint');
-    if (hint) hint.hidden = after === rows[1];
+        after = marks.includes(f.end_time) || marks.includes(f.end_date) ? toRow : fromRow;
+    }
     const clear = () => {
         form.querySelectorAll('.input.warn').forEach((el) => el.classList.remove('warn'));
         if (hint) hint.hidden = false;
         errorEl.hidden = true;
-        form.removeEventListener('input', clear);
     };
-    form.addEventListener('input', clear);
+    clear();
+    if (after) after.after(errorEl); else form.querySelector('.form-buttons').before(errorEl);
+    marks.forEach((el) => el.classList.add('warn'));
+    if (hint) hint.hidden = after === toRow;   // under the To row, the message takes the hint's place
+    form.addEventListener('input', clear, { once: true });
 }
 
 async function submitEntryForm() {

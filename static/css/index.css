@@ -3,11 +3,10 @@
    a base surface (terminal flavor) — its one deliberate primitive override. */
 .input { background: var(--color-bg-base); font-family: var(--font-mono); font-size: var(--text-sm); }
 .btn { font-size: var(--text-sm); }
-/* Chrome in monospace: buttons, labels and small UI text. Headings and what
-   you wrote stay in Inter. */
-.btn, .weekday, .year-weekday, .mood-chip, .st-tab, .filter-field, .search-hint,
-.toast, .modal-actions, .action-sheet-item, .link-btn, .more-btn, .attachment-delete,
-.loading-indicator, .error-message, .no-events {
+/* Chrome in monospace: buttons, labels and small UI text (controls that reset
+   their font say so themselves, messages have their own section). Headings
+   and what you wrote stay in Inter. */
+.btn, .weekday, .year-weekday, .mood-chip, .st-tab, .filter-field, .modal-actions, .attachment-delete {
     font-family: var(--font-mono);
 }
 
@@ -111,9 +110,6 @@ h2 {
     padding: var(--space-1) var(--space-2);
     line-height: 1;
 }
-/* The paperclip is a label for a hidden file field: reachable by Tab through
-   its tabindex (day.js), ringed like a button. */
-.attachment-upload-btn:focus-visible { outline: 2px solid var(--color-accent-hover); outline-offset: 2px; }
 .attachment-upload-btn:hover {
     color: var(--color-text-primary);
 }
@@ -172,19 +168,6 @@ h2 {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-}
-
-.loading-indicator, .error-message, .no-events {
-    color: var(--color-text-muted);
-    text-align: center;
-}
-
-.no-events {
-    margin-top: var(--space-5);
-}
-
-.loading-indicator, .error-message, .no-events {
-    padding: var(--space-5);
 }
 
 /* Group all action buttons/icons */
@@ -680,10 +663,6 @@ h2 {
 .field-row .input { min-width: 0; max-width: 100%; box-sizing: border-box; }
 .field-label { grid-column: 1 / -1; margin-bottom: calc(-1 * var(--space-1)); font-size: var(--text-sm); color: var(--color-text-muted); }
 .field-hint { margin-top: calc(-1 * var(--space-1)); }
-.form-error[hidden] { display: none; }
-.form-error { margin-top: calc(-1 * var(--space-1)); }   /* under the field it's about (day.js) */
-.input.warn, .input.warn:focus { border-color: var(--color-text-secondary); }   /* the field it's about: a lighter edge */
-.retry-btn { margin: var(--space-2) 0 0 calc(-1 * var(--space-1)); }   /* its word lines up with the message (link-btn pads 4px) */
 .add-event-btn { margin: 0 0 var(--space-3); }
 .sidebar.form-open .add-event-btn { display: none; }   /* you're already writing one */
 #entryFormSlot { scroll-margin-top: 52px; }   /* opens below the sticky header */
@@ -702,7 +681,39 @@ h2 {
     overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
 }
 
-/* ---- toasts ---- */
+/* ---- messages: terminal output ----
+   One voice wherever the calendar speaks: grey monospace lines, a problem
+   marked "!", anything else "›" like the status line, left-aligned. No colour
+   and no boxes; red is only for buttons that destroy something. */
+.form-error, .error-message, .toast, .loading-indicator, .no-events, .search-hint, .search-footer, .st-status {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    text-align: left;
+}
+.form-error, .error-message { color: var(--color-text-secondary); }
+.loading-indicator, .no-events, .search-hint, .search-footer, .st-status { color: var(--color-text-muted); }
+.form-error::before, .error-message::before, .toast-error::before { content: "!"; font-weight: 700; color: var(--color-text-muted); }
+.loading-indicator::before, .no-events::before, .search-hint::before, .search-footer::before, .st-status::before,
+.toast:not(.toast-error)::before { content: "›"; color: var(--color-text-muted); }
+.form-error::before, .error-message::before, .loading-indicator::before, .no-events::before,
+.search-hint::before, .search-footer::before, .st-status::before { margin-right: 0.6ch; }   /* a toast's gap spaces its mark */
+.st-status.failed::before { content: none; }   /* its error line carries the "!" */
+
+/* Standing in for a list (loading, nothing there, didn't load), at the content's edge. */
+.loading-indicator, .no-events, .error-message { margin: 0; padding: var(--space-3) 0; }
+.year-content > :is(.error-message, .loading-indicator) { grid-column: 1 / -1; }   /* across the year's grid of months */
+/* "[r] try again": a command, its word underlined, its key shown on a keyboard;
+   pulled back so the word lines up with the message (.link-btn pads 4px). */
+.retry-btn { margin: var(--space-2) 0 0 calc(-1 * var(--space-1)); text-decoration: none; }
+.retry-btn .cmd-word { text-decoration: underline; text-underline-offset: 2px; }
+
+/* In the entry form, under the field it's about (day.js placeError), whose
+   edge turns a lighter grey until it's changed. */
+.form-error { margin-top: calc(-1 * var(--space-1)); }
+.form-error[hidden] { display: none; }
+.input.warn, .input.warn:focus { border-color: var(--color-text-secondary); }
+
+/* Toasts: lines on the bar, as tmux shows a message. */
 .toasts {
     position: fixed;
     left: 0;
@@ -713,8 +724,7 @@ h2 {
     flex-direction: column;
     pointer-events: none;
 }
-/* A toast is a line on the bar, as tmux shows a message: the bar's colours,
-   a mark, the words, and an action as a word after "·". */
+/* The bar's colours; a mark, the words, then an action as a word after "·". */
 .toast {
     pointer-events: auto;
     cursor: default;
@@ -1441,34 +1451,3 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 .entry-form .cancel-btn { color: var(--color-text-muted); }
 .key-hint { opacity: 0.6; }
 @media (hover: none) { .key-hint { display: none; } }   /* no keyboard there */
-
-/* ---- messages: one log line wherever they appear ----
-   Terminal output: grey monospace, a problem marked "!", news "›" like the
-   status line, left-aligned where it stands alone. No colour, no boxes: red is
-   only for the buttons that destroy something. */
-.form-error, .toast, .error-message { font-family: var(--font-mono); }
-.form-error { font-size: var(--text-sm); color: var(--color-text-secondary); }
-.form-error::before, .toast-error::before, .error-message::before { content: "!"; color: var(--color-text-muted); font-weight: 700; }
-.form-error::before, .error-message::before { margin-right: 0.6ch; }   /* in a toast, its gap spaces the mark */
-.toast:not(.toast-error)::before { content: "›"; color: var(--color-text-muted); }
-.error-message { font-size: var(--text-sm); color: var(--color-text-secondary); text-align: left; }
-/* In the year's grid of months, a message spans the whole width. */
-.year-content > :is(.error-message, .loading-indicator) { grid-column: 1 / -1; }
-
-/* Everything the calendar says on its own (loading, nothing here, a hint, a
-   count) is a status line too: "›", grey monospace, left-aligned at the
-   content's edge. */
-.loading-indicator, .no-events, .search-hint, .search-footer, .st-status {
-    font-family: var(--font-mono);
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    text-align: left;
-}
-.loading-indicator, .no-events, .error-message { padding: var(--space-3) 0; margin: 0; }
-.loading-indicator::before, .no-events::before, .search-hint::before, .search-footer::before, .st-status::before {
-    content: "›"; margin-right: 0.6ch;
-}
-.st-status.failed::before { content: none; }
-/* "[r] try again": a command, its word underlined, its key shown on a keyboard. */
-.retry-btn { text-decoration: none; }
-.retry-btn .cmd-word { text-decoration: underline; text-underline-offset: 2px; }
