@@ -626,7 +626,7 @@ async function loadMonthEvents() {
     } catch (error) {
         if (viewState.year !== year || viewState.month !== month) return;
         content.innerHTML = `<div class="error-message">Couldn't load ${escapeHtml(monthLong)}. ${escapeHtml(error.message)}<br>
-            <button type="button" class="btn btn-secondary retry-btn" data-act="diary-retry">Try again</button></div>`;
+            <button type="button" class="link-btn retry-btn" data-act="diary-retry">Try again</button></div>`;
         return;
     }
     if (viewState.year !== year || viewState.month !== month) return;   // moved on meanwhile
@@ -745,7 +745,7 @@ async function loadYearView(year, { keepScroll = false } = {}) {
         data = await api(`/get_year?year=${year}`);
     } catch (error) {
         yearContent.innerHTML = `<div class="error-message">Couldn't load ${year}. ${escapeHtml(error.message)}<br>
-            <button type="button" class="btn btn-secondary retry-btn" data-act="year-retry">Try again</button></div>`;
+            <button type="button" class="link-btn retry-btn" data-act="year-retry">Try again</button></div>`;
         return;
     }
     if (year !== viewState.year) return;

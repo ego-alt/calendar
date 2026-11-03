@@ -22,6 +22,10 @@ function toast(message, { action, onAction, error = false } = {}) {
     el.appendChild(text);
     const dismiss = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 250); };
     if (action) {
+        const sep = document.createElement('span');
+        sep.className = 'toast-sep';
+        sep.textContent = '·';
+        el.appendChild(sep);
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'toast-action';
@@ -399,7 +403,7 @@ async function showSidebar(day) {
         content.innerHTML = `
             ${dayHeader(new Date(viewState.year, viewState.month - 1, day))}
             <div class="error-message">${escapeHtml(error.message)}<br>
-                <button class="btn btn-secondary retry-btn" type="button" data-act="retry">Try again</button></div>`;
+                <button class="link-btn retry-btn" type="button" data-act="retry">Try again</button></div>`;
     }
 }
 
@@ -753,6 +757,34 @@ async function cancelEntryForm() {
     closeEntryForm({ discard: true });
 }
 
+/** Put the form's message under the field it's about, and mark that field
+ *  (its edge turns orange) until it's next changed. Anything not about one
+ *  field (the save failed, the entry's gone) stays at the foot of the form. */
+function placeError(form, errorEl, msg) {
+    const f = form.elements;
+    const rows = form.querySelectorAll('.field-row');
+    form.querySelectorAll('.input.warn').forEach((el) => el.classList.remove('warn'));
+    const realTime = (v) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+    let after = form.querySelector('.form-buttons');
+    let marks = [];
+    if (msg === 'Give this entry a name.') { after = f.name; marks = [f.name]; }
+    else if (msg === 'Pick a date.') { after = rows[0]; marks = [f.start_date]; }
+    else if (/end is before the start/i.test(msg)) { after = rows[1]; marks = [f.end_date, f.end_time]; }
+    else if (/doesn't look right/i.test(msg)) {
+        marks = [f.start_time, f.end_time].filter((el) => el.value && !realTime(el.value));
+        if (!marks.length) marks = [f.start_date, f.end_date];
+        after = marks.includes(f.end_time) || marks.includes(f.end_date) ? rows[1] : rows[0];
+    } else if (/outside the new time/i.test(msg)) { after = rows[1]; marks = [f.start_date, f.end_date]; }
+    if (after.classList?.contains('form-buttons')) after.before(errorEl); else after.after(errorEl);
+    marks.forEach((el) => el.classList.add('warn'));
+    const clear = () => {
+        form.querySelectorAll('.input.warn').forEach((el) => el.classList.remove('warn'));
+        errorEl.hidden = true;
+        form.removeEventListener('input', clear);
+    };
+    form.addEventListener('input', clear);
+}
+
 async function submitEntryForm() {
     const form = document.getElementById('entryForm');
     if (!form || !entryForm) return;
@@ -760,6 +792,7 @@ async function submitEntryForm() {
     const errorEl = form.querySelector('.form-error');
     const showError = (msg) => {
         errorEl.textContent = msg;
+        placeError(form, errorEl, msg);
         errorEl.hidden = false;
         errorEl.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });   // not hidden under a keyboard
     };

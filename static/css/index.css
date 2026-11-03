@@ -680,12 +680,10 @@ h2 {
 .field-row .input { min-width: 0; max-width: 100%; box-sizing: border-box; }
 .field-label { grid-column: 1 / -1; margin-bottom: calc(-1 * var(--space-1)); font-size: var(--text-sm); color: var(--color-text-muted); }
 .field-hint { margin-top: calc(-1 * var(--space-1)); }
-.form-error {
-    font-size: var(--text-sm);
-    color: var(--color-danger-hover);
-}
 .form-error[hidden] { display: none; }
-.retry-btn { margin-top: var(--space-3); }
+.form-error { margin-top: calc(-1 * var(--space-1)); }   /* under the field it's about (day.js) */
+.input.warn, .input.warn:focus { border-color: var(--color-warn); }
+.retry-btn { margin-top: var(--space-2); }
 .add-event-btn { margin: 0 0 var(--space-3); }
 .sidebar.form-open .add-event-btn { display: none; }   /* you're already writing one */
 #entryFormSlot { scroll-margin-top: 52px; }   /* opens below the sticky header */
@@ -707,41 +705,41 @@ h2 {
 /* ---- toasts ---- */
 .toasts {
     position: fixed;
-    left: 50%;
-    bottom: calc(var(--tmux-h) + var(--space-3));
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
+    bottom: var(--tmux-h);
     z-index: 2000;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
     pointer-events: none;
-    width: max-content;
-    max-width: calc(100vw - 2 * var(--space-4));
 }
+/* A toast is a line on the bar, as tmux shows a message: the bar's colours,
+   a mark, the words, and an action as a word after "·". */
 .toast {
     pointer-events: auto;
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    background: var(--color-bg-overlay-strong);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--space-2) var(--space-4);
+    gap: var(--space-2);
+    min-height: 32px;
+    box-sizing: border-box;
+    padding: var(--space-1) var(--space-3);
+    background: var(--color-bg-chrome);
+    border-top: 1px solid var(--color-border-soft);
+    color: var(--color-text-secondary);
     font-size: var(--text-sm);
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(4px);
     transition: opacity var(--dur-base) ease, transform var(--dur-base) ease;
 }
 .toast.show { opacity: 1; transform: none; }
-.toast-error { border-color: var(--color-danger); }
+.toast-sep { color: var(--color-text-muted); }
 .toast-action {
     background: none;
     border: 0;
-    color: var(--color-accent-hover);
+    color: var(--color-text-primary);
     font: inherit;
-    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
     cursor: pointer;
     padding: var(--space-1) 0;
     min-height: 32px;
@@ -773,7 +771,6 @@ h2 {
 .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
 
 @media (max-width: 640px) {
-    .toasts { bottom: calc(var(--tmux-h) + var(--space-3)); }
     .input, .entry-form input, .entry-form textarea { font-size: var(--text-base); }   /* no iOS zoom */
 }
 
@@ -1443,3 +1440,16 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 .entry-form .cancel-btn { color: var(--color-text-muted); }
 .key-hint { opacity: 0.6; }
 @media (hover: none) { .key-hint { display: none; } }   /* no keyboard there */
+
+/* ---- messages: one log line wherever they appear ----
+   A problem is marked "!" in orange, news "›" in the accent, like the status
+   line; the words keep their own colour. No boxes and no red: red is for the
+   buttons that destroy something. */
+.form-error, .toast, .error-message { font-family: var(--font-mono); }
+.form-error { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.form-error::before, .toast-error::before, .error-message::before { content: "!"; color: var(--color-warn); font-weight: 700; }
+.form-error::before, .error-message::before { margin-right: 0.6ch; }   /* in a toast, its gap spaces the mark */
+.toast:not(.toast-error)::before { content: "›"; color: var(--color-accent); }
+.error-message { font-size: var(--text-sm); color: var(--color-text-secondary); }
+/* In the year's grid of months, a message spans the whole width. */
+.year-content > :is(.error-message, .loading-indicator) { grid-column: 1 / -1; }

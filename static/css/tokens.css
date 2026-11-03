@@ -49,6 +49,7 @@
     --color-accent-hover: #8ec07c;
     --color-danger: #cc241d;
     --color-danger-hover: #fb4934;
+    --color-warn: #fe8019;        /* Gruvbox orange: the "!" that marks a problem (red is for destructive buttons) */
     --color-highlight-soft: rgba(235, 219, 178, 0.05);
     --color-on-accent: #1d2021;   /* text on the green: the page colour, as on the bar's "cal" */
     --color-on-danger: #fbf1c7;   /* text on the red: Gruvbox fg0, the one light enough to read on it */
