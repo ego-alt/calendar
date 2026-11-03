@@ -54,7 +54,7 @@ body.view-calendar #calendarView { display: flex; }
     height: calc(100dvh - var(--tmux-h));
     background-color: var(--color-bg-pane);   /* same as the day panel (index.css) */
     border-left: 1px solid var(--color-border);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: right var(--dur-drawer) var(--ease-drawer), opacity var(--dur-drawer) var(--ease-drawer), visibility var(--dur-drawer);
     z-index: 1004;
     opacity: 0;
     visibility: hidden;   /* off-screen: keep it out of the tab order too */
@@ -183,7 +183,7 @@ body.view-search #searchView {
 }
 
 /* ---- phones ---- */
-@media (max-width: 480px) {
+@media (max-width: 640px) {
     :root { --tmux-h: calc(48px + env(safe-area-inset-bottom)); }
     #calendarView { padding: var(--space-3) 0; }
     .term-main { padding: var(--space-2); }
@@ -199,4 +199,4 @@ body.view-search #searchView {
     .term-pane .year-dot { right: 1px; }
     .term-pane .year-marker { left: 1px; }
 }
-@media (max-width: 480px), (hover: none) { .keys-btn { display: none; } }   /* no keyboard there */
+@media (max-width: 640px), (hover: none) { .keys-btn { display: none; } }   /* no keyboard there */

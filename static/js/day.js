@@ -102,6 +102,22 @@ window.addEventListener('online', () => toast('Back online'));
 // ---------- dates ----------
 
 /** "Tue 6 Oct 2026" — the one long date format. */
+// Smooth scrolling, unless motion is turned down.
+const scrollBehavior = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
+
+// Times are typed as the logbook writes them, 24-hour "hh:mm" (a native time
+// field would show the browser's own clock, often with AM/PM). "930" or "9.30"
+// become "09:30"; a lone hour "9" becomes "09:00".
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+function tidyTime(raw) {
+    const t = raw.trim().replace(/[.h]/g, ':');
+    if (!t) return '';
+    let m = t.match(/^(\d{1,2}):(\d{1,2})$/);
+    if (!m && /^\d{3,4}$/.test(t)) m = [t, t.slice(0, -2), t.slice(-2)];
+    if (!m && /^\d{1,2}$/.test(t)) m = [t, t, '0'];
+    return m ? `${m[1].padStart(2, '0')}:${m[2].padStart(2, '0')}` : t;
+}
+
 function formatDayLong(date) {
     return formatDate(date);
 }
@@ -325,7 +341,7 @@ function dayHeader(date, { tools = false } = {}) {
                 <button type="button" class="marker-toggle" data-act="marker" aria-pressed="false" aria-label="Marker" title="Marker">
                     <span class="marker-dot" aria-hidden="true"></span>
                 </button>
-                <label class="attachment-upload-btn" title="Attach photos or PDFs (up to 10 MB each)">
+                <label class="attachment-upload-btn" tabindex="0" role="button" title="Attach photos or PDFs (up to 10 MB each)">
                     <input type="file" multiple hidden accept="image/*,.heic,.heif,application/pdf" onchange="handleAttachmentUpload(event)">
                     <i class="fas fa-paperclip" aria-hidden="true"></i><span class="sr-only">Attach</span>
                 </label>` : ''}
@@ -356,7 +372,7 @@ async function stepDay(delta) {
 async function showSidebar(day) {
     const sidebar = document.getElementById('sidebar');
     const content = document.getElementById('sidebarContent');
-    if (window.innerWidth <= 480) sidebar.style.height = '';
+    if (window.innerWidth <= 640) sidebar.style.height = '';
     requestAnimationFrame(() => sidebar.classList.add('active'));
     currentOpenDay = day;
     entryForm = null;
@@ -555,6 +571,7 @@ function setUpDayNote() {
     });
     el.addEventListener('blur', save);
     el.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); el.blur(); } });
+    el.closest('.day-note-wrap')?.addEventListener('click', (e) => { if (e.target !== el) el.focus(); });
     if (draft != null && draft.trim() !== saved.trim()) save();   // a note left unsaved last time
 }
 
@@ -651,12 +668,12 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null,
             <div class="field-row">
                 <span class="field-label">From</span>
                 <input class="input date-input" type="date" name="start_date" aria-label="From date">
-                <input class="input time-input" type="time" name="start_time" aria-label="From time (optional)">
+                <input class="input time-input" name="start_time" placeholder="hh:mm" inputmode="numeric" maxlength="5" autocomplete="off" aria-label="From time, hh:mm (optional)">
             </div>
             <div class="field-row">
                 <span class="field-label">To</span>
                 <input class="input date-input" type="date" name="end_date" aria-label="To date">
-                <input class="input time-input" type="time" name="end_time" aria-label="To time (optional)">
+                <input class="input time-input" name="end_time" placeholder="hh:mm" inputmode="numeric" maxlength="5" autocomplete="off" aria-label="To time, hh:mm (optional)">
             </div>
             <div class="field-hint">Times are optional.</div>
             <input class="input" name="with_who" placeholder="Who was there?" aria-label="Who was there?" autocomplete="off">
@@ -671,6 +688,8 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null,
         </form>`;
     const form = document.getElementById('entryForm');
     Object.entries(values).forEach(([k, v]) => { if (form.elements[k]) form.elements[k].value = v || ''; });
+
+    form.querySelectorAll('.time-input').forEach((el) => el.addEventListener('blur', () => { el.value = tidyTime(el.value); }));
 
     // Keep the end date in step with the start date until it's changed by hand.
     let endTouched = values.end_date !== values.start_date;
@@ -693,7 +712,7 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null,
     document.getElementById('sidebar').classList.add('form-open');
     document.body.classList.add('entry-form-open');
     form.elements.name.focus({ preventScroll: true });
-    slot.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    slot.scrollIntoView({ block: 'start', behavior: scrollBehavior() });
 }
 
 function restoreDraft(key, values) {
@@ -743,10 +762,15 @@ async function submitEntryForm() {
     const showError = (msg) => {
         errorEl.textContent = msg;
         errorEl.hidden = false;
-        errorEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });   // not hidden under a keyboard
+        errorEl.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });   // not hidden under a keyboard
     };
     if (!values.name.trim()) { showError('Give this entry a name.'); form.elements.name.focus(); return; }
     if (!values.start_date) { showError('Pick a date.'); return; }
+    for (const f of ['start_time', 'end_time']) {
+        values[f] = tidyTime(values[f]);
+        form.elements[f].value = values[f];
+        if (values[f] && !TIME.test(values[f])) { showError('Write times as hh:mm, like 09:30.'); form.elements[f].focus(); return; }
+    }
 
     clearTimeout(draftTimer);
     const { mode, eventId, subId, key } = entryForm;
@@ -1047,4 +1071,13 @@ document.getElementById('sidebarContent').addEventListener('click', (e) => {
         case 'clear-mood': setDayMood(viewState.year, viewState.month, currentOpenDay, null); break;
         case 'marker': toggleDayMarker(viewState.year, viewState.month, currentOpenDay); break;
     }
+});
+
+// The paperclip is a label for a hidden file field: Enter or Space opens the
+// file picker, as a click does.
+document.addEventListener('keydown', (e) => {
+    const clip = e.target.closest?.('.attachment-upload-btn');
+    if (!clip || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    clip.querySelector('input[type=file]')?.click();
 });

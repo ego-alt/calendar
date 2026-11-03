@@ -2,6 +2,11 @@
  * sets a raw font size (tests/test_style_tokens.py checks). Role names follow
  * dashboard/docs/ui-spec.md. */
 :root {
+    /* Dark: the browser draws its own parts (date pickers, open dropdowns,
+       scrollbars, autofill, the resize grip) dark too, and ticks in the accent. */
+    color-scheme: dark;
+    accent-color: var(--color-accent);
+
     /* Spacing (× 4px) */
     --space-1: 4px;
     --space-2: 8px;
@@ -19,9 +24,13 @@
     --font-sans: 'Inter', Arial, Helvetica, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-    /* Motion */
-    --dur-fast: 0.12s;
+    /* Motion: every transition takes one of these, so reduced motion (below)
+       turns them all off at once. */
+    --dur-fast: 0.15s;
     --dur-base: 0.2s;
+    --dur-slow: 0.3s;      /* the phone's day sheet, a day's hover */
+    --dur-drawer: 0.4s;    /* the side drawers */
+    --ease-drawer: cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Colours: Gruvbox dark medium. */
     --color-bg-base: #1d2021;     /* Gruvbox bg0_h ("hard"), its darkest grey */
@@ -41,6 +50,14 @@
     --color-danger: #cc241d;
     --color-danger-hover: #fb4934;
     --color-highlight-soft: rgba(235, 219, 178, 0.05);
+    --color-on-accent: #1d2021;   /* text on the green: the page colour, as on the bar's "cal" */
+    --color-on-danger: #fbf1c7;   /* text on the red: Gruvbox fg0, the one light enough to read on it */
+    --color-accent-soft: rgba(104, 157, 106, 0.15);   /* an outlined accent button's hover */
+    --color-selection: rgba(104, 157, 106, 0.4);      /* selected text */
+    --color-match: rgba(250, 189, 47, 0.28);          /* a search match: Gruvbox yellow, soft */
+    --color-shadow: rgba(0, 0, 0, 0.25);
+    --color-day-mark: rgba(235, 219, 178, 0.7);       /* the photo notch on a day */
+    --color-day-mark-soft: rgba(235, 219, 178, 0.35); /* the folded corner's edge */
 
     /* Corners: terminal edges, square on the chrome. The mood tiles keep their
        rounding (--radius-tile), and round things like mood dots are pills. */
@@ -48,7 +65,8 @@
     --radius-md: 0;
     --radius-lg: 0;
     --radius-tile: 8px;
-    --radius-tile-sm: 4px;
+    --radius-tile-sm: 4px;   /* the year's days, keyboard keys */
+    --radius-mark: 2px;      /* small marks: chart cells and swatches, the today caret, the sheet handle */
     --radius-pill: 9999px;
 
     /* Both side drawers (day panel left, Year / Diary right), padding included. */
@@ -63,3 +81,12 @@
 }
 
 /* One breakpoint: 640px (a convention, since @media can't read a var()). */
+
+/* Motion off when asked: the duration tokens go to zero, and anything else
+   that moves (a fade-in, a scroll) stops too. */
+@media (prefers-reduced-motion: reduce) {
+    :root { --dur-fast: 0s; --dur-base: 0s; --dur-slow: 0s; --dur-drawer: 0s; }
+    *, *::before, *::after { animation: none !important; transition-duration: 0s !important; scroll-behavior: auto !important; }
+}
+
+::selection { background: var(--color-selection); color: var(--color-text-primary); }

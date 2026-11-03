@@ -57,7 +57,7 @@
     padding: 0 5px;
     border-radius: var(--radius-pill);
     background: var(--color-accent);
-    color: #fff;
+    color: var(--color-on-accent);
     font-size: var(--text-xs);
 }
 .filters-count[hidden] { display: none; }
@@ -65,14 +65,14 @@
 .filter-field span { font-size: var(--text-sm); color: var(--color-text-muted); }
 .filter-field .input { flex: 1; min-width: 0; }
 .search-results mark {
-    background: rgba(250, 189, 47, 0.28);
+    background: var(--color-match);
     color: inherit;
-    border-radius: 2px;
+    border-radius: var(--radius-mark);
     padding: 0 1px;
 }
 .search-result-date { display: flex; align-items: center; gap: var(--space-3); }
 .search-footer { text-align: center; color: var(--color-text-muted); font-size: var(--text-sm); margin: var(--space-4) 0; }
-@media (max-width: 480px) {
+@media (max-width: 640px) {
     .filters-btn { display: inline-flex; align-items: center; }
     .search-filters { display: none; }
     .search-filters.open { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); margin-top: var(--space-2); }

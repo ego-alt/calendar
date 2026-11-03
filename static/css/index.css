@@ -6,7 +6,8 @@
 /* Chrome in monospace: buttons, labels and small UI text. Headings and what
    you wrote stay in Inter. */
 .btn, .weekday, .year-weekday, .mood-chip, .st-tab, .filter-field, .search-hint,
-.toast, .modal-actions, .action-sheet-item, .link-btn {
+.toast, .modal-actions, .action-sheet-item, .link-btn, .more-btn, .attachment-delete,
+.loading-indicator, .error-message, .no-events {
     font-family: var(--font-mono);
 }
 
@@ -105,11 +106,14 @@ h2 {
 .attachment-upload-btn {
     cursor: pointer;
     color: var(--color-text-muted);
-    transition: color 0.2s;
+    transition: color var(--dur-base);
     font-size: var(--text-sm);
     padding: var(--space-1) var(--space-2);
     line-height: 1;
 }
+/* The paperclip is a label for a hidden file field: reachable by Tab through
+   its tabindex (day.js), ringed like a button. */
+.attachment-upload-btn:focus-visible { outline: 2px solid var(--color-accent-hover); outline-offset: 2px; }
 .attachment-upload-btn:hover {
     color: var(--color-text-primary);
 }
@@ -143,18 +147,21 @@ h2 {
     right: var(--space-1);
     width: 18px;
     height: 18px;
+    padding: 0;
+    border: 0;
     background: var(--color-bg-overlay);
     border-radius: var(--radius-pill);
     color: var(--color-text-primary);
     font-size: var(--text-sm);
+    line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.2s, background 0.2s;
+    transition: opacity var(--dur-base), background var(--dur-base);
 }
-.attachment-tile:hover .attachment-delete {
+.attachment-tile:hover .attachment-delete, .attachment-delete:focus-visible {
     opacity: 1;
 }
 .attachment-delete:hover {
@@ -186,7 +193,7 @@ h2 {
     right: var(--space-2);
     display: flex;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity var(--dur-base);
 }
 
 .event-actions {
@@ -203,7 +210,7 @@ h2 {
 .event-actions i, .subevent-actions i {
     cursor: pointer;
     color: var(--color-text-muted);
-    transition: color 0.2s;
+    transition: color var(--dur-base);
 }
 
 .subevent-actions i {
@@ -234,7 +241,7 @@ h2 {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: border-color var(--dur-slow) ease, background-color var(--dur-slow) ease;
     position: relative;
     font-size: var(--text-base);
 }
@@ -276,7 +283,7 @@ h2 {
     margin: 3px;
     cursor: pointer;
     border: 2px solid transparent;
-    transition: transform 0.2s ease;
+    transition: transform var(--dur-base) ease;
 }
 .color-option:hover {
     transform: scale(1.1);
@@ -301,12 +308,12 @@ h2 {
     top: 5px;
     left: 5px;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--dur-base) ease;
     color: var(--color-text-muted);
     cursor: pointer;
     font-size: var(--text-sm);
 }
-.day:hover .eye-icon {
+.day:hover .eye-icon, .day:focus-visible .eye-icon {
     opacity: 1;
 }
 /* The day panel: a drawer from the left, over the page, ending at the bottom
@@ -321,7 +328,7 @@ h2 {
     height: calc(100dvh - var(--tmux-h));
     background-color: var(--color-bg-elevated);
     border-right: 1px solid var(--color-border);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: left var(--dur-drawer) var(--ease-drawer), opacity var(--dur-drawer) var(--ease-drawer);
     z-index: 1004;
     opacity: 0;
     overflow-y: auto;
@@ -331,7 +338,7 @@ h2 {
     left: 0;
     opacity: 1;
 }
-@media (min-width: 481px) {
+@media (min-width: 641px) {
     .sidebar { padding-top: 0; }   /* the header sits flush at the top */
 }
 
@@ -387,7 +394,7 @@ h2 {
     position: relative;
     margin-bottom: var(--space-2);
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color var(--dur-base) ease;
 }
 .event-time, .diary-event-time {
     color: var(--color-text-muted);
@@ -424,7 +431,7 @@ h2 {
     font-style: italic;
     white-space: pre-line;
 }
-/* Date/time inputs share the row via flex; date is wider to fit a full date. */
+/* Date and time share the row; the time is a plain hh:mm field (day.js). */
 .date-input,
 .time-input {
     font-size: var(--text-sm);
@@ -432,17 +439,6 @@ h2 {
 }
 .date-input { flex: 2; }
 .time-input { flex: 1; }
-.time-input::-webkit-inner-spin-button,
-.time-input::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-.time-input::-webkit-calendar-picker-indicator {
-    display: none;
-}
-.time-input {
-    -moz-appearance: textfield;
-}
 .event-indicator {
     position: absolute;
     bottom: var(--space-1);
@@ -564,7 +560,7 @@ h2 {
 }
 
 /* Mobile styles */
-@media (max-width: 480px) {
+@media (max-width: 640px) {
     /* Smaller headings on phones: the 32px desktop h1 looks oversized. */
     h1 {
         font-size: var(--text-lg);
@@ -582,14 +578,13 @@ h2 {
         left: 0;
         bottom: -100vh;
         top: auto;
-        /* Its size as it has always been (90% of the screen plus its padding),
-           but never wider than the screen: the padding grows with the phone's
-           text size, and the sheet ran off the right edge. */
+        /* Edge to edge, as it always was on a phone (90% plus its padding came
+           to the full width there); up to 640px a fixed share would leave a gap. */
         box-sizing: border-box;
-        width: min(100vw, calc(90vw + 2 * var(--space-5)));
+        width: 100vw;
         height: 78dvh;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-        transition: bottom 0.3s ease;
+        transition: bottom var(--dur-slow) ease;
         overflow-y: auto;
     }
     /* The sheet's top padding (room for the handle) would leave the sticky
@@ -614,7 +609,7 @@ h2 {
         box-sizing: content-box;
         background-color: var(--color-text-muted);
         background-clip: content-box;
-        border-radius: 2px;
+        border-radius: var(--radius-mark);
         cursor: pointer;
     }
 }
@@ -657,7 +652,7 @@ h2 {
     padding: var(--space-3);
     margin: var(--space-3) 0 var(--space-4);
     border: 1px solid var(--color-border);
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--dur-base) ease;
 }
 .entry-form .form-header {
     margin: 0 0 var(--space-1);
@@ -737,7 +732,7 @@ h2 {
     font-size: var(--text-sm);
     opacity: 0;
     transform: translateY(8px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: opacity var(--dur-base) ease, transform var(--dur-base) ease;
 }
 .toast.show { opacity: 1; transform: none; }
 .toast-error { border-color: var(--color-danger); }
@@ -750,7 +745,9 @@ h2 {
     cursor: pointer;
     padding: var(--space-1) 0;
     min-height: 32px;
+    position: relative;
 }
+.toast-action::after { content: ""; position: absolute; inset: -6px -8px; }   /* a 44px target, the 32px look */
 
 /* ---- in-app confirm ---- */
 .modal-scrim {
@@ -775,7 +772,7 @@ h2 {
 .modal-detail { color: var(--color-text-muted); font-size: var(--text-sm); margin: var(--space-2) 0 var(--space-4); }
 .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
     .toasts { bottom: calc(var(--tmux-h) + var(--space-3)); }
     .input, .entry-form input, .entry-form textarea { font-size: var(--text-base); }   /* no iOS zoom */
 }
@@ -804,7 +801,7 @@ h2 {
     font-family: var(--font-mono);   /* a control label */
     font-size: var(--text-xs);
     cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
 }
 .mood-chip:hover { color: var(--color-text-primary); }
 .mood-dot {
@@ -856,12 +853,22 @@ h2 {
     .drawer-step, .drawer-close { min-width: 44px; min-height: 44px; }
     .pane-tab { min-height: 44px; }
 }
+/* Phones: small words that act keep their look, with a finger-sized target
+   (an invisible ::after around them). The year's day numbers stay small: they
+   sit 24px apart, so a bigger target would land on the next day. */
+@media (max-width: 640px) {
+    .link-btn, .attachment-upload-btn, .day-note-btn, .year-month-title, .diary-day-head { position: relative; }
+    .link-btn::after, .attachment-upload-btn::after, .day-note-btn::after { content: ""; position: absolute; inset: -12px -4px; }
+    .year-month-title::after { content: ""; position: absolute; inset: -14px 0; }
+    .diary-day-head::before { content: ""; position: absolute; inset: -10px 0; }   /* ::after is its "──" */
+}
 .link-btn {
     background: none;
     border: 0;
     padding: var(--space-1);
     color: var(--color-text-muted);
     font: inherit;
+    font-family: var(--font-mono);
     font-size: var(--text-sm);
     text-decoration: underline;
     text-underline-offset: 2px;
@@ -903,6 +910,7 @@ h2 {
         background: none;
         border: 0;
         color: var(--color-text-muted);
+        font-family: var(--font-mono);
         font-size: var(--text-base);
         cursor: pointer;
     }
@@ -920,7 +928,7 @@ h2 {
     align-items: flex-end;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.18s ease;
+    transition: opacity var(--dur-fast) ease;
 }
 .action-sheet[hidden] { display: none; }
 .action-sheet.open { opacity: 1; }
@@ -933,7 +941,7 @@ h2 {
     flex-direction: column;
     gap: var(--space-1);
     transform: translateY(16px);
-    transition: transform 0.18s ease;
+    transition: transform var(--dur-fast) ease;
 }
 .action-sheet.open .action-sheet-card { transform: none; }
 .action-sheet-title {
@@ -953,6 +961,7 @@ h2 {
     background: var(--color-bg-inset);
     color: var(--color-text-primary);
     font: inherit;
+    font-family: var(--font-mono);
     cursor: pointer;
 }
 .action-sheet-item.danger { color: var(--color-danger-hover); }
@@ -961,7 +970,7 @@ h2 {
 .form-buttons-title { display: none; flex: 1; text-align: center; font-weight: 600; color: var(--color-text-primary); align-self: center; }
 
 /* ---- phones: the entry form is a full-screen sheet with Save on top ---- */
-@media (max-width: 480px) {
+@media (max-width: 640px) {
     body.entry-form-open .tmux { display: none; }
     body.entry-form-open .entry-form {
         position: fixed;
@@ -984,13 +993,13 @@ h2 {
         background: var(--color-bg-elevated);
         border-bottom: 1px solid var(--color-border-soft);
     }
-    body.entry-form-open .entry-form .form-buttons .btn { flex: 0 0 auto; min-width: 88px; min-height: 40px; }
+    body.entry-form-open .entry-form .form-buttons .btn { flex: 0 0 auto; min-width: 88px; min-height: 44px; }
     body.entry-form-open .entry-form .form-header { display: none; }   /* shown in the bar */
     body.entry-form-open .form-buttons-title { display: block; }
 }
 
 /* month loading: dim the grid instead of looking stuck */
-#calendarContainer { transition: opacity 0.15s ease; }
+#calendarContainer { transition: opacity var(--dur-fast) ease; }
 #calendarContainer.loading { opacity: 0.5; }
 
 
@@ -1007,7 +1016,7 @@ h2 {
     width: 7px;
     height: 13px;
     background: var(--color-text-primary);
-    border-radius: 1px;
+    border-radius: var(--radius-mark);
 }
 
 /* ---- Diary ---- */
@@ -1138,13 +1147,13 @@ button.diary-file { border: 0; cursor: zoom-in; font: inherit; }
     position: fixed;
     inset: 0;
     z-index: 2080;
-    background: rgba(20, 20, 20, 0.96);
+    background: var(--color-bg-pane);
     display: grid;
     grid-template-columns: 56px minmax(0, 1fr) 56px;
     grid-template-rows: auto minmax(0, 1fr) auto;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     opacity: 0;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--dur-fast) ease;
 }
 .viewer[hidden] { display: none; }
 .viewer.open { opacity: 1; }
@@ -1189,13 +1198,12 @@ button.diary-file { border: 0; cursor: zoom-in; font: inherit; }
 }
 .viewer-meta .input { width: min(320px, 100%); }
 .viewer-caption-text { color: var(--color-text-secondary); }
-@media (max-width: 480px) {
+@media (max-width: 640px) {
     .viewer { grid-template-columns: 0 minmax(0, 1fr) 0; }
     .viewer-nav { display: none; }                  /* swipe instead */
     .viewer-open span, .viewer-delete span { display: none; }
 }
 .viewer-delete[hidden] { display: none; }
-.viewer { background: #161514; transition-duration: 0.1s; }
 .viewer-doc a, .viewer-open { text-decoration: none; }
 
 /* ---- shortcut sheet ---- */
@@ -1206,7 +1214,7 @@ button.diary-file { border: 0; cursor: zoom-in; font: inherit; }
 kbd {
     font: var(--text-xs) var(--font-mono);
     padding: 1px 6px;
-    border-radius: 4px;
+    border-radius: var(--radius-tile-sm);
     border: 1px solid var(--color-border);
     background: var(--color-bg-inset);
     color: var(--color-text-primary);
@@ -1307,7 +1315,7 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
     height: 0;
     border-style: solid;
     border-color: transparent var(--color-bg-base) var(--color-bg-base) transparent;
-    filter: drop-shadow(-1px -1px 0 rgba(235, 219, 178, 0.35));
+    filter: drop-shadow(-1px -1px 0 var(--color-day-mark-soft));
     border-bottom-right-radius: var(--radius-md);
 }
 .fold-1 { border-width: 0 7px 7px 0; }
@@ -1320,8 +1328,8 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
     left: 6px;
     width: 9px;
     height: 7px;
-    border: 1.5px solid rgba(235, 219, 178, 0.7);
-    border-radius: 2px;
+    border: 1.5px solid var(--color-day-mark);
+    border-radius: var(--radius-mark);
 }
 .day.today .photo-notch { left: 17px; }
 .day:hover .photo-notch { opacity: 0; }   /* the quick-mood eye takes that corner */
@@ -1335,8 +1343,9 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
     display: flex;
     align-items: baseline;
     margin: 0 0 var(--space-3);
-    padding: var(--space-2) 0;
+    padding: var(--space-3) 0;   /* with its one line, a finger tall; a tap anywhere on it writes (day.js) */
     border-bottom: 1px dashed var(--color-border);
+    cursor: text;
 }
 .day-note-wrap:focus-within { border-bottom-color: var(--color-accent); }
 /* The day's note reads at the size of an entry's notes. */
@@ -1427,7 +1436,7 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 }
 .add-event-btn.btn-primary:hover:not(:disabled),
 .entry-form .save-btn.btn-primary:hover:not(:disabled) {
-    background: rgba(104, 157, 106, 0.15);
+    background: var(--color-accent-soft);
     border-color: var(--color-accent-hover);
     color: var(--color-accent-hover);
 }

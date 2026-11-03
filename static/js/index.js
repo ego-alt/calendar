@@ -278,7 +278,7 @@ function setupGlobalEventListeners() {
         if (!keepsPane && paneTab()) closePane();
         if (!keepsPanel && sidebar.classList.contains('active')) {
             sidebar.classList.remove('active');
-            if (window.innerWidth <= 480) sidebar.style.height = '';
+            if (window.innerWidth <= 640) sidebar.style.height = '';
             // Any half-written entry is kept as a draft (see day.js) and comes
             // back when this day is opened again.
             closeEntryForm();
@@ -290,7 +290,7 @@ function setupGlobalEventListeners() {
         e.stopPropagation();
     });
 
-    if (window.innerWidth <= 480) {
+    if (window.innerWidth <= 640) {
         // Dismiss the bottom sheet by tapping the handle, or by pressing and
         // swiping down anywhere on the card. The swipe only counts when the
         // content is scrolled to the top, so it doesn't fight content scrolling.
@@ -367,6 +367,18 @@ function setupMonthGridListeners() {
     });
 
     document.querySelectorAll('.day.current-month').forEach(day => {
+        // Reached by Tab like any button (the first month is drawn by the
+        // server, later ones above): Enter or Space opens the day.
+        day.tabIndex = 0;
+        day.setAttribute('role', 'button');
+        day.setAttribute('aria-label', new Date(viewState.year, viewState.month - 1, Number(day.dataset.day))
+            .toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }));
+        day.addEventListener('keydown', (e) => {
+            if (e.target !== day || (e.key !== 'Enter' && e.key !== ' ')) return;
+            e.preventDefault();
+            e.stopPropagation();
+            showSidebar(Number(day.dataset.day));
+        });
         day.addEventListener('dblclick', (e) => {
             e.stopPropagation();
             toggleDayMarker(viewState.year, viewState.month, Number(day.dataset.day));   // day.js
