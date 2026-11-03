@@ -108,7 +108,6 @@ const scrollBehavior = () => (matchMedia('(prefers-reduced-motion: reduce)').mat
 // Times are typed as the logbook writes them, 24-hour "hh:mm" (a native time
 // field would show the browser's own clock, often with AM/PM). "930" or "9.30"
 // become "09:30"; a lone hour "9" becomes "09:00".
-const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 function tidyTime(raw) {
     const t = raw.trim().replace(/[.h]/g, ':');
     if (!t) return '';
@@ -769,7 +768,6 @@ async function submitEntryForm() {
     for (const f of ['start_time', 'end_time']) {
         values[f] = tidyTime(values[f]);
         form.elements[f].value = values[f];
-        if (values[f] && !TIME.test(values[f])) { showError('Write times as hh:mm, like 09:30.'); form.elements[f].focus(); return; }
     }
 
     clearTimeout(draftTimer);
