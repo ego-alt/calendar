@@ -361,7 +361,7 @@ h2 {
     border: 0;
     padding: var(--space-1) var(--space-2);
     font: inherit;
-    font-size: var(--text-sm);
+    font-size: var(--text-base);   /* the title's size: they step it */
     line-height: 1;
     color: var(--color-text-muted);
     cursor: pointer;
@@ -632,11 +632,10 @@ h2 {
     font-weight: 600;
 }
 .entry-form textarea { min-height: 96px; resize: vertical; }
-.form-context, .form-note, .field-hint {
+.form-context, .field-hint {
     font-size: var(--text-sm);
     color: var(--color-text-muted);
 }
-.form-note { color: var(--color-accent-hover); }
 .field-row { display: flex; flex-direction: column; gap: var(--space-1); }
 .field-label { font-size: var(--text-sm); color: var(--color-text-muted); }
 /* From / To: one field, the date as the logbook writes it, a hairline, then
@@ -693,18 +692,19 @@ h2 {
    One voice wherever the calendar speaks: grey monospace lines, a problem
    marked "!", anything else "›" like the status line, left-aligned. No colour
    and no boxes; red is only for buttons that destroy something. */
-.form-error, .error-message, .toast, .loading-indicator, .no-events, .search-hint, .search-footer, .st-status {
+.form-error, .error-message, .toast, .loading-indicator, .no-events, .search-hint, .search-footer, .st-status,
+.form-note, .upload-progress {
     font-family: var(--font-mono);
-    font-size: var(--text-sm);
+    font-size: var(--text-xs);   /* system output: the bar's size */
     text-align: left;
 }
 .form-error, .error-message { color: var(--color-text-secondary); }
-.loading-indicator, .no-events, .search-hint, .search-footer, .st-status { color: var(--color-text-muted); }
+.loading-indicator, .no-events, .search-hint, .search-footer, .st-status, .form-note, .upload-progress { color: var(--color-text-muted); }
 .form-error::before, .error-message::before, .toast-error::before { content: "!"; font-weight: 700; color: var(--color-text-muted); }
 .loading-indicator::before, .no-events::before, .search-hint::before, .search-footer::before, .st-status::before,
-.toast:not(.toast-error)::before { content: "›"; color: var(--color-text-muted); }
-.form-error::before, .error-message::before, .loading-indicator::before, .no-events::before,
-.search-hint::before, .search-footer::before, .st-status::before { margin-right: 0.6ch; }   /* a toast's gap spaces its mark */
+.form-note::before, .upload-progress::before, .toast:not(.toast-error)::before { content: "›"; color: var(--color-text-muted); }
+.form-error::before, .error-message::before, .loading-indicator::before, .no-events::before, .search-hint::before,
+.search-footer::before, .st-status::before, .form-note::before, .upload-progress::before { margin-right: 0.6ch; }   /* a toast's gap spaces its mark */
 .st-status.failed::before { content: none; }   /* its error line carries the "!" */
 
 /* Standing in for a list (loading, nothing there, didn't load), at the content's edge. */
@@ -745,7 +745,6 @@ h2 {
     background: var(--color-bg-chrome);
     border-top: 1px solid var(--color-border-soft);
     color: var(--color-text-secondary);
-    font-size: var(--text-sm);
 }
 /* One line: a longer message ends in "…", and a tap shows the rest (day.js). */
 .toast-text { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -815,7 +814,7 @@ h2 {
     color: var(--color-text-muted);
     font: inherit;
     font-family: var(--font-mono);   /* a control label */
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     cursor: pointer;
     transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
 }
@@ -988,6 +987,7 @@ h2 {
 /* ---- phones: the entry form is a full-screen sheet with Save on top ---- */
 @media (max-width: 640px) {
     body.entry-form-open .tmux { display: none; }
+    body.entry-form-open .toasts { bottom: 0; }   /* the bar it sits on is hidden */
     body.entry-form-open .entry-form {
         position: fixed;
         inset: 0;
@@ -1151,11 +1151,7 @@ h2 {
 .attachment-tile.small { width: 48px; }
 .attachment-tile.small .attachment-open { aspect-ratio: 1; }
 .attachment-tile.small .attachment-icon span { display: none; }
-.upload-progress {
-    font-size: var(--text-sm);
-    color: var(--color-accent-hover);
-    margin: calc(-1 * var(--space-3)) 0 var(--space-3);
-}
+.upload-progress { margin: calc(-1 * var(--space-3)) 0 var(--space-3); }
 button.diary-file { border: 0; cursor: zoom-in; font: inherit; }
 
 /* ---- the viewer ---- */

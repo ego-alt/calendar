@@ -15,14 +15,16 @@
     --space-5: 20px;
     --space-8: 40px;
 
-    /* Type: five sizes. */
+    /* Type: five sizes, given by job: 16 a title (the day, a form), 14 what you
+       read and tap (moods, notes, buttons, entries), 11 system output and chrome
+       (the bar, status lines and messages, key hints, the time gutter). */
     --text-xs: 0.6875rem;   /* 11: micro labels, chart axes, the phone's bottom bar */
     --text-sm: 0.875rem;    /* 14: captions, secondary */
     --text-base: 1rem;      /* 16: body */
     --text-lg: 1.25rem;     /* 20: headings, emphasis */
     --text-xl: 2rem;        /* 32: the month's name, stats figures */
     --font-sans: 'Inter', Arial, Helvetica, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;   /* self-hosted (fonts/plexmono) */
 
     /* Motion: every transition takes one of these, so reduced motion (below)
        turns them all off at once. */
