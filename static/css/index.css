@@ -414,14 +414,6 @@ h2 {
     font-style: italic;
     white-space: pre-line;
 }
-/* Date and time share the row; the time is a plain hh:mm field (day.js). */
-.date-input,
-.time-input {
-    font-size: var(--text-sm);
-    min-width: 0;
-}
-.date-input { flex: 2; }
-.time-input { flex: 1; }
 .event-indicator {
     position: absolute;
     bottom: var(--space-1);
@@ -549,11 +541,6 @@ h2 {
         font-size: var(--text-lg);
         margin-bottom: var(--space-3);
     }
-    /* iOS zooms the page when focusing any field under 16px and never zooms
-     * back out. Keep the visual scale but lift these to 16px on phones. */
-    .date-input, .time-input {
-        font-size: var(--text-base);
-    }
     /* Bottom-sheet event drawer: opens at this height; scrolling grows it up to
      * nearly full height (index.js), then the entries scroll. Tapping or swiping
      * the handle slides it back down. */
@@ -650,18 +637,39 @@ h2 {
     color: var(--color-text-muted);
 }
 .form-note { color: var(--color-accent-hover); }
-.field-row {
+.field-row { display: flex; flex-direction: column; gap: var(--space-1); }
+.field-label { font-size: var(--text-sm); color: var(--color-text-muted); }
+/* From / To: one field, the date as the logbook writes it, a hairline, then
+   hh:mm (day.js stampRow). Drawn like .input, with no browser icon. */
+.stamp {
     display: grid;
-    /* "From" / "To" sit above their row, so a full date (in monospace, with
-       its picker) fits beside the time even in a 340px drawer */
-    grid-template-columns: minmax(0, 1fr) 6.5em;
-    gap: var(--space-2);
-    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-border);
+    font: var(--text-sm) var(--font-mono);
+    transition: border-color var(--dur-base) ease;
 }
-/* A grid item won't shrink below its content by default, so a wide date
-   field (large text on the phone) pushed its row past the screen's edge. */
-.field-row .input { min-width: 0; max-width: 100%; box-sizing: border-box; }
-.field-label { grid-column: 1 / -1; margin-bottom: calc(-1 * var(--space-1)); font-size: var(--text-sm); color: var(--color-text-muted); }
+.stamp:focus-within { border-color: var(--color-accent); }
+.stamp:has(.warn) { border-color: var(--color-text-secondary); }   /* the form's message is about it */
+.stamp-date { position: relative; display: flex; align-items: center; min-width: 0; padding: var(--space-2); cursor: pointer; }
+.stamp-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-text-primary); }
+.stamp-text.empty { color: var(--color-text-muted); }
+.stamp-wd { margin-right: 1ch; color: var(--color-text-muted); }
+/* The native date field, invisible over the whole date: a tap anywhere opens its picker. */
+.stamp-picker { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.stamp-picker::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: auto; height: auto; cursor: pointer; }
+.stamp-time {
+    width: 5ch;
+    padding: var(--space-2) var(--space-3);
+    border: 0;
+    border-left: 1px solid var(--color-border);
+    background: none;
+    color: var(--color-text-primary);
+    font: inherit;
+    text-align: center;
+}
+.stamp-time::placeholder { color: var(--color-text-muted); }
+.stamp :is(input):focus, .stamp :is(input):focus-visible { outline: none; }   /* the field's edge shows focus */
 .field-hint { margin-top: calc(-1 * var(--space-1)); }
 .add-event-btn { margin: 0 0 var(--space-3); }
 .sidebar.form-open .add-event-btn { display: none; }   /* you're already writing one */
@@ -1451,3 +1459,11 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 .entry-form .cancel-btn { color: var(--color-text-muted); }
 .key-hint { opacity: 0.6; }
 @media (hover: none) { .key-hint { display: none; } }   /* no keyboard there */
+
+/* Phones: the From / To fields are a finger tall, at 16px (below it iOS zooms in). */
+@media (max-width: 640px) {
+    .stamp { min-height: 44px; font-size: var(--text-base); }
+}
+/* The name field suggests past names (a datalist): they show as you type,
+   without Chrome's own ▼ in the field. */
+.entry-form input[list]::-webkit-calendar-picker-indicator { display: none !important; }

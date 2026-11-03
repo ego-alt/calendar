@@ -137,6 +137,34 @@ function tidyTime(raw) {
     return m ? `${m[1].padStart(2, '0')}:${m[2].padStart(2, '0')}` : t;
 }
 
+/** A form row for a moment in time: one field with the date as the logbook
+ *  writes it ("Wed 4 Nov 2026") and an hh:mm time beside it. The date is a
+ *  native date field laid invisibly over its text, so a tap opens the phone's
+ *  own picker; the text is drawn from it (showStamp). */
+function stampRow(label, dateName, timeName) {
+    return `<div class="field-row">
+        <span class="field-label">${label}</span>
+        <div class="stamp">
+            <label class="stamp-date"><span class="stamp-text"></span><input class="stamp-picker" type="date" name="${dateName}" aria-label="${label} date"></label>
+            <input class="stamp-time time-input" name="${timeName}" placeholder="hh:mm" inputmode="numeric" maxlength="5" autocomplete="off" aria-label="${label} time, hh:mm (optional)">
+        </div>
+    </div>`;
+}
+
+function showStamp(picker) {
+    const text = picker.parentElement.querySelector('.stamp-text');
+    const [y, m, d] = picker.value.split('-').map(Number);
+    if (!y) { text.textContent = 'pick a date'; text.classList.add('empty'); return; }
+    const [weekday, ...rest] = formatDayLong(new Date(y, m - 1, d)).split(' ');
+    text.innerHTML = `<span class="stamp-wd">${weekday}</span>${escapeHtml(rest.join(' '))}`;
+    text.classList.remove('empty');
+}
+
+/** Open the native picker from anywhere on the date (and from Enter or Space). */
+function openPicker(picker) {
+    try { picker.showPicker(); } catch (_) { /* already open, or no showPicker: the tap opens it */ }
+}
+
 function formatDayLong(date) {
     return formatDate(date);
 }
@@ -684,16 +712,8 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null,
             ${parent ? `<div class="form-context">Part of “${escapeHtml(parent.name)}”</div>` : ''}
             ${draft ? `<div class="form-note">Draft restored.</div>` : ''}
             <input class="input" name="name" placeholder="What happened?" aria-label="What happened?" autocomplete="off">
-            <div class="field-row">
-                <span class="field-label">From</span>
-                <input class="input date-input" type="date" name="start_date" aria-label="From date">
-                <input class="input time-input" name="start_time" placeholder="hh:mm" inputmode="numeric" maxlength="5" autocomplete="off" aria-label="From time, hh:mm (optional)">
-            </div>
-            <div class="field-row">
-                <span class="field-label">To</span>
-                <input class="input date-input" type="date" name="end_date" aria-label="To date">
-                <input class="input time-input" name="end_time" placeholder="hh:mm" inputmode="numeric" maxlength="5" autocomplete="off" aria-label="To time, hh:mm (optional)">
-            </div>
+            ${stampRow('From', 'start_date', 'start_time')}
+            ${stampRow('To', 'end_date', 'end_time')}
             <div class="field-hint">Times are optional.</div>
             <input class="input" name="with_who" placeholder="Who was there?" aria-label="Who was there?" autocomplete="off">
             <input class="input" name="where" placeholder="Where?" aria-label="Where?" autocomplete="off">
@@ -709,6 +729,12 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null,
     Object.entries(values).forEach(([k, v]) => { if (form.elements[k]) form.elements[k].value = v || ''; });
 
     form.querySelectorAll('.time-input').forEach((el) => el.addEventListener('blur', () => { el.value = tidyTime(el.value); }));
+    const pickers = form.querySelectorAll('.stamp-picker');
+    pickers.forEach((p) => {
+        showStamp(p);
+        p.addEventListener('click', () => openPicker(p));
+        p.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPicker(p); } });
+    });
 
     // Keep the end date in step with the start date until it's changed by hand.
     let endTouched = values.end_date !== values.start_date;
@@ -716,6 +742,7 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null,
     form.elements.start_date.addEventListener('input', () => {
         if (!endTouched) form.elements.end_date.value = form.elements.start_date.value;
     });
+    form.addEventListener('input', () => pickers.forEach(showStamp));   // after the line above, so To follows From
 
     form.addEventListener('input', () => {
         clearTimeout(draftTimer);
@@ -793,7 +820,7 @@ function placeError(form, errorEl, msg) {
         after = marks.includes(f.end_time) || marks.includes(f.end_date) ? toRow : fromRow;
     }
     const clear = () => {
-        form.querySelectorAll('.input.warn').forEach((el) => el.classList.remove('warn'));
+        form.querySelectorAll('.warn').forEach((el) => el.classList.remove('warn'));
         if (hint) hint.hidden = false;
         errorEl.hidden = true;
     };
