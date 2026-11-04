@@ -64,16 +64,6 @@ body.view-calendar #calendarView { display: flex; }
     opacity: 1;
     visibility: visible;
 }
-.pane-tab {
-    background: none;
-    border: 0;
-    padding: var(--space-1) var(--space-2);
-    font: inherit;
-    color: var(--color-text-muted);
-    cursor: pointer;
-}
-.pane-tab:hover { color: var(--color-text-primary); }
-.pane-tab.active { background: var(--color-border); color: var(--color-text-primary); }
 .pane-body {
     position: absolute;
     inset: 44px 0 0 0;   /* below the 44px drawer header */
@@ -198,5 +188,7 @@ body.view-search #searchView {
     .term-pane .year-dot, .term-pane .year-marker { width: 3px; height: 3px; bottom: 1px; }
     .term-pane .year-dot { right: 1px; }
     .term-pane .year-marker { left: 1px; }
+    /* Stats and Search use the screen's width: the page's own 12px edge, no more. */
+    #statsView, #searchView { padding: var(--space-4) 0; }
 }
 @media (max-width: 640px), (hover: none) { .keys-btn { display: none; } }   /* no keyboard there */

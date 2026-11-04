@@ -347,8 +347,8 @@ h2 {
 .sidebar .drawer-head { margin: 0 calc(-1 * var(--space-5)) var(--space-4); }
 .drawer-title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 2px; }
 .drawer-title .day-title,
-.drawer-tools .pane-year,
-.drawer-tools .pane-month {
+.drawer-title .pane-year,
+.drawer-title .pane-month {
     font-family: var(--font-sans);   /* a title: Inter, like the month heading */
     font-size: var(--text-base);
     font-weight: 600;
@@ -866,7 +866,6 @@ h2 {
 /* The drawers' small header controls get finger-sized targets too. */
 @media (hover: none) {
     .drawer-step, .drawer-close { min-width: 44px; min-height: 44px; }
-    .pane-tab { min-height: 44px; }
 }
 /* Phones: small words that act keep their look, with a finger-sized target
    (an invisible ::after around them). The year's day numbers stay small: they
@@ -1425,7 +1424,7 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 .detail-notes { color: var(--color-text-muted); }
 
 /* dates read as dates, in the theme's green */
-.drawer-head .day-title, .drawer-tools .pane-year, .drawer-tools .pane-month,
+.drawer-head .day-title, .drawer-title .pane-year, .drawer-title .pane-month,
 .diary-date, .entry-span, .search-result-date {
     color: var(--color-syn-date);
 }

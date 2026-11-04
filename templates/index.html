@@ -89,13 +89,10 @@
                 </div>
                 <aside class="term-pane" id="contextPane" aria-label="Year and diary">
                     <!-- Same header as the day panel's (day.js dayHeader): what it
-                         shows on the left, its controls, then ×. -->
+                         shows on the left, then ×. Year or diary is switched in
+                         the bottom bar, the one place for it. -->
                     <header class="drawer-head">
-                        <nav class="drawer-title pane-tabs" role="tablist">
-                            <button type="button" class="pane-tab" data-pane="year" role="tab">year</button>
-                            <button type="button" class="pane-tab" data-pane="diary" role="tab">diary</button>
-                        </nav>
-                        <div class="drawer-tools" id="paneTitle"></div>
+                        <div class="drawer-title" id="paneTitle"></div>
                         <button type="button" class="btn btn-ghost drawer-close" id="paneClose" aria-label="Close"><i class="fas fa-times"></i></button>
                     </header>
                     <div class="pane-body" id="yearView">

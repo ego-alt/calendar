@@ -141,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
     keysModal.addEventListener('click', (e) => { if (e.target === keysModal) keysModal.hidden = true; });
     document.getElementById('keysBtn')?.addEventListener('click', () => { keysModal.hidden = false; });
     document.getElementById('paneClose').addEventListener('click', () => closePane());
-    document.querySelectorAll('.pane-tab').forEach((t) => t.addEventListener('click', () => openPane(t.dataset.pane)));
     // ‹ 2026 › in the year tab's title steps the year (the month follows).
     document.getElementById('paneTitle').addEventListener('click', (e) => {
         const b = e.target.closest('[data-nav]');
@@ -170,13 +169,11 @@ const paneTab = () => document.getElementById('termWindow').dataset.pane || '';
 const isPaneOpen = (tab) => paneTab() === tab;
 
 function openPane(tab) {
+    // A phone has room for one drawer: the year or diary takes the day's place.
+    if (window.innerWidth <= 640 && document.getElementById('sidebar').classList.contains('active')) dismissSidebar();
     const win = document.getElementById('termWindow');
     win.dataset.pane = tab;
     win.classList.add('pane-open');
-    document.querySelectorAll('.pane-tab').forEach((t) => {
-        t.classList.toggle('active', t.dataset.pane === tab);
-        t.setAttribute('aria-selected', String(t.dataset.pane === tab));
-    });
     document.getElementById('yearView').hidden = tab !== 'year';
     document.getElementById('diaryView').hidden = tab !== 'diary';
     if (tab === 'year') {

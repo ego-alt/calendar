@@ -79,6 +79,8 @@
        stays the largest element; the bold weight keeps the number prominent. */
     .st-tile .n { font-size: var(--text-lg); }
     .st-card h2 { font-size: var(--text-base); }
+    .st-card, .st-tile { padding: var(--space-3); }
+    .st-tiles, .st-2col { gap: var(--space-2); }
     .st-tab::after { content: ""; position: absolute; inset: -10px 0; }   /* a 44px target, the 25px look */
 }
 
