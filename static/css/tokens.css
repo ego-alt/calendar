@@ -1,6 +1,6 @@
 /* Tokens — every size and colour the calendar uses. Nothing outside this file
  * sets a raw font size (tests/test_style_tokens.py checks). Role names follow
- * dashboard/docs/ui-spec.md. */
+ * dashboard/docs/design.md. */
 :root {
     /* Dark: the browser draws its own parts (date pickers, open dropdowns,
        scrollbars, autofill, the resize grip) dark too, and ticks in the accent. */
