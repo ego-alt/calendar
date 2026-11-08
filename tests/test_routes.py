@@ -210,6 +210,28 @@ def test_attachment_delete_is_undoable_then_purged(authed_client, app):
     assert not file_path.exists()
 
 
+def test_purging_an_entry_unlinks_its_files_and_drops_its_embedding(authed_client, app):
+    """The database does this (ON DELETE), so foreign keys must be on."""
+    from datetime import datetime, timedelta
+
+    from models import Event, EventEmbedding
+    from trash import purge_deleted
+
+    attachment_id = _upload(authed_client, 2026, 5, 11).get_json()["attachment"]["id"]
+    with app.app_context():
+        event = Event(name="Lunch", start_time=datetime(2026, 5, 11, 12), deleted_at=datetime(2026, 1, 1))
+        db.session.add(event)
+        db.session.flush()
+        db.session.add(EventEmbedding(event_id=event.id, embedding=b"x", model="m", source_hash="h"))
+        attachment = db.session.get(Attachment, attachment_id)
+        attachment.event_id = event.id
+        db.session.commit()
+        assert purge_deleted(older_than=timedelta(0)) == 1
+        db.session.expire_all()
+        assert db.session.get(Attachment, attachment_id).event_id is None
+        assert EventEmbedding.query.count() == 0
+
+
 def test_attachment_ownership_blocks_other_user(authed_client, app, client):
     upload = _upload(authed_client, 2026, 5, 11)
     attachment_id = upload.get_json()["attachment"]["id"]

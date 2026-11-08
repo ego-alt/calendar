@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 from flask import current_app
 
-from models import Attachment, DailyLog, Event, EventEmbedding, SubEvent, db
+from models import Attachment, DailyLog, Event, SubEvent, db
 
 PURGE_AFTER = timedelta(days=30)
 
@@ -53,9 +53,6 @@ def purge_deleted(older_than: timedelta = PURGE_AFTER) -> int:
         SubEvent.query.filter(SubEvent.event_id.in_(old_events)).execution_options(
             include_deleted=True
         ).delete(synchronize_session=False)
-        EventEmbedding.query.filter(EventEmbedding.event_id.in_(old_events)).delete(
-            synchronize_session=False
-        )
         removed += Event.query.filter(Event.id.in_(old_events)).execution_options(
             include_deleted=True
         ).delete(synchronize_session=False)

@@ -1,11 +1,22 @@
+import sqlite3
+
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import event as sa_event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, with_loader_criteria
 from sqlalchemy.sql import func
 from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
+
+
+@sa_event.listens_for(Engine, "connect")
+def _foreign_keys_on(dbapi_connection, _record):
+    """SQLite ignores foreign keys (ON DELETE included) unless each connection
+    asks. Migrations turn them off again (migrations/env.py)."""
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        dbapi_connection.execute("PRAGMA foreign_keys=ON")
 
 
 class User(UserMixin, db.Model):

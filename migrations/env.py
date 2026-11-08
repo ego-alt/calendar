@@ -97,14 +97,22 @@ def run_migrations_online():
     connectable = get_engine()
 
     with connectable.connect() as connection:
+        # A migration rebuilds an SQLite table by copying it and dropping the
+        # old one; with foreign keys on, that drop would cascade to the rows
+        # that point at it (models.py turns them on for the app).
+        connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+        connection.commit()   # so the migrations' own transaction is the outer one, and commits
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),
             **conf_args
         )
 
-        with context.begin_transaction():
-            context.run_migrations()
+        try:
+            with context.begin_transaction():
+                context.run_migrations()
+        finally:
+            connection.invalidate()   # not back into the pool with foreign keys off
 
 
 if context.is_offline_mode():
