@@ -15,8 +15,11 @@ from tests.test_search import stub_embeddings  # noqa: F401  (autouse fixture)
 DAY = {"year": 2026, "month": 5, "day": 25}
 
 
-def _note(client, text, **day):
-    r = client.post("/mood/note", json={**DAY, **day, "note": text})
+def _note(client, text, base=None, **day):
+    """Save a note, from the one there now unless `base` says otherwise."""
+    if base is None:
+        base = _day(client, day.get("day", DAY["day"]))["note"] or ""
+    r = client.post("/mood/note", json={**DAY, **day, "note": text, "base": base})
     assert r.status_code == 200, r.get_json()
     return r.get_json()
 
@@ -30,6 +33,26 @@ def test_note_is_saved_on_the_day_not_as_an_entry(authed_client):
     day = _day(authed_client)
     assert day["note"] == "Rain all day. Read on the sofa." and day["events"] == []
     assert Event.query.count() == 0
+
+
+def test_a_note_changed_elsewhere_is_not_overwritten(authed_client):
+    """A draft kept on one device says which note it started from; if the
+    note has changed since, the save is refused with the note as it is."""
+    _note(authed_client, "Written on the phone")
+    _note(authed_client, "Rewritten on the Mac", base="Written on the phone")
+    r = authed_client.post("/mood/note", json={**DAY, "note": "Phone draft", "base": "Written on the phone"})
+    assert r.status_code == 409 and r.get_json()["current"] == "Rewritten on the Mac"
+    assert _day(authed_client)["note"] == "Rewritten on the Mac"
+    # Started from nothing, but there's a note now: refused too.
+    r = authed_client.post("/mood/note", json={**DAY, "day": 26, "note": "x", "base": ""})
+    assert r.status_code == 200
+    r = authed_client.post("/mood/note", json={**DAY, "day": 26, "note": "y", "base": ""})
+    assert r.status_code == 409 and r.get_json()["current"] == "x"
+
+
+def test_a_save_must_say_what_it_started_from(authed_client):
+    r = authed_client.post("/mood/note", json={**DAY, "note": "from an old page"})
+    assert r.status_code == 400 and _day(authed_client)["note"] is None
 
 
 def test_clearing_returns_the_old_text_and_drops_an_empty_day(authed_client, app):

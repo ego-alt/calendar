@@ -94,7 +94,7 @@ async function api(path, { method = 'GET', json, form } = {}) {
     let data = {};
     try { data = await response.json(); } catch (_) { /* not JSON */ }
     if (!response.ok || data.status === 'error') {
-        throw new Error(data.message || `Something went wrong (${response.status}). Try again.`);
+        throw Object.assign(new Error(data.message || `Something went wrong (${response.status}). Try again.`), { status: response.status, data });
     }
     return data;
 }
@@ -251,9 +251,10 @@ function readDrafts() {
 function writeDrafts(drafts) {
     try { localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts)); } catch (_) { /* private mode: memory only */ }
 }
-function saveDraft(key, values) {
+/** `base` is the entry as it was when the draft was started. */
+function saveDraft(key, values, base) {
     const drafts = readDrafts();
-    drafts[key] = { values, at: Date.now() };
+    drafts[key] = { values, base, at: Date.now() };
     writeDrafts(drafts);
 }
 function clearDraft(key) {
@@ -549,6 +550,7 @@ function renderDay() {
         ${dayHeader(date, { tools: true })}
         <div id="dayMoodSlot"></div>
         <div class="day-note-wrap detail-notes"><span class="mark" aria-hidden="true">&gt;</span><textarea class="day-note" id="dayNote" rows="1" placeholder="Write about the day…" aria-label="A note about the day"></textarea></div>
+        <div class="form-note note-conflict" id="noteConflict" role="alert" hidden>Changed on another device since you wrote this. <button class="link-btn" type="button" data-note="mine"><span class="cmd-word">keep yours</span></button> · <button class="link-btn" type="button" data-note="theirs"><span class="cmd-word">use theirs</span></button></div>
         <button class="add-event-btn btn btn-primary" type="button" data-act="new"><span class="key-hint">[n] </span>new entry</button>
         <div id="entryFormSlot"></div>
         <div class="event-list">${cards || '<div class="no-events">No entries yet.</div>'}</div>
@@ -560,16 +562,19 @@ function renderDay() {
 // ---------- the day's note ----------
 // Free text on the day itself (not an entry): typed straight in, saved as you
 // go. If a save can't get through, the text is kept on this device and sent
-// with the next change or the next time the day is opened.
+// with the next change or the next time the day is opened. Each save says
+// which note it started from (its base): if the note was changed on another
+// device since, the server refuses it and you choose which to keep.
 
 const NOTE_DRAFTS_KEY = 'calendar-note-drafts';
 let noteTimer = null;
 function noteDrafts() {
     try { return JSON.parse(localStorage.getItem(NOTE_DRAFTS_KEY)) || {}; } catch (_) { return {}; }
 }
-function setNoteDraft(iso, text) {
+/** A draft is {text, base}; one kept before bases were (a bare string) has none. */
+function setNoteDraft(iso, text, base) {
     const drafts = noteDrafts();
-    if (text === null) delete drafts[iso]; else drafts[iso] = text;
+    if (text === null) delete drafts[iso]; else drafts[iso] = { text, base };
     try { localStorage.setItem(NOTE_DRAFTS_KEY, JSON.stringify(drafts)); } catch (_) { /* private mode */ }
 }
 
@@ -578,48 +583,80 @@ function setUpDayNote() {
     if (!el || !dayState) return;
     const state = dayState;
     let saved = state.note;
-    const draft = noteDrafts()[state.iso];
-    el.value = draft ?? saved;
+    const stored = noteDrafts()[state.iso];
+    const draft = typeof stored === 'string' ? { text: stored, base: null } : stored;
+    // The note this text was written from: the saved one, or a draft's (an
+    // old draft doesn't say; on a day with no note it can only be nothing).
+    let base = draft ? (draft.base ?? (saved ? null : '')) : saved;
+    el.value = draft ? draft.text : saved;
     const fit = () => { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; };
     fit();
+    const [year, month, day] = state.iso.split('-').map(Number);
+
+    // Changed on another device since this text was started: keep which?
+    const conflict = document.getElementById('noteConflict');
+    function showConflict(current) {
+        saved = current;
+        state.note = current;
+        conflict.hidden = false;
+        conflict.querySelector('[data-note="mine"]').onclick = () => { conflict.hidden = true; base = current; save(); };
+        conflict.querySelector('[data-note="theirs"]').onclick = () => {
+            conflict.hidden = true;
+            base = current;
+            el.value = current;
+            fit();
+            setNoteDraft(state.iso, null);
+        };
+    }
 
     async function save() {
         clearTimeout(noteTimer);
         const text = el.value.trim();
-        if (text === saved.trim()) { setNoteDraft(state.iso, null); return; }
-        setNoteDraft(state.iso, el.value);
-        const [year, month, day] = state.iso.split('-').map(Number);
+        if (text === saved.trim()) { setNoteDraft(state.iso, null); base = saved; conflict.hidden = true; return; }
+        setNoteDraft(state.iso, el.value, base);
+        if (!conflict.hidden) return;   // waiting for you to choose
         let res;
         try {
-            res = await api('/mood/note', { method: 'POST', json: { year, month, day, note: text } });
+            res = await api('/mood/note', { method: 'POST', json: { year, month, day, note: text, base: base ?? '' } });
         } catch (error) {
+            if (error.status === 409) { showConflict(error.data.current || ''); return; }
             toast(`Your note is kept on this device · ${why(error)}`, { error: true });
             return;
         }
         setNoteDraft(state.iso, null);
         const previous = res.previous || '';
         saved = text;
+        base = text;
         state.note = text;
         window.statsStale = true;
         updateCalendarView();   // the tile's fold follows how much was written
         if (!text && previous) {
             toast('Note cleared', { action: 'Undo', onAction: async () => {
-                await api('/mood/note', { method: 'POST', json: { year, month, day, note: previous } });
-                if (dayState === state) { el.value = previous; saved = previous; state.note = previous; fit(); }
+                try {
+                    await api('/mood/note', { method: 'POST', json: { year, month, day, note: previous, base: '' } });
+                } catch (error) {
+                    toast(`Couldn't undo · ${why(error)}`, { error: true });
+                    return;
+                }
+                if (dayState === state) { el.value = previous; saved = previous; base = previous; state.note = previous; fit(); }
                 updateCalendarView();
             } });
         }
     }
     el.addEventListener('input', () => {
         fit();
-        setNoteDraft(state.iso, el.value);
+        setNoteDraft(state.iso, el.value, base);
         clearTimeout(noteTimer);
         noteTimer = setTimeout(save, 800);
     });
     el.addEventListener('blur', save);
     el.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); el.blur(); } });
     el.closest('.day-note-wrap')?.addEventListener('click', (e) => { if (e.target !== el) el.focus(); });
-    if (draft != null && draft.trim() !== saved.trim()) save();   // a note left unsaved last time
+    // A note left unsaved last time: sent now, unless the note has changed
+    // since it was started (or it's an old draft that doesn't say).
+    if (draft && draft.text.trim() !== saved.trim()) {
+        if (base !== null && base.trim() === saved.trim()) save(); else showConflict(saved);
+    }
 }
 
 // ---------- the entry form ----------
@@ -702,15 +739,19 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null,
     const initial = preset || valuesFromEntry(entry);
     const parent = mode.startsWith('sub') ? findEntry(eventId) : null;
     const key = formKey(mode, eventId, subId);
-    const draft = draftValues || readDrafts()[key]?.values;
+    const stored = readDrafts()[key];
+    const draft = draftValues || stored?.values;
     const values = draft || initial;
+    // Saving replaces the entry, so say if it was changed elsewhere since.
+    const changed = draft && stored?.base && isDirty(stored.base, initial);
     entryForm = { key, mode, eventId, subId, initial };
 
     slot.innerHTML = `
         <form class="entry-form" id="entryForm" novalidate>
             <div class="form-header">${FORM_TITLES[mode]}</div>
             ${parent ? `<div class="form-context">Part of “${escapeHtml(parent.name)}”</div>` : ''}
-            ${draft ? `<div class="form-note">Draft restored.</div>` : ''}
+            ${changed ? `<div class="form-note">Draft restored. This entry was changed on another device since: saving replaces that.</div>`
+                : draft ? `<div class="form-note">Draft restored.</div>` : ''}
             <input class="input" name="name" placeholder="What happened?" aria-label="What happened?" autocomplete="off">
             ${stampRow('From', 'start_date', 'start_time')}
             ${stampRow('To', 'end_date', 'end_time')}
@@ -749,7 +790,7 @@ function openEntryForm(mode, { eventId = null, subId = null, draftValues = null,
         draftTimer = setTimeout(() => {
             if (!entryForm || entryForm.key !== key) return;   // saved or closed meanwhile
             const now = readForm(form);
-            if (isDirty(now, initial)) saveDraft(key, now); else clearDraft(key);
+            if (isDirty(now, initial)) saveDraft(key, now, stored?.base || initial); else clearDraft(key);
         }, 250);
     });
     form.addEventListener('submit', (e) => { e.preventDefault(); submitEntryForm(); });
@@ -777,7 +818,7 @@ function closeEntryForm({ discard = false } = {}) {
     // Closing without discarding: make sure the very latest keystrokes are kept.
     const form = document.getElementById('entryForm');
     if (entryForm && !discard && form && isDirty(readForm(form), entryForm.initial)) {
-        saveDraft(entryForm.key, readForm(form));
+        saveDraft(entryForm.key, readForm(form), readDrafts()[entryForm.key]?.base || entryForm.initial);
     }
     if (entryForm && discard) clearDraft(entryForm.key);
     entryForm = null;

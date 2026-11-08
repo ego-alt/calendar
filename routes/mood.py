@@ -65,7 +65,12 @@ def toggle_marker():
 @json_login_required
 def update_note():
     """The day's own note: free text, saved as you type. An empty note clears
-    it. Returns the previous text so the app can offer Undo."""
+    it. Returns the previous text so the app can offer Undo.
+
+    `base` is the note the edit started from. If the note has changed since
+    (on another device), nothing is saved: a 409 says so, with the note as it
+    is now, so a draft kept on one device can't silently replace a newer note
+    written on another."""
     data = request.json or {}
     date = datetime(int(data["year"]), int(data["month"]), int(data["day"])).date()
     note = (data.get("note") or "").strip() or None
@@ -73,6 +78,10 @@ def update_note():
         return jsonify({"status": "error", "message": "That note is too long to save."}), 400
     daily_log = DailyLog.query.filter_by(user_id=current_user.id, date=date).first()
     previous = daily_log.note if daily_log else None
+    if "base" not in data:
+        return jsonify({"status": "error", "message": "Reload the page, then save your note again."}), 400
+    if ((data["base"] or "").strip() or None) != previous:
+        return jsonify({"status": "conflict", "message": "This note was changed on another device.", "current": previous or ""}), 409
     if daily_log is None:
         if note is None:
             return jsonify({"status": "success", "previous": None})

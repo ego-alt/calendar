@@ -1462,3 +1462,6 @@ body.signed-out .login-overlay { background: var(--color-bg-base); }
 /* The name field suggests past names (a datalist): they show as you type,
    without Chrome's own ▼ in the field. */
 .entry-form input[list]::-webkit-calendar-picker-indicator { display: none !important; }
+
+/* A note changed on another device while this one held a draft (day.js). */
+.note-conflict { margin: calc(-1 * var(--space-2)) 0 var(--space-3); }
