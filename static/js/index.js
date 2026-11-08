@@ -4,6 +4,19 @@ const CURRENT_YEAR = TODAY.getFullYear();
 const CURRENT_MONTH = TODAY.getMonth() + 1; // getMonth() returns 0-11
 const CURRENT_DAY = TODAY.getDate();
 
+// The server works out "today" in this device's zone from the tz cookie
+// (utils.viewer_today). Without it (a first visit, or a new zone) it drew the
+// first month for another day, so the page is drawn again, once, with it set.
+(() => {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!zone) return;
+    document.cookie = `tz=${zone}; path=/; max-age=31536000; SameSite=Lax`;   // zone names are cookie-safe as they are
+    const here = `${CURRENT_YEAR}-${String(CURRENT_MONTH).padStart(2, '0')}-${String(CURRENT_DAY).padStart(2, '0')}`;
+    let once = false;
+    try { once = sessionStorage.getItem('tz-redrawn') === here; sessionStorage.setItem('tz-redrawn', here); } catch (_) { once = true; }
+    if (window.SERVER_TODAY && window.SERVER_TODAY !== here && !once && document.cookie.includes('tz=')) location.reload();
+})();
+
 // View state (changes as user navigates)
 let viewState = {
     year: CURRENT_YEAR,

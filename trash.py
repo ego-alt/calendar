@@ -7,7 +7,7 @@ delete and from `flask purge-deleted`.
 """
 
 import pathlib
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from flask import current_app
 
@@ -17,7 +17,7 @@ PURGE_AFTER = timedelta(days=30)
 
 
 def now():
-    return datetime.utcnow()
+    return datetime.now(UTC)
 
 
 def log_has_attachments(log: DailyLog) -> bool:

@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
@@ -7,6 +7,7 @@ from models import DailyLog, Event, db
 from moods import MOOD_BY_KEY
 from query_router import route_query
 from search_index import search
+from utils import viewer_today
 
 from ._helpers import json_login_required
 from .events import retrieve_event_data
@@ -66,7 +67,7 @@ def search_events():
     uid = current_user.id
     routed = route_query(
         request.args.get("q", ""),
-        today=date.today(),
+        today=viewer_today(),
         people=_known_people(uid),
         places=_distinct(Event.where, uid),
     )

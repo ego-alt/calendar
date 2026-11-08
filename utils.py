@@ -1,11 +1,24 @@
 import calendar
 from collections import defaultdict
-from datetime import date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from flask import has_request_context, request
 from sqlalchemy import func
 
 from models import DailyLog, Event
 from moods import MOOD_BY_KEY, MOODS
+
+
+def viewer_today() -> date:
+    """Today where the viewer is, in their device's zone (the `tz` cookie
+    shell.js sets), not the server's: in Hong Kong a UTC server is still on
+    yesterday until 8am. UTC without the cookie or outside a request."""
+    zone = request.cookies.get("tz") if has_request_context() else None
+    try:
+        return datetime.now(ZoneInfo(zone) if zone else UTC).date()
+    except (ZoneInfoNotFoundError, ValueError):
+        return datetime.now(UTC).date()
 
 
 def parse_event_datetime(date_str, time_str=None, is_end: bool = False):
@@ -321,7 +334,7 @@ def get_stats_data(user_id: int, year: int | None = None) -> dict:
     "Mood with…" averages; the mix charts stay count-based. Computed
     server-side; stats.js renders it.
     """
-    today = date.today()
+    today = viewer_today()
     if year:
         start, end = date(year, 1, 1), min(date(year, 12, 31), today)
     else:

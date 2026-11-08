@@ -302,6 +302,7 @@
         window.INITIAL_VIEW = "{{ active_view|default('calendar') }}";
         window.PROXY_MODE = {{ 'true' if proxy_mode else 'false' }};
         window.SIGNED_IN = {{ 'true' if current_user.is_authenticated else 'false' }};
+        window.SERVER_TODAY = "{{ '%04d-%02d-%02d' % (current_year, current_month, current_day) }}";
         window.INITIAL_MONTH = {{ {"year": current_year, "month": current_month, "mood_colors": mood_colors, "day_info": day_info, "days_with_events": days_with_events} | tojson }};
         window.MOODS = {{ moods | map(attribute='__dict__') | list | tojson }};
     </script>

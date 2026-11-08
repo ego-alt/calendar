@@ -1,9 +1,9 @@
-from datetime import datetime
+from datetime import date
 
 from flask import Blueprint, jsonify, render_template, request
 
 from models import DailyLog, Event
-from utils import get_month_data, get_month_details, get_year_data
+from utils import get_month_data, get_month_details, get_year_data, viewer_today
 
 from ._helpers import current_user_id, json_login_required
 
@@ -13,7 +13,7 @@ index_blueprint = Blueprint("index_routes", __name__)
 def build_index_context() -> dict:
     """Template context for the calendar shell — shared by `/` and the `/stats`
     deep-link, since both render the same single-page app shell."""
-    today = datetime.now()
+    today = viewer_today()
     calendar_data, mood_colors, days_with_events, days_with_marker = get_month_data(
         today.year, today.month, current_user_id()
     )
@@ -55,7 +55,7 @@ def get_month():
     return jsonify(
         {
             "calendar_data": calendar_data,
-            "month_label": datetime(year, month, 1).strftime("%B %Y"),
+            "month_label": date(year, month, 1).strftime("%B %Y"),
             "mood_colors": mood_colors,
             "days_with_events": days_with_events,
             "days_with_marker": days_with_marker,

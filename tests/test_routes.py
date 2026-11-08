@@ -212,14 +212,14 @@ def test_attachment_delete_is_undoable_then_purged(authed_client, app):
 
 def test_purging_an_entry_unlinks_its_files_and_drops_its_embedding(authed_client, app):
     """The database does this (ON DELETE), so foreign keys must be on."""
-    from datetime import datetime, timedelta
+    from datetime import UTC, datetime, timedelta
 
     from models import Event, EventEmbedding
     from trash import purge_deleted
 
     attachment_id = _upload(authed_client, 2026, 5, 11).get_json()["attachment"]["id"]
     with app.app_context():
-        event = Event(name="Lunch", start_time=datetime(2026, 5, 11, 12), deleted_at=datetime(2026, 1, 1))
+        event = Event(name="Lunch", start_time=datetime(2026, 5, 11, 12), deleted_at=datetime(2026, 1, 1, tzinfo=UTC))
         db.session.add(event)
         db.session.flush()
         db.session.add(EventEmbedding(event_id=event.id, embedding=b"x", model="m", source_hash="h"))

@@ -401,8 +401,7 @@ def _cleanup(text):
     return " ".join(tokens)
 
 
-def route_query(q, *, today=None, people=(), places=()):
-    today = today or date.today()
+def route_query(q, *, today, people=(), places=()):
     text = q or ""
 
     date_from, date_to, date_label, text = _extract_date(text, today)

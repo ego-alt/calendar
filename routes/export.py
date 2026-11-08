@@ -9,7 +9,6 @@ import json
 import pathlib
 import tempfile
 import zipfile
-from datetime import date
 
 from flask import Blueprint, current_app, send_file
 from flask_login import current_user
@@ -17,6 +16,7 @@ from sqlalchemy.orm import selectinload
 
 from models import Attachment, DailyLog, Event
 from moods import MOOD_BY_KEY
+from utils import viewer_today
 
 from ._helpers import json_login_required
 
@@ -70,8 +70,9 @@ def export_all():
     for e in events:
         entries_by_day.setdefault(e.start_time.date(), []).append(e)
 
-    data = {"exported": date.today().isoformat(), "days": []}
-    md = ["# Diary", "", f"Exported {date.today():%-d %b %Y}.", ""]
+    today = viewer_today()
+    data = {"exported": today.isoformat(), "days": []}
+    md = ["# Diary", "", f"Exported {today:%-d %b %Y}.", ""]
     folder = pathlib.Path(current_app.config["ATTACHMENT_DIR"])
 
     tmp = tempfile.SpooledTemporaryFile(max_size=32 * 1024 * 1024)
@@ -137,5 +138,5 @@ def export_all():
     tmp.seek(0)
     return send_file(
         tmp, mimetype="application/zip", as_attachment=True,
-        download_name=f"diary-{date.today().isoformat()}.zip",
+        download_name=f"diary-{viewer_today().isoformat()}.zip",
     )

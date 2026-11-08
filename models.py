@@ -1,14 +1,39 @@
 import sqlite3
+from datetime import UTC
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import DateTime
 from sqlalchemy import event as sa_event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, with_loader_criteria
 from sqlalchemy.sql import func
+from sqlalchemy.types import TypeDecorator
 from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
+
+
+class UtcDateTime(TypeDecorator):
+    """A moment (when a row was made, changed or deleted): stored as naive UTC
+    and always read back as aware UTC, so code never mixes the two. An entry's
+    or a receipt's own time is a time on the clock as written, not a moment, so
+    it stays a plain DateTime (tests/test_timestamps.py lists those)."""
+
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            raise ValueError("UtcDateTime needs an aware datetime, not a naive one")
+        return value.astimezone(UTC).replace(tzinfo=None)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
 @sa_event.listens_for(Engine, "connect")
@@ -25,7 +50,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, unique=True, nullable=False)
     password_hash = db.Column(db.String)
-    created_at = db.Column(db.DateTime, server_default=func.now())
+    created_at = db.Column(UtcDateTime, server_default=func.now())
 
     # Relationships
     daily_logs = db.relationship("DailyLog", back_populates="user")
@@ -72,8 +97,8 @@ class Attachment(db.Model):
     stored_name = db.Column(db.String, nullable=False, unique=True)
     mime_type = db.Column(db.String, nullable=False)
     size_bytes = db.Column(db.Integer, nullable=False)
-    created_at = db.Column(db.DateTime, server_default=func.now())
-    deleted_at = db.Column(db.DateTime, nullable=True, index=True)  # soft delete (undo)
+    created_at = db.Column(UtcDateTime, server_default=func.now())
+    deleted_at = db.Column(UtcDateTime, nullable=True, index=True)  # soft delete (undo)
     caption = db.Column(db.String, nullable=True)
     # The date and time on a receipt, as the scanner read it: links it to its entry.
     receipt_time = db.Column(db.DateTime, nullable=True)
@@ -100,9 +125,9 @@ class Event(db.Model):
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime)
 
-    created_at = db.Column(db.DateTime, server_default=func.now())
-    last_modified = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
-    deleted_at = db.Column(db.DateTime, nullable=True, index=True)  # soft delete (undo)
+    created_at = db.Column(UtcDateTime, server_default=func.now())
+    last_modified = db.Column(UtcDateTime, server_default=func.now(), onupdate=func.now())
+    deleted_at = db.Column(UtcDateTime, nullable=True, index=True)  # soft delete (undo)
 
     __table_args__ = (db.Index("ix_events_user_start", "user_id", "start_time"),)
 
@@ -131,7 +156,7 @@ class EventEmbedding(db.Model):
     embedding = db.Column(db.LargeBinary, nullable=False)  # float32, L2-normalized
     model = db.Column(db.String, nullable=False)  # producing model id
     source_hash = db.Column(db.String, nullable=False)  # skip re-embedding unchanged text
-    updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+    updated_at = db.Column(UtcDateTime, server_default=func.now(), onupdate=func.now())
 
 
 class DayNoteEmbedding(db.Model):
@@ -148,7 +173,7 @@ class DayNoteEmbedding(db.Model):
     embedding = db.Column(db.LargeBinary, nullable=False)
     model = db.Column(db.String, nullable=False)
     source_hash = db.Column(db.String, nullable=False)
-    updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+    updated_at = db.Column(UtcDateTime, server_default=func.now(), onupdate=func.now())
 
 
 class SubEvent(db.Model):
@@ -164,9 +189,9 @@ class SubEvent(db.Model):
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime)
 
-    created_at = db.Column(db.DateTime, server_default=func.now())
-    last_modified = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
-    deleted_at = db.Column(db.DateTime, nullable=True, index=True)  # soft delete (undo)
+    created_at = db.Column(UtcDateTime, server_default=func.now())
+    last_modified = db.Column(UtcDateTime, server_default=func.now(), onupdate=func.now())
+    deleted_at = db.Column(UtcDateTime, nullable=True, index=True)  # soft delete (undo)
 
     __table_args__ = (db.Index("ix_subevents_event_start", "event_id", "start_time"),)
 
