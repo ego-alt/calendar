@@ -90,7 +90,12 @@
     }
     ["click", "keydown", "touchend"].forEach((ev) => document.addEventListener(ev, () => setTimeout(syncLayers, 0), true));
 
-    tabs.forEach((t) => t.addEventListener("click", () => setView(t.dataset.view)));
+    // On a phone, tapping the month while on it closes the year or diary over it.
+    tabs.forEach((t) => t.addEventListener("click", () => {
+        if (t.dataset.view === "calendar" && current === "calendar" && window.matchMedia("(max-width: 640px)").matches
+            && byId("termWindow").classList.contains("pane-open")) closePane();
+        setView(t.dataset.view);
+    }));
     window.loadStats = loadStats;
 
     // A heatmap cell opens that day on the calendar.
