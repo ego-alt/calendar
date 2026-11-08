@@ -115,14 +115,6 @@ body.view-calendar #calendarView { display: flex; }
     line-height: 1;
     z-index: 1005;
 }
-.tmux-session {
-    display: flex;
-    align-items: center;
-    padding: 0 var(--space-3);
-    background: var(--color-accent);
-    color: var(--color-bg-chrome);
-    font-weight: 700;
-}
 .tmux-windows { display: flex; align-items: stretch; }
 .tmux-win {
     background: none;
@@ -188,7 +180,7 @@ body.view-search #searchView {
     #calendarView { padding: var(--space-3) 0; }
     .term-main { padding: var(--space-2); }
     .tmux { font-size: var(--text-xs); }
-    .tmux-session, .status-line { display: none; }
+    .status-line { display: none; }
     .tmux-windows { flex: 1; }
     .tmux-win { flex: 1; padding: 0 2px; }
     .tmux-win.active::after { content: ""; }
