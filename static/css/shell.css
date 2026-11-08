@@ -132,11 +132,21 @@ body.view-calendar #calendarView { display: flex; }
     color: var(--color-text-muted);
     cursor: pointer;
 }
-.tmux-win:hover { color: var(--color-text-primary); }
+@media (hover: hover) { .tmux-win:hover { color: var(--color-text-primary); } }   /* a tap's hover would stick */
 .tmux-win.active { background: var(--color-border); color: var(--color-text-primary); }
 .tmux-win.active::after { content: "*"; }
 .tmux-win:focus-visible { outline: 1px solid var(--color-accent-hover); outline-offset: -1px; }
 .tmux-sep { display: flex; align-items: center; padding: 0 var(--space-1); color: var(--color-border); }
+/* Year and diary are the month's drawers, not views: bracketed toggles beside
+   it that are never filled (an open one only brightens). They stay put in every
+   view, so the tabs never move under a finger; from Stats or Search they open
+   the month with that drawer. */
+.tmux-toggles { display: flex; align-items: stretch; }
+.tmux-toggle { padding: 0 var(--space-1); }
+.tmux-toggle::before { content: "["; }
+.tmux-toggle::after { content: "]"; }
+.tmux-toggle.active { background: none; color: var(--color-accent-hover); }
+.tmux-toggle.active::after { content: "]"; }
 .status-line {
     flex: 1;
     min-width: 0;
@@ -182,6 +192,8 @@ body.view-search #searchView {
     .tmux-windows { flex: 1; }
     .tmux-win { flex: 1; padding: 0 2px; }
     .tmux-win.active::after { content: ""; }
+    .tmux-toggle { flex: 0 0 auto; padding: 0 var(--space-2); }
+    .tmux-toggle.active::after { content: "]"; }
     /* The drawer fills the screen above the bar. */
     .term-pane { right: -100vw; width: 100vw; border-left: 0; }
     .term-pane .year-content { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-3); }

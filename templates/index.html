@@ -231,9 +231,11 @@
         <span class="tmux-session">cal</span>
         <nav class="tmux-windows" aria-label="Views">
             <button type="button" class="tmux-win" data-view="calendar" title="Month (m)">month</button>
-            <span class="tmux-sep" aria-hidden="true">│</span>
-            <button type="button" class="tmux-win" data-pane="year" aria-pressed="false" title="Year (y)">year</button>
-            <button type="button" class="tmux-win" data-pane="diary" aria-pressed="false" title="Diary (d)">diary</button>
+            <!-- The month's two drawers: toggles that belong to it, not views. -->
+            <span class="tmux-toggles">
+                <button type="button" class="tmux-win tmux-toggle" data-pane="year" aria-pressed="false" title="Year (y)">year</button>
+                <button type="button" class="tmux-win tmux-toggle" data-pane="diary" aria-pressed="false" title="Diary (d)">diary</button>
+            </span>
             <span class="tmux-sep" aria-hidden="true">│</span>
             <button type="button" class="tmux-win" data-view="stats">stats</button>
             <button type="button" class="tmux-win" data-view="search" title="Search (/)">search</button>
